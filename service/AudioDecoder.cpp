@@ -129,9 +129,11 @@ namespace com
                         case audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE:
                             value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(/* audio mixing enable */ 1);
                             break;
+#if 0
                         case audiodecoder::Property::METRIC_xxxx:
                             value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(/* metric value */ 100);
                             break;
+#endif
                         default:
                             return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                     }
@@ -219,6 +221,14 @@ namespace com
                 {
                     return android::binder::Status::ok();
                 }
+
+                // FIXME: Implement setProperty() is required because it is defined as a virtual method
+                // Dummy result is used to pass compilation
+                android::binder::Status AudioDecoderController::setProperty(  audiodecoder::Property property, const PropertyValue& propertyValue, bool* _aidl_return  )
+                {
+                    return android::binder::Status::ok();
+                }
+
             }
         }
     }

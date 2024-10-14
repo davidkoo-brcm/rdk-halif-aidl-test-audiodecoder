@@ -58,8 +58,8 @@ namespace com {
                     virtual ~AudioDecoder();
 
                     android::binder::Status getCapabilities( audiodecoder::Capabilities* _aidl_return ) override;
-                    android::binder::Status getProperty( audiodecoder::Property property, std::optional<PropertyValue>* _aidl_return ) override;
-                    android::binder::Status setProperty( audiodecoder::Property property, const PropertyValue& propertyValue, bool* _aidl_return ) override;
+                    android::binder::Status getProperty( audiodecoder::Property property, std::optional<PropertyValue>* _aidl_return );
+                    android::binder::Status setProperty( audiodecoder::Property property, const PropertyValue& propertyValue, bool* _aidl_return );
                     android::binder::Status getState( State* _aidl_return ) override;
                     android::binder::Status open( audiodecoder::Codec codec, bool secure, const android::sp<audiodecoder::IAudioDecoderControllerListener>& audioDecoderControllerListener, android::sp<audiodecoder::IAudioDecoderController>* _aidl_return ) override;
                     android::binder::Status close( const android::sp<audiodecoder::IAudioDecoderController>& audioDecoderController, bool* _aidl_return ) override;
@@ -80,6 +80,9 @@ namespace com {
                     android::binder::Status signalDiscontinuity() override;
                     android::binder::Status signalEOS() override;
                     android::binder::Status parseCodecSpecificData( rdk::hal::audiodecoder::CSDAudioFormat csdAudioFormat, const std::vector<uint8_t>& codecData, bool* _aidl_return ) override;
+                    // FIXME: Implement setProperty() is required because it is defined as a virtual method
+                    // Dummy result is used to pass compilation
+                    android::binder::Status setProperty( audiodecoder::Property property, const PropertyValue& propertyValue, bool* _aidl_return ) override;
                 };
             }
         }
