@@ -1,0 +1,6 @@
+*.sw*
+*.o
+*/ut/build
+*/ut/hal
+*/ut/src/gen/
+*/ut/ut-core/
