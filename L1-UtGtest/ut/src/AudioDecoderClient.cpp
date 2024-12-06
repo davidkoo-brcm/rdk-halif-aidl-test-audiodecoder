@@ -2517,6 +2517,8 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    optind = 1;
+
     while ((opt = getopt(argc, argv, "p:")) != -1) 
     {
         switch (opt) 
@@ -2598,7 +2600,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        std::cout << "USAGE : ./AudioDecoderClient -p <config_file>" <<std::endl;
+        std::cout << "USAGE: " << argv[0] << " -p <config_file>" <<std::endl;
         return -1;
     }
 
