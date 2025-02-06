@@ -45,9 +45,9 @@ The output of an audio decoder can take 2 routes; non-tunnelled it comes back to
 
 |#|Test Functionality|Description|
 |-|------------------|-----------|
-|1|[Set and Get Decoder Properties](#set-and-get-decoder-properties)|Set various properties of decoder and verifies by get function|
-|2|[Test2](#test2)|Test2|
-|3|[Test3](#test3)|Test3|
+|1|[Set and Get Decoder Properties](#1-set-and-get-decoder-properties)|Set various properties of decoder and verifies by get function|
+|2|[Test2](#2-test2)|Test2|
+|3|[Test3](#3-test3)|Test3|
 
 ### 1. Set and Get Decoder Properties
 
@@ -88,9 +88,9 @@ The output of an audio decoder can take 2 routes; non-tunnelled it comes back to
 
 |#|Test Functionality|Description|
 |-|------------------|-----------|
-|1|[Decode Single frame of Audio](#decode-single-frame-of-audio)|Decodes the single audio frame of various formats|
-|2|[Test2](#test2-1)|Test2|
-|3|[Test3](#test3-1)|Test3|
+|1|[Decode Single frame of Audio](#1-decode-single-frame-of-audio)|Decodes the single audio frame of various formats|
+|2|[Test2](#2-test2-1)|Test2|
+|3|[Test3](#3-test3-1)|Test3|
 
 ### 1. Decode Single frame of Audio
 
