@@ -5,7 +5,8 @@
 - [Acronyms, Terms and Abbreviations](#acronyms-terms-and-abbreviations)
 - [Introduction](#introduction)
 - [Module Description](#module-description)
-- [Testing Scope](#testing-scope)
+- [L2 Test Specification](#l2-test-specification)
+- [L3 Test Specification](#l3-test-specification)
 
 ## Acronyms, Terms and Abbreviations
 
@@ -45,8 +46,10 @@ The output of an audio decoder can take 2 routes; non-tunnelled it comes back to
 |#|Test Functionality|Description|
 |-|------------------|-----------|
 |1|[Set and Get Decoder Properties](#set-and-get-decoder-properties)|Set various properties of decoder and verifies by get function|
+|2|[Test2](#test2)|Test2|
+|3|[Test3](#test3)|Test3|
 
-### Set and Get Decoder Properties
+### 1. Set and Get Decoder Properties
 
 #### Description
 
@@ -63,13 +66,33 @@ The output of an audio decoder can take 2 routes; non-tunnelled it comes back to
 |IAudioDecoder|open, getProperty, close|
 |IAudioDecoderController|setProperty|
 
+### 2. Test2
+
+#### Description
+
+#### HAL APIs
+
+|Class|Function|
+|-----|--------|
+
+### 3. Test3
+
+#### Description
+
+#### HAL APIs
+
+|Class|Function|
+|-----|--------|
+
 ## L3 Test Specification
 
 |#|Test Functionality|Description|
 |-|------------------|-----------|
 |1|[Decode Single frame of Audio](#decode-single-frame-of-audio)|Decodes the single audio frame of various formats|
+|2|[Test2](#test2-1)|Test2|
+|3|[Test3](#test3-1)|Test3|
 
-### Decode Single frame of Audio
+### 1. Decode Single frame of Audio
 
 #### Description
 
@@ -89,3 +112,21 @@ The output of an audio decoder can take 2 routes; non-tunnelled it comes back to
 |IAudioDecoderControllerListener|onFrameOutput|
 |IAudioDecoderEventListener|onDecodeError|
 |IAVBuffer|createAudioPool, alloc, free, destroyPool|
+
+### 2. Test2
+
+#### Description
+
+#### HAL APIs
+
+|Class|Function|
+|-----|--------|
+
+### 3. Test3
+
+#### Description
+
+#### HAL APIs
+
+|Class|Function|
+|-----|--------|
