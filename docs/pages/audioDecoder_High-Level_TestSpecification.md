@@ -43,54 +43,11 @@ The output of an audio decoder can take 2 routes; non-tunnelled it comes back to
 
 ## L2 Test Specification
 
-|#|Test Functionality|Description|
-|-|------------------|-----------|
-|1|[Set and Get Decoder Properties](#1-set-and-get-decoder-properties)|Set various properties of decoder and verifies by get function|
-|2|[Test2](#2-test2)|Test2|
-|3|[Test3](#3-test3)|Test3|
-
-### 1. Set and Get Decoder Properties
-
-#### Description
-
-- Read supported audio decoders using `IAudioDecoderManager` class
-- Loop through supported audio decoders
-- set read-write properties (`Property`) of decoder and verify using get function
-- get read only properties of decoder and verify with default/supported values
-
-#### HAL APIs
-
-|Class|Function|
-|-----|--------|
-|IAudioDecoderManager|getAudioDecoderIds, getAudioDecoder|
-|IAudioDecoder|open, getProperty, close|
-|IAudioDecoderController|setProperty|
-
-### 2. Test2
-
-#### Description
-
-#### HAL APIs
-
-|Class|Function|
-|-----|--------|
-
-### 3. Test3
-
-#### Description
-
-#### HAL APIs
-
-|Class|Function|
-|-----|--------|
+|Description|HAL APIs|
+|------------------|-----------|
+|<ul><li>Read supported audio decoders using `IAudioDecoderManager` class</li><li>Loop through supported audio decoder</li><li>set read-write properties (`Property`) of decoder and verify using get function</li><li>get read only properties of decoder and verify with default/supported values</li></ul>|<ul><li>IAudioDecoderManager - getAudioDecoderIds, getAudioDecoder</li><li>IAudioDecoder - open, getProperty, close </li><li>IAudioDecoderController - setProperty</li></ul>|
 
 ## L3 Test Specification
-
-|#|Test Functionality|Description|
-|-|------------------|-----------|
-|1|[Decode Single frame of Audio](#1-decode-single-frame-of-audio)|Decodes the single audio frame of various formats|
-|2|[Test2](#2-test2-1)|Test2|
-|3|[Test3](#3-test3-1)|Test3|
 
 ### 1. Decode Single frame of Audio
 
@@ -112,21 +69,3 @@ The output of an audio decoder can take 2 routes; non-tunnelled it comes back to
 |IAudioDecoderControllerListener|onFrameOutput|
 |IAudioDecoderEventListener|onDecodeError|
 |IAVBuffer|createAudioPool, alloc, free, destroyPool|
-
-### 2. Test2
-
-#### Description
-
-#### HAL APIs
-
-|Class|Function|
-|-----|--------|
-
-### 3. Test3
-
-#### Description
-
-#### HAL APIs
-
-|Class|Function|
-|-----|--------|
