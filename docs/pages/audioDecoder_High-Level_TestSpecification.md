@@ -43,29 +43,16 @@ The output of an audio decoder can take 2 routes; non-tunnelled it comes back to
 
 ## L2 Test Specification
 
-|Description|HAL APIs|
-|------------------|-----------|
-|<ul><li>Read supported audio decoders using `IAudioDecoderManager` class</li><li>Loop through supported audio decoder</li><li>set read-write properties (`Property`) of decoder and verify using get function</li><li>get read only properties of decoder and verify with default/supported values</li></ul>|<ul><li>IAudioDecoderManager - getAudioDecoderIds, getAudioDecoder</li><li>IAudioDecoder - open, getProperty, close </li><li>IAudioDecoderController - setProperty</li></ul>|
+|Test|Description|HAL APIs|
+|----|-----------|--------|
+|Set and Get Audio Properties|<ul><li>Read supported audio decoders using `IAudioDecoderManager` class</li><li>Loop through supported audio decoder</li><li>set read-write properties (`Property`) of decoder and verify using get function</li><li>get read only properties of decoder and verify with default/supported values</li></ul>|<ul><li>IAudioDecoderManager - getAudioDecoderIds, getAudioDecoder</li><li>IAudioDecoder - open, getProperty, close </li><li>IAudioDecoderController - setProperty</li></ul>|
+|Test2|Test2 Description|classes-functions|
+|Test3|Test3 Description|classes-functions|
 
 ## L3 Test Specification
 
-### 1. Decode Single frame of Audio
-
-#### Description
-
-- Read supported audio decoders using `IAudioDecoderManager` class
-- Loop through supported audio decoders
-- Loop through supported audio formats
-- Provide single audio frame to decoder in non-tunnel module
-- Verify the decoded frame
-
-#### HAL APIs
-
-|Class|Function|
-|-----|--------|
-|IAudioDecoderManager|getAudioDecoderIds, getAudioDecoder|
-|IAudioDecoder|open, registerEventListener, close|
-|IAudioDecoderController|start, decodeBuffer, stop|
-|IAudioDecoderControllerListener|onFrameOutput|
-|IAudioDecoderEventListener|onDecodeError|
-|IAVBuffer|createAudioPool, alloc, free, destroyPool|
+|Test|Description|HAL APIs|
+|----|-----------|--------|
+|Decode Single frame of Audio|<ul><li>Read supported audio decoders using `IAudioDecoderManager` class</li><li>Loop through supported audio decoders</li><li>Loop through supported audio formats</li><li>Provide single audio frame to decoder in non-tunnel module</li>Verify the decoded frame</li></ul>|<ul><li>IAudioDecoderManager - getAudioDecoderIds, getAudioDecoder</li><li>IAudioDecoder - open, registerEventListener, close </li><li>IAudioDecoderController - start, decodeBuffer, stop<li>IAudioDecoderControllerListener - onFrameOutput<li>IAudioDecoderEventListener - onDecodeError</li>IAVBuffer - createAudioPool, alloc, free, destroyPool</li></ul>|
+|Test2|Test2 Description|classes-functions|
+|Test3|Test3 Description|classes-functions|
