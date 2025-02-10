@@ -16,7 +16,6 @@
 - `L2`     - Level 2 Testing
 - `L3`     - Level 3 Testing
 - `NA`     - Not Applicable
-- `Y`      - Yes
 - `Caller` - Any user of the interface via the `APIs`
 - `CB`     - Call-back function (suffix)
 - `MS12`   - MultiStream 12
@@ -28,6 +27,7 @@
 - `DD`     - DOLBY Digital
 - `DDPLUS` - DOLBY Digital Plus
 - `RDK`    - Reference Design Kit
+- `EOS`    - End of Stream
 
 ## Introduction
 
@@ -41,17 +41,37 @@ The Audio Decoder `HAL` service provides the interfaces for compressed audio to 
 
 The output of an audio decoder can take 2 routes; non-tunnelled it comes back to the `RDK` media pipeline as a `PCM` audio frame buffer with metadata or tunnelled through the vendor layer directly to the mixer
 
+## Test Streams Specification
+
+|#|Stream Name|Description |
+|-|-----------|------------|
+|<a id="stream01"></a>01|tones_string_48k_stereo.ac3|`AC3` format audio with tones (single notes) across various frequencies|
+|<a id="stream02"></a>02|tones_string_48k_stereo.wav|`WAV` (`PCM`) format with tones across various frequencies|
+|<a id="stream03"></a>03|tones_string_48k_stereo.eac3|`EAC3` format with tones across various frequencies|
+|<a id="stream04"></a>04|tones_string_48k_stereo.aac|`AAC` format with tones across various frequencies|
+|<a id="stream05"></a>05|tones_string_48k_stereo.ogg|`VORBIS` format with tones across various frequencies|
+|<a id="stream06"></a>06|tones_string_48k_stereo.wma|`WMA` format with tones across various frequencies|
+|<a id="stream07"></a>07|invalid_48k_stereo.ac3|`AC3` format audio with invalid header/data|
+|<a id="stream08"></a>08|invalid_string_48k_stereo.wav|`WAV` (`PCM`) format with invalid header/data|
+|<a id="stream09"></a>09|invalid_string_48k_stereo.eac3|`EAC3` format with invalid header/data|
+|<a id="stream10"></a>10|invalid_string_48k_stereo.aac|`AAC` format with invalid header/data|
+|<a id="stream11"></a>11|invalid_string_48k_stereo.ogg|`VORBIS` format with invalid header/data|
+|<a id="stream12"></a>12|invalid_string_48k_stereo.wma|`WMA` format with invalid header/data|
+
 ## L2 Test Specification
 
 |Test|Description|HAL APIs|
 |----|-----------|--------|
 |Set and Get Audio Properties|<ul><li>Read supported audio decoders using `IAudioDecoderManager` class</li><li>Loop through supported audio decoders</li><li>set read-write properties (`Property`) of decoder and verify using get function</li><li>get read only properties of decoder and verify with default/supported values read from `hfp_audiodecoder.yaml`</li></ul>|<ul><li>IAudioDecoderManager - getAudioDecoderIds, getAudioDecoder</li><li>IAudioDecoder - open, getProperty, close </li><li>IAudioDecoderController - setProperty</li></ul>|
-|States of Audio Decoder|<ul><li>Read supported audio decoders using `IAudioDecoderManager` class</li><li>Loop through supported audio decoders</li><li>Register event listeners using `registerEventListener`</li><li>`open`, `start`, `stop`, `flush` and `close` audio decoder and verify the state using `getState` and `onStateChanged` event listener</li></ul>|<ul><li>IAudioDecoderManager - getAudioDecoderIds, getAudioDecoder</li><li>IAudioDecoder - open, registerEventListener, unregisterEventListener, close </li><li>IAudioDecoderController - start, stop, flush</li></ul>|
+|States of Audio Decoder|<ul><li>Read supported audio decoders using `IAudioDecoderManager` class</li><li>Loop through supported audio decoders</li><li>Register event listeners using `registerEventListener`</li><li>`open`, `start`, `stop`, `flush` (with reset `true` and `false`) and `close` audio decoder and verify the state using `getState` and `onStateChanged` event listener</li></ul>|<ul><li>IAudioDecoderManager - getAudioDecoderIds, getAudioDecoder</li><li>IAudioDecoder - open, registerEventListener, unregisterEventListener, close </li><li>IAudioDecoderController - start, stop, flush</li></ul>|
 
 ## L3 Test Specification
 
-|Test|Description|HAL APIs|
-|----|-----------|--------|
-|Decode Audio Frames (non-tunnel)|<ul><li>Read supported audio decoders using `IAudioDecoderManager` class</li><li>Loop through supported audio decoders</li><li>Loop through supported audio formats</li><li>`open` audio decoder in non-secure mode</li><li>register control and event listeners</li><li>Provide audio frames to decoder in non-tunnel module</li><li>`start` the decoder</li><li>Verify the decoded frame received from `onFrameOutput`</li><li>After decoding all frames `stop` and `close` the decoder</li></ul>|<ul><li>IAudioDecoderManager - getAudioDecoderIds, getAudioDecoder</li><li>IAudioDecoder - open, registerEventListener, close </li><li>IAudioDecoderController - start, decodeBuffer, stop<li>IAudioDecoderControllerListener - onFrameOutput<li>IAudioDecoderEventListener - onDecodeError</li>IAVBuffer - createAudioPool, alloc, free, destroyPool</li></ul>|
-|Multi-Instance Decoding|If platform supports multiple decoders, open multiple instances of audio decoders at same time and check if the decoding is happening properly or not|<ul><li>IAudioDecoderManager - getAudioDecoderIds, getAudioDecoder</li><li>IAudioDecoder - open, registerEventListener, close </li><li>IAudioDecoderController - start, decodeBuffer, stop<li>IAudioDecoderControllerListener - onFrameOutput<li>IAudioDecoderEventListener - onDecodeError</li>IAVBuffer - createAudioPool, alloc, free, destroyPool</li></ul>|
-|Test3|Test3 Description|classes-functions|
+|Test|Description|HAL APIs|Test Stream|
+|----|-----------|--------|-----------|
+|Decode Audio Frames (non-tunnel)|<ul><li>Read supported audio decoders using `IAudioDecoderManager` class</li><li>Loop through supported audio decoders</li><li>Loop through supported audio formats</li><li>`open` audio decoder in non-secure mode</li><li>register control and event listeners</li><li>`start` the decoder</li><li>Provide audio frames to decoder in non-tunnel module</li><li>Verify the decoded frame, `nsPresentationTime`, `FrameMetadata` fields received from `onFrameOutput`</li><li>After decoding all frames `stop` and `close` the decoder</li></ul>|<ul><li>IAudioDecoderManager - getAudioDecoderIds, getAudioDecoder</li><li>IAudioDecoder - open, registerEventListener, close </li><li>IAudioDecoderController - start, decodeBuffer, stop<li>IAudioDecoderControllerListener - onFrameOutput<li>IAudioDecoderEventListener - onDecodeError</li><li>IAVBuffer - createAudioPool, alloc, free, destroyPool</li></ul>|[01](#stream01), [02](#stream02), [03](#stream03), [04](#stream04), [05](#stream05), [06](#stream06)|
+|Invalid Audio Frames (non-tunnel)|<ul><li>Read supported audio decoders using `IAudioDecoderManager` class</li><li>Loop through supported audio decoders</li><li>Loop through supported audio formats</li><li>`open` audio decoder in non-secure mode</li><li>register control and event listeners</li><li>`start` the decoder</li><li>Provide audio frames to decoder in non-tunnel module</li><li>check if the decoder raises proper error</li><li>After decoding all frames `stop` and `close` the decoder</li></ul>|<ul><li>IAudioDecoderManager - getAudioDecoderIds, getAudioDecoder</li><li>IAudioDecoder - open, registerEventListener, close </li><li>IAudioDecoderController - start, decodeBuffer, stop<li>IAudioDecoderControllerListener - onFrameOutput<li>IAudioDecoderEventListener - onDecodeError</li><li>IAVBuffer - createAudioPool, alloc, free, destroyPool</li></ul>|[07](#stream07), [08](#stream08), [09](#stream09), [10](#stream10), [11](#stream11), [12](#stream12)|
+|Signal Discontinuity|<ul><li>Read supported audio decoders using `IAudioDecoderManager` class</li><li>Loop through supported audio decoders</li><li>Loop through supported audio formats</li><li>`open` audio decoder in non-secure mode</li><li>register control and event listeners</li><li>`start` the decoder</li><li>Provide audio frames to decoder in non-tunnel module</li><li>Signal discontinuity using `signalDiscontinuity`</li><li>Decoder should continue decoding without any issue</li><li>Verify the decoded frame, `nsPresentationTime`, `FrameMetadata` fields received from `onFrameOutput`</li><li>After decoding all frames `stop` and `close` the decoder</li></ul>|<ul><li>IAudioDecoderManager - getAudioDecoderIds, getAudioDecoder</li><li>IAudioDecoder - open, registerEventListener, close </li><li>IAudioDecoderController - start, decodeBuffer, signalDiscontinuity, stop<li>IAudioDecoderControllerListener - onFrameOutput<li>IAudioDecoderEventListener - onDecodeError</li><li>IAVBuffer - createAudioPool, alloc, free, destroyPool</li></ul>|[01](#stream01), [02](#stream02), [03](#stream03), [04](#stream04), [05](#stream05), [06](#stream06)|
+|Signal `EOS`|<ul><li>Read supported audio decoders using `IAudioDecoderManager` class</li><li>Loop through supported audio decoders</li><li>Loop through supported audio formats</li><li>`open` audio decoder in non-secure mode</li><li>register control and event listeners</li><li>`start` the decoder</li><li>Provide audio frames to decoder in non-tunnel module</li><li>Signal `EOS` using `signalEOS`</li><li>Decoder should decode without any issue and after all frames decode `FrameMetadata.endOfStream` must be `true`</li><li>After decoding all frames `stop` and `close` the decoder</li></ul>|<ul><li>IAudioDecoderManager - getAudioDecoderIds, getAudioDecoder</li><li>IAudioDecoder - open, registerEventListener, close </li><li>IAudioDecoderController - start, decodeBuffer, signalEOS, stop<li>IAudioDecoderControllerListener - onFrameOutput<li>IAudioDecoderEventListener - onDecodeError</li><li>IAVBuffer - createAudioPool, alloc, free, destroyPool</li></ul>|[01](#stream01), [02](#stream02), [03](#stream03), [04](#stream04), [05](#stream05), [06](#stream06)|
+|Check flush functionality|<ul><li>Read supported audio decoders using `IAudioDecoderManager` class</li><li>Loop through supported audio decoders</li><li>Loop through supported audio formats</li><li>`open` audio decoder in non-secure mode</li><li>register control and event listeners</li><li>`start` the decoder</li><li>Provide audio frames to decoder in non-tunnel module</li><li>call `flush` and check if the queued frames are flushed out. Check decoder state with rest flag enabled and disabled</li><li>After decoding all frames `stop` and `close` the decoder</li></ul>|<ul><li>IAudioDecoderManager - getAudioDecoderIds, getAudioDecoder</li><li>IAudioDecoder - open, registerEventListener, close </li><li>IAudioDecoderController - start, decodeBuffer, flush, stop<li>IAudioDecoderControllerListener - onFrameOutput<li>IAudioDecoderEventListener - onDecodeError</li><li>IAVBuffer - createAudioPool, alloc, free, destroyPool</li></ul>|[01](#stream01), [02](#stream02), [03](#stream03), [04](#stream04), [05](#stream05), [06](#stream06)|
+|Multi-Instance Decoding|If platform supports multiple decoders, open multiple instances of audio decoders at same time and check if the decoding is happening properly or not|<ul><li>IAudioDecoderManager - getAudioDecoderIds, getAudioDecoder</li><li>IAudioDecoder - open, registerEventListener, close </li><li>IAudioDecoderController - start, decodeBuffer, stop<li>IAudioDecoderControllerListener - onFrameOutput<li>IAudioDecoderEventListener - onDecodeError</li>IAVBuffer - createAudioPool, alloc, free, destroyPool</li></ul>|[01](#stream01), [02](#stream02), [03](#stream03), [04](#stream04), [05](#stream05), [06](#stream06)|
