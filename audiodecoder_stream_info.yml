@@ -1,0 +1,15 @@
+
+audiostreams:
+  - name: tones_string_48k_stereo.ac3
+    format: AC3
+    samplerate: 48000
+    channels: 2
+    framesize: [512,520,312]
+    PTS: [0, 21000000, 42000000]
+  - name: tones_string_48k_stereo.aac
+    format: AAC
+    samplerate: 48000
+    channels: 2
+    framesize: [256, 312, 226]
+    PTS: [0, 21000000, 42000000]
+
