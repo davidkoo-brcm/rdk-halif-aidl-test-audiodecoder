@@ -23,7 +23,7 @@ AudioDecoderService_pid=$!
 sleep 2
 
 echo "Eexecute [hal_test]"
-${RUN_DIR}/hal_test -p profiles/hfp-audiodecoder.yaml
+${RUN_DIR}/hal_test $@
 
 # cleanup
 kill -9 $servicemanager_pid $AudioDecoderService_pid
