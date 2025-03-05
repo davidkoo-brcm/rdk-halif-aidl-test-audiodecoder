@@ -22,8 +22,8 @@ AudioDecoderService_pid=$!
 # Need to wait some time for the service to be ready
 sleep 2
 
-echo "Eexecute [hal_test]"
-${RUN_DIR}/hal_test $@
+echo "Eexecute [vts_audiodecoder_hal_test]"
+${RUN_DIR}/vts_audiodecoder_hal_test $@
 
 # cleanup
 kill -9 $servicemanager_pid $AudioDecoderService_pid

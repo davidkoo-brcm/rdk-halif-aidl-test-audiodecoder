@@ -65,15 +65,15 @@
 #include "vts_helper_functions.h"
 #include "vts_parse_audiodecoder_hfp.h"
 
-void helper_validateCapabilities(const ::com::rdk::hal::audiodecoder::Capabilities& capabilities)
+void helper_validateCapabilities(sp<IAudioDecoder> audioDecoder, const Capabilities& capabilities)
 {
     bool decoderID = false;
     int _resource_id;
-    ::com::rdk::hal::audiodecoder::Property property = ::com::rdk::hal::audiodecoder::Property::RESOURCE_ID;
-    std::optional<::com::rdk::hal::PropertyValue> resource_id;
+    Property property = Property::RESOURCE_ID;
+    std::optional<PropertyValue> resource_id;
 
     ::android::binder::Status status = audioDecoder->getProperty(property, &resource_id);
-    _resource_id = resource_id->value->get<::com::rdk::hal::PropertyValue::Value::Tag::intValue>();
+    _resource_id = resource_id->value->get<PropertyValue::Value::Tag::intValue>();
     /*
      "decoders" is a vector, which contains information of audio decoders available in hal feature profile.
      The following are the information for each audio decoder:

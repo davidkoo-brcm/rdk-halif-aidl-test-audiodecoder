@@ -94,18 +94,18 @@ using namespace com::rdk::hal::audiodecoder;
 struct decoder
 {
     int id;
-    ::std::vector<::com::rdk::hal::audiodecoder::Codec> supportedCodecs;
+    ::std::vector<Codec> supportedCodecs;
     bool supportsSecure;
 };
 
 extern sp<IAudioDecoder> audioDecoder;
 extern ::com::rdk::hal::audiodecoder::IAudioDecoder::Id g_audiodecoderId;
 
-bool helper_validatePropertyValue( const std::optional<::com::rdk::hal::PropertyValue>& propertyValue, const ::com::rdk::hal::audiodecoder::Property property);
-bool helper_areElementsUnique(const std::vector<::com::rdk::hal::audiodecoder::IAudioDecoder::Id>& decoderIds);
+bool helper_validatePropertyValue( const std::optional<PropertyValue>& propertyValue, const Property property);
+bool helper_areElementsUnique(const std::vector<IAudioDecoder::Id>& decoderIds);
 UT_status_t getAudioDecoderService();
 com::rdk::hal::audiodecoder::Codec helper_StringTocodec(const std::string& format);
-void helper_validateCapabilities(const ::com::rdk::hal::audiodecoder::Capabilities& capabilities);
+void helper_validateCapabilities(sp<IAudioDecoder> audioDecoder, const Capabilities& capabilities);
 
 #endif //__VTS_HELPER_H__
 
