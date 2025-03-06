@@ -98,14 +98,11 @@ struct decoder
     bool supportsSecure;
 };
 
-extern sp<IAudioDecoder> audioDecoder;
-extern ::com::rdk::hal::audiodecoder::IAudioDecoder::Id g_audiodecoderId;
-
 bool helper_validatePropertyValue( const std::optional<PropertyValue>& propertyValue, const Property property);
 bool helper_areElementsUnique(const std::vector<IAudioDecoder::Id>& decoderIds);
 UT_status_t getAudioDecoderService();
-com::rdk::hal::audiodecoder::Codec helper_StringTocodec(const std::string& format);
 void helper_validateCapabilities(sp<IAudioDecoder> audioDecoder, const Capabilities& capabilities);
+Codec helper_StringTocodec(const std::string& format);
 
 #endif //__VTS_HELPER_H__
 

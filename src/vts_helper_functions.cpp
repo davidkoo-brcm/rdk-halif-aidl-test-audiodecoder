@@ -65,6 +65,44 @@
 #include "vts_helper_functions.h"
 #include "vts_parse_audiodecoder_hfp.h"
 
+IAudioDecoder::Id g_audiodecoderId;
+
+/*currently HAL FEATURE PROFILE contain string value for codec instead of enum. so the helper required to convert*/
+Codec helper_StringTocodec(const std::string& format)
+{
+    static const std::unordered_map<std::string, Codec> formatMap = {
+    {"PCM", Codec::PCM},
+    {"AAC_LC", Codec::AAC_LC},
+    {"HE_AAC", Codec::HE_AAC},
+    {"HE_AAC2", Codec::HE_AAC2},
+    {"AAC_ELD", Codec::AAC_ELD},
+    {"DOLBY_AC3", Codec::DOLBY_AC3},
+    {"DOLBY_AC3_PLUS", Codec::DOLBY_AC3_PLUS},
+    {"DOLBY_AC3_PLUS_JOC", Codec::DOLBY_AC3_PLUS_JOC},
+    {"DOLBY_AC4", Codec::DOLBY_AC4},
+    {"DOLBY_MAT", Codec::DOLBY_MAT},
+    {"DOLBY_MAT2", Codec::DOLBY_MAT2},
+    {"DOLBY_TRUEHD", Codec::DOLBY_TRUEHD},
+    {"MPEG2", Codec::MPEG2},
+    {"MP3", Codec::MP3},
+    {"FLAC", Codec::FLAC},
+    {"VORBIS", Codec::VORBIS},
+    {"DTS", Codec::DTS},
+    {"OPUS", Codec::OPUS},
+    {"WMA", Codec::WMA},
+    {"REALAUDIO", Codec::REALAUDIO},
+    {"USAC", Codec::USAC},
+    {"X_HE_AAC", Codec::X_HE_AAC}
+    };
+
+    auto it = formatMap.find(format);
+    if (it != formatMap.end())
+    {
+        return it->second;
+    }
+    return static_cast<Codec>(-1);
+}
+
 void helper_validateCapabilities(sp<IAudioDecoder> audioDecoder, const Capabilities& capabilities)
 {
     bool decoderID = false;
@@ -100,7 +138,6 @@ void helper_validateCapabilities(sp<IAudioDecoder> audioDecoder, const Capabilit
     }
     UT_ASSERT_TRUE(decoderID) <<"Audio decoder id : "<<_resource_id <<" is not in profile";
 }
-
 
 bool helper_areElementsUnique(const std::vector<::com::rdk::hal::audiodecoder::IAudioDecoder::Id>& decoderIds)
 {
