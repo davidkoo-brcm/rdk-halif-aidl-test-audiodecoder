@@ -162,12 +162,12 @@ UT_status_t getAudioDecoderService()
         UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::READY); \
     } while (0)
 
-#define AUDIODECODER_OPEN_FAILURE(audioDecoder, codec, secure, controllerListener, audioDecoderController) \
+#define AUDIODECODER_OPEN_FAILURE(audioDecoder, codec, secure, controllerListener, audioDecoderController, exception) \
     do { \
         ::android::binder::Status status; \
         ::com::rdk::hal::State state; \
         status = audioDecoder->open(codec, secure, controllerListener, audioDecoderController); \
-        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
         UT_ASSERT_EQUAL(audioDecoderController, nullptr); \
     } while (0)
 
@@ -184,13 +184,13 @@ UT_status_t getAudioDecoderService()
         UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::CLOSED); \
     } while (0)
 
-#define AUDIODECODER_CLOSE_FAILURE(audioDecoder, audioDecoderController) \
+#define AUDIODECODER_CLOSE_FAILURE(audioDecoder, audioDecoderController, exception) \
     do { \
         ::android::binder::Status status; \
         ::com::rdk::hal::State state; \
         bool _aidl_return; \
         status = audioDecoder->close(audioDecoderController, &_aidl_return); \
-        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
         UT_ASSERT_FALSE(_aidl_return); \
     } while (0)
 
@@ -241,12 +241,12 @@ UT_status_t getAudioDecoderService()
         UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::STARTED); \
     } while (0)
 
-#define AUDIODECODER_START_FAILURE(audioDecoderController) \
+#define AUDIODECODER_START_FAILURE(audioDecoderController, exception) \
     do { \
         ::android::binder::Status status; \
         ::com::rdk::hal::State state; \
         status = audioDecoderController->start(); \
-        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
     } while (0)
 
 #define AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController) \
@@ -260,22 +260,22 @@ UT_status_t getAudioDecoderService()
         UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::READY); \
     } while (0)
 
-#define AUDIODECODER_STOP_FAILURE(audioDecoderController) \
+#define AUDIODECODER_STOP_FAILURE(audioDecoderController, exception) \
     do { \
         ::android::binder::Status status; \
         ::com::rdk::hal::State state; \
         status = audioDecoderController->stop(); \
-        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
     } while (0)
 
-#define AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, nsPresentationTime, bufferHandle, trimEndNs, trimStartNs) \
+#define AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, nsPresentationTime, bufferHandle, trimEndNs, trimStartNs, exception) \
     do { \
         ::android::binder::Status status; \
         ::com::rdk::hal::State state; \
         bool _aidl_return; \
         status = audioDecoderController->decodeBuffer(nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, &_aidl_return); \
         UT_ASSERT_FALSE(status.isOk()); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_ARGUMENT); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
     } while (0)
 
 #define AUDIODECODER_FLUSH_SUCCESS(audioDecoder, audioDecoderController, reset) \
@@ -292,12 +292,12 @@ UT_status_t getAudioDecoderService()
             UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::READY); \
     } while (0)
 
-#define AUDIODECODER_FLUSH_FAILURE(audioDecoderController, reset) \
+#define AUDIODECODER_FLUSH_FAILURE(audioDecoderController, reset, exception) \
     do { \
         ::android::binder::Status status; \
         ::com::rdk::hal::State state; \
         status = audioDecoderController->flush(reset); \
-        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
     } while (0)
 
 #define AUDIODECODER_SIGNAL_DISCONTINUITY_SUCCESS(audioDecoder, audioDecoderController) \
@@ -311,12 +311,12 @@ UT_status_t getAudioDecoderService()
         UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::STARTED); \
     } while (0)
 
-#define AUDIODECODER_SIGNAL_DISCONTINUITY_FAILURE(audioDecoderController) \
+#define AUDIODECODER_SIGNAL_DISCONTINUITY_FAILURE(audioDecoderController, exception) \
     do { \
         ::android::binder::Status status; \
         ::com::rdk::hal::State state; \
         status = audioDecoderController->signalDiscontinuity(); \
-        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
     } while (0)
 
 #define AUDIODECODER_SIGNAL_EOS_SUCCESS(audioDecoder, audioDecoderController) \
@@ -330,12 +330,12 @@ UT_status_t getAudioDecoderService()
         UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::STARTED); \
     } while (0)
 
-#define AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController) \
+#define AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, exception) \
     do { \
         ::android::binder::Status status; \
         ::com::rdk::hal::State state; \
         status = audioDecoderController->signalEOS(); \
-        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
     } while (0)
 
 #define AUDIODECODER_PARSE_CSD_SUCCESS(audioDecoder, audioDecoderController, csdAudioFormat, codecData) \
@@ -351,13 +351,52 @@ UT_status_t getAudioDecoderService()
         UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::STARTED); \
     } while (0)
 
-#define AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, codecData) \
+#define AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, codecData, exception) \
     do { \
         ::android::binder::Status status; \
         ::com::rdk::hal::State state; \
         bool _aidl_return; \
         status = audioDecoderController->parseCodecSpecificData(csdAudioFormat, codecData, &_aidl_return); \
-        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
+        UT_ASSERT_FALSE(_aidl_return); \
+    } while (0)
+
+#define AUDIODECODER_SETPROPERTY_SUCCESS(audioDecoderController, property, propertyValue) \
+    do { \
+        ::android::binder::Status status; \
+        bool _aidl_return; \
+        status = audioDecoderController->setProperty(property, propertyValue, &_aidl_return); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_TRUE(_aidl_return); \
+    } while (0)
+
+#define AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, properyList, type) \
+    do { \
+        for (const auto& [property, value] : properyList) \
+        { \
+            PropertyValue propertyValue; \
+            propertyValue.value = PropertyValue::Value::make<PropertyValue::Value::Tag::type>(value); \
+            AUDIODECODER_SETPROPERTY_SUCCESS(audioDecoderController, property, propertyValue); \
+        } \
+    } while (0)
+
+#define AUDIODECODER_SETPROPERTY_STRING_LIST_SUCCESS(audioDecoderController, properyList) \
+    do { \
+        for (const auto& [property, value] : properyList) \
+        { \
+            PropertyValue propertyValue; \
+            propertyValue.value = PropertyValue::Value::make<PropertyValue::Value::Tag::stringValue>(value); \
+            AUDIODECODER_SETPROPERTY_SUCCESS(audioDecoderController, property, propertyValue); \
+        } \
+    } while (0)
+
+#define AUDIODECODER_SETPROPERTY_FAILURE(audioDecoderController, property, propertyValue, exception) \
+    do { \
+        ::android::binder::Status status; \
+        ::com::rdk::hal::State state; \
+        bool _aidl_return; \
+        status = audioDecoderController->setProperty(csdAudioFormat, codecData, &_aidl_return); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
         UT_ASSERT_FALSE(_aidl_return); \
     } while (0)
 
@@ -828,22 +867,22 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_open_neg)
         invalidCodec = static_cast<Codec>(static_cast<int32_t>(capabilities.supportedCodecs.front()) - 1);
 
         /* Send invalid audio codec value */
-        AUDIODECODER_OPEN_FAILURE(audioDecoder, invalidCodec, capabilities.supportsSecure, controllerListener, &audioDecoderController);
+        AUDIODECODER_OPEN_FAILURE(audioDecoder, invalidCodec, capabilities.supportsSecure, controllerListener, &audioDecoderController, Status::EX_ILLEGAL_ARGUMENT);
 
         /* If decoder doesn't support secure, request for secure decoder */
         if (capabilities.supportsSecure == false)
         {
-            AUDIODECODER_OPEN_FAILURE(audioDecoder, invalidCodec, true, controllerListener, &audioDecoderController);
+            AUDIODECODER_OPEN_FAILURE(audioDecoder, invalidCodec, true, controllerListener, &audioDecoderController, Status::EX_ILLEGAL_ARGUMENT);
         }
 
         /* Send invalid listener */
-        AUDIODECODER_OPEN_FAILURE(audioDecoder, capabilities.supportedCodecs.front(), capabilities.supportsSecure, nullptr, &audioDecoderController);
+        AUDIODECODER_OPEN_FAILURE(audioDecoder, capabilities.supportedCodecs.front(), capabilities.supportsSecure, nullptr, &audioDecoderController, Status::EX_ILLEGAL_ARGUMENT);
 
         /* Open the decoder */
         AUDIODECODER_OPEN_SUCCESS(audioDecoder, capabilities.supportedCodecs.front(), capabilities.supportsSecure, controllerListener, &audioDecoderController);
 
         /* Open the Decoder again */
-        AUDIODECODER_OPEN_FAILURE(audioDecoder, capabilities.supportedCodecs.front(), capabilities.supportsSecure, controllerListener, &audioDecoderController);
+        AUDIODECODER_OPEN_FAILURE(audioDecoder, capabilities.supportedCodecs.front(), capabilities.supportsSecure, controllerListener, &audioDecoderController, Status::EX_ILLEGAL_STATE);
 
         AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController);
     }
@@ -960,13 +999,13 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_close_neg)
             AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, &audioDecoderController);
 
             /* Close with invalid controller */
-            AUDIODECODER_CLOSE_FAILURE(audioDecoder, nullptr);
+            AUDIODECODER_CLOSE_FAILURE(audioDecoder, nullptr, Status::EX_ILLEGAL_ARGUMENT);
 
             /* Close the decoder */
             AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController);
 
             /* Close the decoder again*/
-            AUDIODECODER_CLOSE_FAILURE(audioDecoder, audioDecoderController);
+            AUDIODECODER_CLOSE_FAILURE(audioDecoder, audioDecoderController, Status::EX_ILLEGAL_STATE);
         }
     }
 }
@@ -1308,7 +1347,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_start_neg)
             AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController);
 
             /* Start the decoder again */
-            AUDIODECODER_START_FAILURE(audioDecoderController);
+            AUDIODECODER_START_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
 
             /* Stop the decoder */
             AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController);
@@ -1316,8 +1355,8 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_start_neg)
             /* Close the decoder */
             AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController);
 
-            /* Start the decoder again */
-            AUDIODECODER_START_FAILURE(audioDecoderController);
+            /* Start the decoder after close */
+            AUDIODECODER_START_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
         }
     }
 }
@@ -1453,13 +1492,13 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_stop_neg)
             AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController);
 
             /* Stop the decoder again */
-            AUDIODECODER_STOP_FAILURE(audioDecoderController);
+            AUDIODECODER_STOP_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
 
             /* Close the decoder */
             AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController);
 
             /* stop the decoder again */
-            AUDIODECODER_STOP_FAILURE(audioDecoderController);
+            AUDIODECODER_STOP_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
         }
     }
 }
@@ -1531,19 +1570,19 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_decodeBuffer_neg)
 
             /* Decode buffer with invalid Presentation time */
             AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, invalid_nsPresentationTime,
-                                              invalid_bufferHandle, valid_trimStartNs, valid_trimEndNs);
+                                              invalid_bufferHandle, valid_trimStartNs, valid_trimEndNs, Status::EX_ILLEGAL_ARGUMENT);
 
             /* Decode buffer with invalid buffer handle */
             AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, valid_nsPresentationTime,
-                                              invalid_bufferHandle, valid_trimStartNs, valid_trimEndNs);
+                                              invalid_bufferHandle, valid_trimStartNs, valid_trimEndNs, Status::EX_ILLEGAL_ARGUMENT);
 
             /* Decode buffer with invalid trimStart */
             AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, valid_nsPresentationTime,
-                                              invalid_bufferHandle, invalid_trimStartNs, valid_trimEndNs);
+                                              invalid_bufferHandle, invalid_trimStartNs, valid_trimEndNs, Status::EX_ILLEGAL_ARGUMENT);
 
             /* Decode buffer with invalid trimEnd */
             AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, valid_nsPresentationTime,
-                                              invalid_bufferHandle, valid_trimStartNs, invalid_trimEndNs);
+                                              invalid_bufferHandle, valid_trimStartNs, invalid_trimEndNs, Status::EX_ILLEGAL_ARGUMENT);
 
             /* Stop the decoder */
             AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController);
@@ -1693,10 +1732,10 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_flush_neg)
             AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, &audioDecoderController);
 
             /* Flush the decoder before start with reset flag false */
-            AUDIODECODER_FLUSH_FAILURE(audioDecoderController, false);
+            AUDIODECODER_FLUSH_FAILURE(audioDecoderController, false, Status::EX_ILLEGAL_STATE);
 
             /* Flush the decoder before start with reset flag true */
-            AUDIODECODER_FLUSH_FAILURE(audioDecoderController, true);
+            AUDIODECODER_FLUSH_FAILURE(audioDecoderController, true, Status::EX_ILLEGAL_STATE);
 
             /* Start the decoder */
             AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController);
@@ -1705,19 +1744,19 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_flush_neg)
             AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController);
 
             /* Flush the decoder with reset flag false*/
-            AUDIODECODER_FLUSH_FAILURE(audioDecoderController, false);
+            AUDIODECODER_FLUSH_FAILURE(audioDecoderController, false, Status::EX_ILLEGAL_STATE);
 
             /* Flush the decoder with reset flag false*/
-            AUDIODECODER_FLUSH_FAILURE(audioDecoderController, true);
+            AUDIODECODER_FLUSH_FAILURE(audioDecoderController, true, Status::EX_ILLEGAL_STATE);
 
             /* Close the decoder */
             AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController);
 
             /* Flush the decoder with reset flag false*/
-            AUDIODECODER_FLUSH_FAILURE(audioDecoderController, false);
+            AUDIODECODER_FLUSH_FAILURE(audioDecoderController, false, Status::EX_ILLEGAL_STATE);
 
             /* Flush the decoder with reset flag false*/
-            AUDIODECODER_FLUSH_FAILURE(audioDecoderController, true);
+            AUDIODECODER_FLUSH_FAILURE(audioDecoderController, true, Status::EX_ILLEGAL_STATE);
         }
     }
 }
@@ -1849,7 +1888,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalDiscontinuity_neg)
             AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, &audioDecoderController);
 
             /* Signal discontinuity to the decoder before start */
-            AUDIODECODER_SIGNAL_DISCONTINUITY_FAILURE(audioDecoderController);
+            AUDIODECODER_SIGNAL_DISCONTINUITY_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
 
             /* Start the decoder */
             AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController);
@@ -1858,13 +1897,13 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalDiscontinuity_neg)
             AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController);
 
             /* Signal discontinuity to the decoder after start->stop */
-            AUDIODECODER_SIGNAL_DISCONTINUITY_FAILURE(audioDecoderController);
+            AUDIODECODER_SIGNAL_DISCONTINUITY_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
 
             /* Close the decoder */
             AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController);
 
             /* Signal discontinuity to the decoder after close */
-            AUDIODECODER_SIGNAL_DISCONTINUITY_FAILURE(audioDecoderController);
+            AUDIODECODER_SIGNAL_DISCONTINUITY_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
         }
     }
 }
@@ -1998,7 +2037,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalEOS_neg)
             AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, &audioDecoderController);
 
             /* Signal EOS to the decoder before start */
-            AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController);
+            AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
 
             /* Start the decoder */
             AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController);
@@ -2007,13 +2046,13 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalEOS_neg)
             AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController);
 
             /* Signal EOS to the decoder after start->stop */
-            AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController);
+            AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
 
             /* Close the decoder */
             AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController);
 
             /* Signal EOS to the decoder after close */
-            AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController);
+            AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
         }
     }
 }
@@ -2175,29 +2214,165 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_parseCodecSpecificData_neg)
                 AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, &audioDecoderController);
 
                 /* Set CSD data to the decoder before STARTED*/
-                AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, valid_codecData);
+                AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, valid_codecData, Status::EX_ILLEGAL_STATE);
 
                 /* Start the decoder */
                 AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController);
 
                 /* Set invalid CSD data to the decoder */
-                AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, invalid_codecData_1);
+                AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, invalid_codecData_1, Status::EX_ILLEGAL_ARGUMENT);
 
                 /* Set invalid CSD data to the decoder */
-                AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, invalid_codecData_2);
+                AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, invalid_codecData_2, Status::EX_ILLEGAL_ARGUMENT);
 
                 /* Stop the decoder */
                 AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController);
 
                 /* Set CSD data to the decoder after STOP */
-                AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, valid_codecData);
+                AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, valid_codecData, Status::EX_ILLEGAL_STATE);
 
                 /* Close the decoder */
                 AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController);
 
                 /* Set CSD data to the decoder after CLOSE */
-                AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, valid_codecData);
+                AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, valid_codecData, Status::EX_ILLEGAL_STATE);
             }
+        }
+    }
+}
+
+std::multimap<Property, int32_t> validIntPropertyReady =
+{
+    {Property::LOW_LATENCY_MODE, 0},
+    {Property::LOW_LATENCY_MODE, 1},
+    {Property::AV_SOURCE , int32_t(static_cast<int32_t>(AVSource::AUTO))},
+    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::UNKNOWN))},
+    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::IP))},
+    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::TUNER))},
+    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::SYSTEM))},
+    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::HDMI_1))}
+};
+
+std::multimap<Property, int32_t> validIntPropertyAll =
+{
+    {Property::LOW_LATENCY_MODE, 0},
+    {Property::LOW_LATENCY_MODE, 1},
+    {Property::AC4_PRESENTATION_GROUP_INDEX , -1},
+    {Property::AC4_PRESENTATION_GROUP_INDEX , 0},
+    {Property::AC4_ASSOCIATED_TYPE, -1},
+    {Property::AC4_ASSOCIATED_TYPE, 0},
+    {Property::AC4_ASSOCIATED_TYPE, 1},
+    {Property::AC4_ASSOCIATED_TYPE, 2},
+    {Property::AC4_AUTO_SELECTION_PRIORITY, -1},
+    {Property::AC4_AUTO_SELECTION_PRIORITY, 0},
+    {Property::AC4_AUTO_SELECTION_PRIORITY, 1},
+    {Property::AC4_MIXER_BALANCE, 255},
+    {Property::AC4_MIXER_BALANCE, -32},
+    {Property::AC4_MIXER_BALANCE, 32},
+    {Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, -1},
+    {Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, 0},
+    {Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, 1}
+};
+
+std::multimap<Property, android::String16> validStringPropertyAll =
+{
+    {Property::AC4_PREFERRED_LANG1, android::String16("")},
+    {Property::AC4_PREFERRED_LANG1, android::String16("eng")},
+    {Property::AC4_PREFERRED_LANG2, android::String16("")},
+    {Property::AC4_PREFERRED_LANG2, android::String16("eng")}
+};
+
+/**
+* @brief Tests the positive scenario for setting property in AudioDecoderController.
+*
+* This test ensures that the properties can be set without an error
+*
+* **Test Group ID:** Basic: 01 @n
+* **Test Case ID:** 029 @n
+* **Priority:** High @n
+* @n
+* **Pre-Conditions:** None @n
+* **Dependencies:** None @n
+* **User Interaction:** None @n
+* @n
+* **Test Procedure:** @n
+* |Variation / Step|Description|Test Data|Expected Result|Notes|
+* |----------------|-----------|---------|---------------|-----|
+* |01|Get the supported IDs and loop through the available decoder|None|None|None|
+* |02|Open the audio decoder with the codec and create audioDecoderController with listener|_codec, _decoder.supportsSecure, listener, audioDecoderController|status.isOk() should be true, audioDecoderController != nullptr|Should pass|
+* |03|Verify the state of the decoder after open|state|state should be READY|Should pass|
+* |04|set the properties listed in table|property|status should be ok|Should pass|
+* |05|start the decoder|audioDecoderController|status should be ok|Should pass|
+* |06|Check the state of the decoder|None|state should be STARTED, status should be ok|Should pass|
+* |07|set the properties listed in table|property|status should be ok|Should pass|
+* |08|Stop the decoder|None|state should be READY, status should be ok|Should pass|
+* |09|set the properties listed in table|property|status should be ok|Should pass|
+* |10|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
+* |11|set the properties listed in table|property|status should be ok|Should pass|
+*/
+UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_setProperty_pos)
+{
+    std::vector<IAudioDecoder::Id> decoderIds;
+    sp<IAudioDecoder> audioDecoder;
+    audiodecoder::Capabilities capabilities;
+    ::android::binder::Status status;
+
+    status = service->getAudioDecoderIds(&decoderIds);
+    UT_ASSERT_TRUE(status.isOk());
+    UT_ASSERT_FALSE(decoderIds.empty());
+
+    for(const auto& _decoderId: decoderIds)
+    {
+        status = service->getAudioDecoder(_decoderId, &audioDecoder);
+        UT_ASSERT_TRUE(status.isOk());
+        UT_ASSERT_TRUE(audioDecoder == nullptr);
+
+        audioDecoder->getCapabilities(&capabilities);
+        UT_ASSERT_TRUE(status.isOk());
+
+        for(const auto& _codec: capabilities.supportedCodecs)
+        {
+            sp<IAudioDecoderController> audioDecoderController;
+            sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
+            sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
+
+            /* Open the Decoder */
+            AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, &audioDecoderController);
+
+            /* set the properties which can be set at any state */
+            AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validIntPropertyAll, intValue);
+            AUDIODECODER_SETPROPERTY_STRING_LIST_SUCCESS(audioDecoderController, validStringPropertyAll);
+
+            /* set the properties which can be set after Ready */
+            AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validIntPropertyReady, intValue);
+
+            /* Start the decoder */
+            AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController);
+
+            /* set the properties which can be set at any state */
+            AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validIntPropertyAll, intValue);
+            AUDIODECODER_SETPROPERTY_STRING_LIST_SUCCESS(audioDecoderController, validStringPropertyAll);
+
+            /* set the properties which can be set after Ready */
+            AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validIntPropertyReady, intValue);
+
+            /* Stop the decoder */
+            AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController);
+
+            /* set the properties which can be set at any state */
+            AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validIntPropertyAll, intValue);
+            AUDIODECODER_SETPROPERTY_STRING_LIST_SUCCESS(audioDecoderController, validStringPropertyAll);
+
+            /* set the properties which can be set after Ready */
+            AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validIntPropertyReady, intValue);
+
+            /* Close the decoder */
+            AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController);
+
+            /* set the properties which can be set at any state */
+            AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validIntPropertyAll, intValue);
+            AUDIODECODER_SETPROPERTY_STRING_LIST_SUCCESS(audioDecoderController, validStringPropertyAll);
+
         }
     }
 }
