@@ -42,13 +42,13 @@
  */
 
 /**
- * @defgroup AUDIO_DECODER_HALTEST_HELPER_HEADER Audio Decoder HAL Tests helper functions Header File
+ * @defgroup AUDIO_DECODER_HALTEST_PARSE_HFP_HEADER Audio Decoder HAL Tests parse Hardware feature profile Header File
  * @{
  * @parblock
  *
- * ### Helper functions for VTS tests :
+ * ### Parse HFP functions for Audio Decoder :
  *
- * Helper functions required for the module across all vendors.
+ * Parse HFP functions required for the module across all vendors.
  *
  * **Pre-Conditions:**  None @n
  * **Dependencies:** None @n
@@ -58,38 +58,19 @@
  */
 
 /**
- * @file vts_helper_functions.h
+ * @file vts_audiodecoder_parse_hfp.h
  *
  */
 
-#ifndef __VTS_HELPER_H__
-#define __VTS_HELPER_H__
+#ifndef __VTS_AUDIODECODER_PARSE_HFP_H__
+#define __VTS_AUDIODECODER_PARSE_HFP_H__
+
+#include <stdio.h>
+#include <vector>
 
 #include <ut.h>
 #include <ut_kvp_profile.h>
 #include <ut_log.h>
-#include <binder/IServiceManager.h>
-#include <binder/ProcessState.h>
-#include <binder/IPCThreadState.h>
-#include <binder/Status.h>
-#include <utils/String16.h>
-#include <stdio.h>
-#include <vector>
-#include <optional>
-#include <algorithm>
-#include <unordered_set>
-
-#include "com/rdk/hal/audiodecoder/IAudioDecoderManager.h"
-#include "com/rdk/hal/audiodecoder/BnAudioDecoderControllerListener.h"
-#include "com/rdk/hal/audiodecoder/BnAudioDecoderEventListener.h"
-
-using android::sp;
-using android::String16;
-using android::defaultServiceManager;
-using android::binder::Status;
-
-using namespace com::rdk::hal;
-using namespace com::rdk::hal::audiodecoder;
 
 struct decoder
 {
@@ -98,14 +79,13 @@ struct decoder
     bool supportsSecure;
 };
 
-bool helper_validatePropertyValue( const std::optional<PropertyValue>& propertyValue, const Property property);
-bool helper_areElementsUnique(const std::vector<IAudioDecoder::Id>& decoderIds);
-UT_status_t getAudioDecoderService();
-void helper_validateCapabilities(sp<IAudioDecoder> audioDecoder, const Capabilities& capabilities);
-Codec helper_StringTocodec(const std::string& format);
+extern std::vector<decoder> gAudiodecoders_hfp;
 
-#endif //__VTS_HELPER_H__
+#define AUDIODECODERMGR_IAUDIODECODER "IAudioDecoderManager.IAudioDecoder"
 
+UT_status_t vts_audiodecoder_parseAudioDecoderHFP();
+
+#endif //__VTS_AUDIODECODER_PARSE_HFP_H__
 
 /** @} */ // End of AUDIO_DECODER_HALTEST_PARSE_HFP_HEADER
 /** @} */ // End of AUDIO_DECODER_HALTEST

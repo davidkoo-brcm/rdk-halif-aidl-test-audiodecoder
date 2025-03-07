@@ -58,17 +58,15 @@
  */
 
 /**
- * @file vts_helper_functions.cpp
+ * @file vts_audiodecoder_helper_functions.cpp
  *
  */
 
-#include "vts_helper_functions.h"
-#include "vts_parse_audiodecoder_hfp.h"
-
-IAudioDecoder::Id g_audiodecoderId;
+#include "vts_audiodecoder_helper_functions.h"
+#include "vts_audiodecoder_parse_hfp.h"
 
 /*currently HAL FEATURE PROFILE contain string value for codec instead of enum. so the helper required to convert*/
-Codec helper_StringTocodec(const std::string& format)
+Codec  vts_audiodecoder_helper_StringTocodec(const std::string& format)
 {
     static const std::unordered_map<std::string, Codec> formatMap = {
     {"PCM", Codec::PCM},
@@ -103,15 +101,10 @@ Codec helper_StringTocodec(const std::string& format)
     return static_cast<Codec>(-1);
 }
 
-void helper_validateCapabilities(sp<IAudioDecoder> audioDecoder, const Capabilities& capabilities)
+void vts_audiodecoder_helper_validateCapabilities(int decoder_id, const Capabilities& capabilities)
 {
     bool decoderID = false;
-    int _resource_id;
-    Property property = Property::RESOURCE_ID;
-    std::optional<PropertyValue> resource_id;
 
-    ::android::binder::Status status = audioDecoder->getProperty(property, &resource_id);
-    _resource_id = resource_id->value->get<PropertyValue::Value::Tag::intValue>();
     /*
      "decoders" is a vector, which contains information of audio decoders available in hal feature profile.
      The following are the information for each audio decoder:
@@ -119,48 +112,51 @@ void helper_validateCapabilities(sp<IAudioDecoder> audioDecoder, const Capabilit
      - Whether the decoder supports secure audio path (SAP) mode.
      - A list of supported codecs.
    */
-    for(const auto& _decoder: decoders)
+    for(const auto& _decoder: gAudiodecoders_hfp)
     {
-        if(_decoder.id == _resource_id)
+        if(_decoder.id == decoder_id)
         {
             decoderID = true;
+
             /* number of supported codec from Hal Feature Profile should be equal to  number of supported codec from getCapabilities() api */
             UT_ASSERT_EQUAL(_decoder.supportedCodecs.size(),capabilities.supportedCodecs.size());
+
             /* iterating over each supported codec from getCapabilities() api */
             for(const auto& supportedcodec_from_api: capabilities.supportedCodecs)
             {
                 auto result = std::find(_decoder.supportedCodecs.begin(),_decoder.supportedCodecs.end(),supportedcodec_from_api);
-                UT_ASSERT_NOT_EQUAL(result, _decoder.supportedCodecs.end()) <<"decoder : "<<static_cast<int>(_decoder.id) <<" contain supportedCodec : "<<static_cast<int>(supportedcodec_from_api) <<" which is not matching with the profile"<<std::endl;
+                UT_ASSERT_NOT_EQUAL(result, _decoder.supportedCodecs.end());
             }
+
             /* ensure that supportsSecure value from  hal feature profile  is equal to the value from getCapabilities() api */
             UT_ASSERT_EQUAL(_decoder.supportsSecure, capabilities.supportsSecure);
         }
     }
-    UT_ASSERT_TRUE(decoderID) <<"Audio decoder id : "<<_resource_id <<" is not in profile";
+    UT_ASSERT_TRUE(decoderID);
 }
 
-bool helper_areElementsUnique(const std::vector<::com::rdk::hal::audiodecoder::IAudioDecoder::Id>& decoderIds)
+bool vts_audiodecoder_helper_areElementsUnique(const std::vector<int>& values)
 {
     std::unordered_set<int> uniqueElements;
 
-    for (const auto& _decoderId : decoderIds)
+    for (const auto& value : values)
     {
-        if(_decoderId.value < 0)
+        if(value < 0)
         {
-            std::cout <<"find Invalid decoder ID : " <<_decoderId.value <<std::endl;
+            UT_LOG_ERROR("find Invalid decoder ID : %d", value);
             return false;
         }
-        if (uniqueElements.find(_decoderId.value) != uniqueElements.end())
+        if (uniqueElements.find(value) != uniqueElements.end())
         {
-            std::cout<<"decoder ID is not unique : " <<_decoderId.value <<std::endl;
+            UT_LOG_ERROR("decoder ID is not unique : %d", value);
             return false;
         }
-        uniqueElements.insert(_decoderId.value);
+        uniqueElements.insert(value);
     }
     return true;
 }
 
-bool helper_validatePropertyValue( const std::optional<::com::rdk::hal::PropertyValue>& propertyValue, const ::com::rdk::hal::audiodecoder::Property property)
+bool vts_audiodecoder_helper_validatePropertyValue(int decoder_id, const std::optional<PropertyValue>& propertyValue, const Property property)
 {
     if (!propertyValue.has_value() || !propertyValue->value.has_value())
     {
@@ -195,8 +191,8 @@ bool helper_validatePropertyValue( const std::optional<::com::rdk::hal::Property
 
     switch (property)
     {
-        case ::com::rdk::hal::audiodecoder::Property::RESOURCE_ID:
-             if(std::holds_alternative<int>(val) && std::get<int>(val) == g_audiodecoderId.value)
+        case Property::RESOURCE_ID:
+             if(std::holds_alternative<int>(val) && std::get<int>(val) == decoder_id)
              {
                 return true;
              }
@@ -205,46 +201,46 @@ bool helper_validatePropertyValue( const std::optional<::com::rdk::hal::Property
                 return false;
              }
 
-        case ::com::rdk::hal::audiodecoder::Property::LOW_LATENCY_MODE:
+        case Property::LOW_LATENCY_MODE:
             return std::holds_alternative<int32_t>(val) &&
                    (std::get<int32_t>(val) == 0 || std::get<int32_t>(val) == 1);
 
-        case ::com::rdk::hal::audiodecoder::Property::AV_SOURCE:
+        case Property::AV_SOURCE:
             return std::holds_alternative<int32_t>(val) &&
-                   (std::get<int32_t>(val) == static_cast<int32_t>(::com::rdk::hal::AVSource::AUTO) ||
-                    std::get<int32_t>(val) == static_cast<int32_t>(::com::rdk::hal::AVSource::UNKNOWN) ||
-                    (std::get<int32_t>(val) >= static_cast<int32_t>(::com::rdk::hal::AVSource::IP) &&
-                     std::get<int32_t>(val) <= static_cast<int32_t>(::com::rdk::hal::AVSource::SYSTEM)) ||
-                    (std::get<int32_t>(val) >= static_cast<int32_t>(::com::rdk::hal::AVSource::HDMI_1) &&
-                     std::get<int32_t>(val) <= static_cast<int32_t>(::com::rdk::hal::AVSource::HDMI_5)) ||
-                    (std::get<int32_t>(val) >= static_cast<int32_t>(::com::rdk::hal::AVSource::COMPOSITE_1) &&
-                     std::get<int32_t>(val) <= static_cast<int32_t>(::com::rdk::hal::AVSource::COMPOSITE_5)));
+                   (std::get<int32_t>(val) == static_cast<int32_t>(AVSource::AUTO) ||
+                    std::get<int32_t>(val) == static_cast<int32_t>(AVSource::UNKNOWN) ||
+                    (std::get<int32_t>(val) >= static_cast<int32_t>(AVSource::IP) &&
+                     std::get<int32_t>(val) <= static_cast<int32_t>(AVSource::SYSTEM)) ||
+                    (std::get<int32_t>(val) >= static_cast<int32_t>(AVSource::HDMI_1) &&
+                     std::get<int32_t>(val) <= static_cast<int32_t>(AVSource::HDMI_5)) ||
+                    (std::get<int32_t>(val) >= static_cast<int32_t>(AVSource::COMPOSITE_1) &&
+                     std::get<int32_t>(val) <= static_cast<int32_t>(AVSource::COMPOSITE_5)));
 
-        case ::com::rdk::hal::audiodecoder::Property::SECURE_AUDIO:
+        case Property::SECURE_AUDIO:
             return std::holds_alternative<int32_t>(val) &&
                    (std::get<int32_t>(val) == 0 || std::get<int32_t>(val) == 1);
 
-        case ::com::rdk::hal::audiodecoder::Property::AC4_PRESENTATION_GROUP_INDEX:
+        case Property::AC4_PRESENTATION_GROUP_INDEX:
             return std::holds_alternative<int32_t>(val) && std::get<int32_t>(val) >= -1;
 
-        case ::com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG1:
-        case ::com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG2:
+        case Property::AC4_PREFERRED_LANG1:
+        case Property::AC4_PREFERRED_LANG2:
             return std::holds_alternative<std::string>(val) &&
                    (std::get<std::string>(val).empty() || std::get<std::string>(val).size() == 3);
 
-        case ::com::rdk::hal::audiodecoder::Property::AC4_ASSOCIATED_TYPE:
+        case Property::AC4_ASSOCIATED_TYPE:
             return std::holds_alternative<int32_t>(val) &&
                    (std::get<int32_t>(val) >= -1 && std::get<int32_t>(val) <= 2);
 
-        case ::com::rdk::hal::audiodecoder::Property::AC4_AUTO_SELECTION_PRIORITY:
+        case Property::AC4_AUTO_SELECTION_PRIORITY:
             return std::holds_alternative<int32_t>(val) &&
                    (std::get<int32_t>(val) >= -1 && std::get<int32_t>(val) <= 1);
 
-        case ::com::rdk::hal::audiodecoder::Property::AC4_MIXER_BALANCE:
+        case Property::AC4_MIXER_BALANCE:
             return std::holds_alternative<int32_t>(val) &&
                    ((std::get<int32_t>(val) >= -32 && std::get<int32_t>(val) <= 32) || std::get<int32_t>(val) == 255);
 
-        case ::com::rdk::hal::audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE:
+        case Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE:
             return std::holds_alternative<int32_t>(val) &&
                    (std::get<int32_t>(val) >= -1 && std::get<int32_t>(val) <= 1);
 

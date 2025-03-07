@@ -42,13 +42,13 @@
  */
 
 /**
- * @defgroup AUDIO_DECODER_HALTEST_PARSE_HFP_HEADER Audio Decoder HAL Tests parse Hardware feature profile Header File
+ * @defgroup AUDIO_DECODER_HALTEST_INIT_HEADER Audio Decoder HAL Tests helper functions Header File
  * @{
  * @parblock
  *
- * ### Parse HFP functions for Audio Decoder :
+ * ### Initialization functions for VTS tests :
  *
- * Parse HFP functions required for the module across all vendors.
+ * Initialization functions required for the module across all vendors.
  *
  * **Pre-Conditions:**  None @n
  * **Dependencies:** None @n
@@ -58,42 +58,18 @@
  */
 
 /**
- * @file parse_audiodecoder_hfp.h
+ * @file vts_audiodecoder_init.h
  *
  */
 
-#ifndef __VTS_PARSE_HFP_H__
-#define __VTS_PARSE_HFP_H__
+#ifndef __VTS_AUDIODECODER_INIT_H__
+#define __VTS_AUDIODECODER_INIT_H__
 
-#include <ut.h>
-#include <ut_kvp_profile.h>
-#include <ut_log.h>
-#include <binder/IServiceManager.h>
-#include <binder/ProcessState.h>
-#include <binder/IPCThreadState.h>
-#include <binder/Status.h>
-#include <utils/String16.h>
-#include <stdio.h>
-#include <vector>
-#include <optional>
-#include <algorithm>
-#include <unordered_set>
+UT_status_t VTS_AudioDecoder_init();
 
-#include "com/rdk/hal/audiodecoder/IAudioDecoderManager.h"
-#include "com/rdk/hal/audiodecoder/BnAudioDecoderControllerListener.h"
-#include "com/rdk/hal/audiodecoder/BnAudioDecoderEventListener.h"
+#endif //__VTS_AUDIODECODER_INIT_H__
 
-using namespace com::rdk::hal::audiodecoder;
-
-extern std::vector<decoder> decoders;
-
-#define AUDIODECODERMGR_IAUDIODECODER "IAudioDecoderManager.IAudioDecoder"
-
-UT_status_t parseAudioDecoderHFP();
-
-#endif //__VTS_PARSE_HFP_H__
-
-/** @} */ // End of AUDIO_DECODER_HALTEST_PARSE_HFP_HEADER
+/** @} */ // End of AUDIO_DECODER_HALTEST_INIT_HEADER
 /** @} */ // End of AUDIO_DECODER_HALTEST
 /** @} */ // End of AUDIO_DECODER
 /** @} */ // End of HPK

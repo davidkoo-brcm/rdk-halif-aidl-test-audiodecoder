@@ -63,31 +63,15 @@
 
 #include <ut.h>
 #include <ut_log.h>
-#include "vts_helper_functions.h"
-#include "vts_parse_audiodecoder_hfp.h"
-
-UT_status_t VTS_init()
-{
-    if(getAudioDecoderService() != UT_STATUS_OK)
-    {
-        return UT_STATUS_FAILURE;
-    }
-    if(parseAudioDecoderHFP() != UT_STATUS_OK)
-    {
-        UT_LOG_ERROR("Failed to process the HFP file");
-        return UT_STATUS_FAILURE;
-    }
-
-    return UT_STATUS_OK;
-}
+#include "vts_audiodecoder_init.h"
 
 int main(int argc, char **argv)
 {
-    int32_t result;
+    UT_status_t result;
 
     UT_init(argc, argv);
 
-    VTS_init();
+    result = VTS_AudioDecoder_init();
 
     result = UT_run_tests();
     return result;
