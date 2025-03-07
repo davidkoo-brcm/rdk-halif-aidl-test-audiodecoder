@@ -67,6 +67,8 @@
 #include "vts_audiodecoder_helper_functions.h"
 #include "vts_audiodecoder_parse_hfp.h"
 
+UT_status_t vts_audiodecoder_getAudioDecoderService();
+
 UT_status_t VTS_AudioDecoder_init()
 {
     if(vts_audiodecoder_getAudioDecoderService() != UT_STATUS_OK)

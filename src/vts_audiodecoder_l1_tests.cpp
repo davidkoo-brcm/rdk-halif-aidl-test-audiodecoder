@@ -58,8 +58,9 @@
  */
 
 #include <ut.h>
-#include <ut_kvp_profile.h>
 #include <ut_log.h>
+#include <ut_kvp_profile.h>
+#include <ut_control_plane.h>
 #include <binder/IServiceManager.h>
 #include <binder/ProcessState.h>
 #include <binder/IPCThreadState.h>
@@ -134,17 +135,89 @@ public:
     }
 };
 
-UT_status_t vts_audiodecoder_getAudioDecoderService()
+/* Status::Exception */
+const static ut_control_keyStringMapping_t statusException_mapTable[] =
 {
-    gAudioDecoderManager = android::interface_cast<IAudioDecoderManager>(
-            defaultServiceManager()->getService(String16(IAudioDecoderManager::serviceName().c_str())));
-    if (gAudioDecoderManager == nullptr)
-    {
-        UT_LOG_ERROR("AudioDecoder Service not available");
-        return UT_STATUS_FAILURE;
-    }
-    return UT_STATUS_OK;
+    {"EX_NONE",                  (int32_t) Status::EX_NONE},
+    {"EX_SECURITY",              (int32_t) Status::EX_SECURITY},
+    {"EX_BAD_PARCELABLE",        (int32_t) Status::EX_BAD_PARCELABLE},
+    {"EX_ILLEGAL_ARGUMENT",      (int32_t) Status::EX_ILLEGAL_ARGUMENT},
+    {"EX_NULL_POINTER",          (int32_t) Status::EX_NULL_POINTER},
+    {"EX_ILLEGAL_STATE",         (int32_t) Status::EX_ILLEGAL_STATE},
+    {"EX_NETWORK_MAIN_THREAD",   (int32_t) Status::EX_NETWORK_MAIN_THREAD},
+    {"EX_UNSUPPORTED_OPERATION", (int32_t) Status::EX_UNSUPPORTED_OPERATION},
+    {"EX_SERVICE_SPECIFIC",      (int32_t) Status::EX_SERVICE_SPECIFIC},
+    {"EX_PARCELABLE",            (int32_t) Status::EX_PARCELABLE},
+    {"EX_HAS_REPLY_HEADER",      (int32_t) Status::EX_HAS_REPLY_HEADER},
+    {"EX_TRANSACTION_FAILED",    (int32_t) Status::EX_TRANSACTION_FAILED},
+    {NULL, -1}
+};
+
+constexpr int32_t toInt(Codec codec) {
+    return static_cast<int32_t>(codec);
 }
+
+/* Codec 
+const static ut_control_keyStringMapping_t statusCodec_mapTable[] = {
+    {"PCM",                  toInt(Codec::PCM)},
+    {"AAC_LC",               toInt(Codec::AAC_LC)},
+    {"HE_AAC",               toInt(Codec::HE_AAC)},
+    {"HE_AAC2",              toInt(Codec::HE_AAC2)},
+    {"AAC_ELD",              toInt(Codec::AAC_ELD)},
+    {"DOLBY_AC3",            toInt(Codec::DOLBY_AC3)},
+    {"DOLBY_AC3_PLUS",       toInt(Codec::DOLBY_AC3_PLUS)},
+    {"DOLBY_AC3_PLUS_JOC",   toInt(Codec::DOLBY_AC3_PLUS_JOC)},
+    {"DOLBY_AC4",            toInt(Codec::DOLBY_AC4)},
+    {"DOLBY_MAT",            toInt(Codec::DOLBY_MAT)},
+    {"DOLBY_MAT2",           toInt(Codec::DOLBY_MAT2)},
+    {"DOLBY_TRUEHD",         toInt(Codec::DOLBY_TRUEHD)},
+    {"MPEG2",                toInt(Codec::MPEG2)},
+    {"MP3",                  toInt(Codec::MP3)},
+    {"FLAC",                 toInt(Codec::FLAC)},
+    {"VORBIS",               toInt(Codec::VORBIS)},
+    {"DTS",                  toInt(Codec::DTS)},
+    {"OPUS",                 toInt(Codec::OPUS)},
+    {"WMA",                  toInt(Codec::WMA)},
+    {"REALAUDIO",            toInt(Codec::REALAUDIO)},
+    {"USAC",                 toInt(Codec::USAC)},
+    {"X_HE_AAC",             toInt(Codec::X_HE_AAC)},
+    {"SBC",                  toInt(Codec::SBC)},
+    {"AVS",                  toInt(Codec::AVS)}
+};*/
+
+/* bool */
+const static ut_control_keyStringMapping_t bool_mapTable[] =
+{
+    {"false", (int32_t) false},
+    {"true",  (int32_t) true},
+    {NULL, -1}
+};
+
+#define AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status) \
+    UT_LOG_INFO("Calling getAudioDecoderIds(OUT:decoderIds:[])"); \
+    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds); \
+    UT_LOG_INFO("Result getAudioDecoderIds(OUT:decoderIds:[size: %d]), status:[isOK:%s, exception:%s]", \
+                            decoderIds.size(), UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+    UT_ASSERT_TRUE(status.isOk()); \
+    UT_ASSERT_FALSE(decoderIds.empty())
+
+#define AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status) \
+    UT_LOG_INFO("Calling getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[])", _decoderId); \
+    status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder); \
+    UT_LOG_INFO("Result getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[0x%X]), status:[isOK:%s, exception:%s]", \
+                            _decoderId, audioDecoder, UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+    UT_ASSERT_TRUE(status.isOk()); \
+    UT_ASSERT_TRUE(audioDecoder == nullptr);
+
+#define AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities) \
+    UT_LOG_INFO("Calling getCapabilities(OUT:capabilities)", _decoderId); \
+    audioDecoder->getCapabilities(&capabilities); \
+    UT_LOG_INFO("Result getCapabilities(OUT:capabilities), status:[isOK:%s, exception:%s]", \
+                            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+    UT_ASSERT_TRUE(status.isOk());
 
 #define AUDIODECODER_OPEN_SUCCESS(audioDecoder, codec, secure, controllerListener, audioDecoderController) \
     do { \
@@ -152,7 +225,13 @@ UT_status_t vts_audiodecoder_getAudioDecoderService()
         ::com::rdk::hal::State state; \
         \
         /* Open the Decoder */ \
+        UT_LOG_INFO("Calling open(IN:codec[%d], IN:secure[%d], IN:controllerListener[0x%X], OUT:audioDecoderController[])", \
+            codec, UT_Control_GetMapString(bool_mapTable, secure), controllerListener); \
         status = (audioDecoder)->open(codec, secure, controllerListener, audioDecoderController); \
+        UT_LOG_INFO("Result open(IN:codec[%d], IN:secure[%d], IN:controllerListener[0x%X], OUT:audioDecoderController[0x%X]), status:[isOK:%s, exception:%s]", \
+            codec, UT_Control_GetMapString(bool_mapTable, secure), controllerListener, audioDecoderController, \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
         UT_ASSERT_NOT_EQUAL(audioDecoderController, nullptr); \
         \
@@ -420,6 +499,18 @@ UT_status_t vts_audiodecoder_getAudioDecoderService()
         } \
     } while (0)
 
+UT_status_t vts_audiodecoder_getAudioDecoderService()
+{
+    gAudioDecoderManager = android::interface_cast<IAudioDecoderManager>(
+            defaultServiceManager()->getService(String16(IAudioDecoderManager::serviceName().c_str())));
+    if (gAudioDecoderManager == nullptr)
+    {
+        UT_LOG_ERROR("AudioDecoder Service not available");
+        return UT_STATUS_FAILURE;
+    }
+    return UT_STATUS_OK;
+}
+
 /**
 * @brief Tests the retrieval of audio decoder IDs to ensure the function fetches valid and unique IDs.
 *
@@ -451,11 +542,10 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecodermanager_getAudioDecoderIds_pos)
     std::vector<IAudioDecoder::Id> secondDecoderIds;
     std::vector<int32_t> decoderId;
     std::unordered_set<int> decoderId_from_profile;
+    ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    ::android::binder::Status status = gAudioDecoderManager->getAudioDecoderIds(&initialDecoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(initialDecoderIds.empty());
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(initialDecoderIds, status);
 
     for (const auto& obj : initialDecoderIds) {
         decoderId.push_back(obj.value);
@@ -464,9 +554,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecodermanager_getAudioDecoderIds_pos)
     UT_ASSERT_TRUE(vts_audiodecoder_helper_areElementsUnique(decoderId));
 
     /* Get the Audio decoder IDs second time */
-    status = gAudioDecoderManager->getAudioDecoderIds(&secondDecoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(secondDecoderIds.empty());
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(secondDecoderIds, status);
 
     UT_ASSERT_EQUAL(initialDecoderIds.size(), secondDecoderIds.size());
 
@@ -522,14 +610,19 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecodermanager_getAudioDecoder_pos)
     IAudioDecoder::Id id ;
     std::optional<PropertyValue> resource_id_1;
     std::optional<PropertyValue> resource_id_2;
+    std::vector<IAudioDecoder::Id> decoderIds;
     Property property = Property::RESOURCE_ID;
+    ::android::binder::Status status;
 
-    for(const auto& _decoder: gAudiodecoders_hfp)
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+
+    for(const auto& _decoderId: decoderIds)
     {
-        id.value = _decoder.id;
-        Status status = gAudioDecoderManager->getAudioDecoder(id, &audiodecoder_1);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audiodecoder_1 != nullptr);
+        Status status;
+
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audiodecoder_1, status);
 
         status = audiodecoder_1->getProperty(property, &resource_id_1);
         UT_ASSERT_TRUE(status.isOk());
@@ -576,10 +669,10 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecodermanager_getAudioDecoder_neg)
     std::vector<int> decoderId_from_profile;
     IAudioDecoder::Id invalidID;
     sp<IAudioDecoder> audiodecoder;
+    ::android::binder::Status status;
 
-    ::android::binder::Status status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     if(decoderIds.size() > 1)
         std::sort(decoderIds.begin(), decoderIds.end());
@@ -626,19 +719,18 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_getCapabilities_pos)
     Capabilities capabilities;
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
+    ::android::binder::Status status;
 
-    ::android::binder::Status status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder != nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         vts_audiodecoder_helper_validateCapabilities(_decoderId.value, capabilities);
     }
@@ -674,16 +766,15 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_getProperty_pos)
                                             Property::AC4_ASSOCIATED_TYPE, Property::AC4_AUTO_SELECTION_PRIORITY, Property::AC4_MIXER_BALANCE,
                                             Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, Property::METRIC_FRAMES_DECODED,
                                             Property::METRIC_DECODE_ERRORS, Property::METRIC_FRAMES_DROPPED};
+    ::android::binder::Status status;
 
-    ::android::binder::Status status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
         /* Get RESOURCE_ID */
         for (auto property : testProperties)
@@ -724,16 +815,15 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_getProperty_neg)
     std::optional<PropertyValue> propertyValue;
     int32_t firstValue = static_cast<int32_t>(Property::RESOURCE_ID);
     Property Invalidproperty = static_cast<Property>(firstValue - 1);
+    ::android::binder::Status status;
 
-    ::android::binder::Status status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
         status = audioDecoder->getProperty(Invalidproperty, &propertyValue);
         UT_ASSERT_FALSE(status.isOk());
@@ -766,15 +856,13 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_getState_pos)
     ::com::rdk::hal::State state;
     ::android::binder::Status status;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
         status = audioDecoder->getState(&state);
         UT_ASSERT_TRUE(status.isOk());
@@ -811,18 +899,16 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_open_pos)
     Capabilities capabilities;
     ::android::binder::Status status;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
@@ -877,18 +963,16 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_open_neg)
 
     bool _aidl_return;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         if(capabilities.supportedCodecs.size() > 1)
             std::sort(capabilities.supportedCodecs.begin(), capabilities.supportedCodecs.end());
@@ -947,18 +1031,16 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_close_pos)
     ::android::binder::Status status;
     bool _aidl_return;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
@@ -1006,18 +1088,16 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_close_neg)
     Capabilities capabilities;
     ::android::binder::Status status;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
@@ -1067,17 +1147,15 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_registerEventListener_pos)
     sp<IAudioDecoder> audioDecoder;
     ::android::binder::Status status;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
         sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
 
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
         /* Register events */
         AUDIODECODER_REGISTER_EVENT_SUCCESS(audioDecoder, eventListener);
@@ -1118,13 +1196,15 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_registerEventListener_neg)
     sp<IAudioDecoder> audioDecoder;
     ::android::binder::Status status;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
         sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
+
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
         /* Register events with invalid listener */
         AUDIODECODER_REGISTER_EVENT_FAILURE(audioDecoder, nullptr);
@@ -1169,17 +1249,15 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_unregisterEventListener_pos)
     ::android::binder::Status status;
     bool _aidl_return;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
         sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
 
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
         /* Register events */
         AUDIODECODER_REGISTER_EVENT_SUCCESS(audioDecoder, eventListener);
@@ -1220,17 +1298,15 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_unregisterEventListener_neg)
     sp<IAudioDecoder> audioDecoder;
     ::android::binder::Status status;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
         sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
 
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
         /* Un-register the events */
         AUDIODECODER_UNREGISTER_EVENT_FAILURE(audioDecoder, eventListener);
@@ -1282,18 +1358,16 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_start_pos)
     ::android::binder::Status status;
     bool _aidl_return;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
@@ -1350,18 +1424,16 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_start_neg)
     Capabilities capabilities;
     ::android::binder::Status status;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
@@ -1422,18 +1494,16 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_stop_pos)
     audiodecoder::Capabilities capabilities;
     ::android::binder::Status status;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
@@ -1492,18 +1562,16 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_stop_neg)
     ::com::rdk::hal::State state;
     ::android::binder::Status status;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
@@ -1572,18 +1640,16 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_decodeBuffer_neg)
     int32_t valid_trimEndNs      = 500;
     int32_t invalid_trimEndNs    = -500;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
@@ -1658,18 +1724,16 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_flush_pos)
     audiodecoder::Capabilities capabilities;
     ::android::binder::Status status;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
@@ -1738,18 +1802,16 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_flush_neg)
     audiodecoder::Capabilities capabilities;
     ::android::binder::Status status;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
@@ -1823,18 +1885,16 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalDiscontinuity_pos)
     audiodecoder::Capabilities capabilities;
     ::android::binder::Status status;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
@@ -1894,18 +1954,16 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalDiscontinuity_neg)
     audiodecoder::Capabilities capabilities;
     ::android::binder::Status status;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
@@ -1972,18 +2030,16 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalEOS_pos)
     audiodecoder::Capabilities capabilities;
     ::android::binder::Status status;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
@@ -2043,18 +2099,16 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalEOS_neg)
     audiodecoder::Capabilities capabilities;
     ::android::binder::Status status;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
@@ -2127,18 +2181,16 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_parseCodecSpecificData_pos)
     */
     std::vector<uint8_t> codecData = {0x12, 0x10};
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
@@ -2214,18 +2266,16 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_parseCodecSpecificData_neg)
     std::vector<uint8_t> invalid_codecData_1 = {0xFF, 0xFF};
     std::vector<uint8_t> invalid_codecData_2 = {};
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
@@ -2372,18 +2422,16 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_setProperty_pos)
     audiodecoder::Capabilities capabilities;
     ::android::binder::Status status;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
@@ -2463,18 +2511,16 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_setProperty_neg)
     audiodecoder::Capabilities capabilities;
     ::android::binder::Status status;
 
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds);
-    UT_ASSERT_TRUE(status.isOk());
-    UT_ASSERT_FALSE(decoderIds.empty());
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
 
     for(const auto& _decoderId: decoderIds)
     {
-        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audioDecoder == nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
 
-        audioDecoder->getCapabilities(&capabilities);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {

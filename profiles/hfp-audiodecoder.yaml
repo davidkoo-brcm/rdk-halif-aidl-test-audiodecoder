@@ -5,23 +5,13 @@ IAudioDecoderManager:           # Component object begins
     IAudioDecoder:              # Resource list
       - id: 0                   # Resource object begins
         supportedCodecs:       # Array of codec capabilities
-           - AAC_LC
-           - HE_AAC
-           - HE_AAC2
-           - DOLBY_AC3
-           - DOLBY_AC3_PLUS
+           - PCM
            - DOLBY_AC3_PLUS_JOC
-           - DOLBY_AC4
-           - X_HE_AAC
+           - MP3
         supportsSecure: true
       - id: 1                  # Resource object begins
         supportedCodecs:       # Array of codec capabilities
-           - AAC_LC
-           - HE_AAC
-           - HE_AAC2
-           - DOLBY_AC3
-           - DOLBY_AC3_PLUS
+           - PCM
            - DOLBY_AC3_PLUS_JOC
-           - DOLBY_AC4
-           - X_HE_AAC
+           - MP3
         supportsSecure: true
