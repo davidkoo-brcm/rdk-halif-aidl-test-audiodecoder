@@ -193,36 +193,53 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     {NULL, -1}
 };
 
-#define AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status) \
-    UT_LOG_INFO("Calling getAudioDecoderIds(OUT:decoderIds:[])"); \
-    status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds); \
-    UT_LOG_INFO("Result getAudioDecoderIds(OUT:decoderIds:[size: %d]), status:[isOK:%s, exception:%s]", \
-                            decoderIds.size(), UT_Control_GetMapString(bool_mapTable, status.isOk()), \
-                            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-    UT_ASSERT_TRUE(status.isOk()); \
-    UT_ASSERT_FALSE(decoderIds.empty())
+#define AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds) \
+    do { \
+        ::android::binder::Status status; \
+        UT_LOG_INFO("Calling getAudioDecoderIds(OUT:decoderIds:[])"); \
+        status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds); \
+        UT_LOG_INFO("Result getAudioDecoderIds(OUT:decoderIds:[size: %d]), status:[isOK:%s, exception:%s]", \
+                                decoderIds.size(), UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                                UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_FALSE(decoderIds.empty()); \
+    } while (0)
 
-#define AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status) \
-    UT_LOG_INFO("Calling getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[])", _decoderId); \
-    status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder); \
-    UT_LOG_INFO("Result getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[0x%X]), status:[isOK:%s, exception:%s]", \
-                            _decoderId, audioDecoder, UT_Control_GetMapString(bool_mapTable, status.isOk()), \
-                            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-    UT_ASSERT_TRUE(status.isOk()); \
-    UT_ASSERT_TRUE(audioDecoder == nullptr);
+#define AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder) \
+    do { \
+        ::android::binder::Status status; \
+        UT_LOG_INFO("Calling getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[])", _decoderId.value); \
+        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder); \
+        UT_LOG_INFO("Result getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[0x%X]), status:[isOK:%s, exception:%s]", \
+                                _decoderId, audioDecoder, UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                                UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_TRUE(audioDecoder != nullptr); \
+    } while (0)
 
 #define AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities) \
-    UT_LOG_INFO("Calling getCapabilities(OUT:capabilities)", _decoderId); \
-    audioDecoder->getCapabilities(&capabilities); \
-    UT_LOG_INFO("Result getCapabilities(OUT:capabilities), status:[isOK:%s, exception:%s]", \
-                            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
-                            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-    UT_ASSERT_TRUE(status.isOk());
+    do { \
+        ::android::binder::Status status; \
+        UT_LOG_INFO("Calling getCapabilities(OUT:capabilities)", _decoderId); \
+        audioDecoder->getCapabilities(&capabilities); \
+        UT_LOG_INFO("Result getCapabilities(OUT:capabilities), status:[isOK:%s, exception:%s]", \
+                                UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                                UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+    } while (0)
+
+#define AUDIODECODER_GET_STATE(audioDecoder, expected_state) \
+    do { \
+        ::android::binder::Status status; \
+        ::com::rdk::hal::State state; \
+        status = (audioDecoder)->getState(&state); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(state, expected_state); \
+    } while (0)
 
 #define AUDIODECODER_OPEN_SUCCESS(audioDecoder, codec, secure, controllerListener, audioDecoderController) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
         \
         /* Open the Decoder */ \
         UT_LOG_INFO("Calling open(IN:codec[%d], IN:secure[%d], IN:controllerListener[0x%X], OUT:audioDecoderController[])", \
@@ -236,16 +253,19 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         UT_ASSERT_NOT_EQUAL(audioDecoderController, nullptr); \
         \
         /* Check the state of the decoder */ \
-        status = (audioDecoder)->getState(&state); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::READY); \
+        AUDIODECODER_GET_STATE((audioDecoder), State::READY); \
     } while (0)
 
 #define AUDIODECODER_OPEN_FAILURE(audioDecoder, codec, secure, controllerListener, audioDecoderController, exception) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
+        UT_LOG_INFO("Calling open(IN:codec[%d], IN:secure[%d], IN:controllerListener[0x%X], OUT:audioDecoderController[])", \
+            codec, UT_Control_GetMapString(bool_mapTable, secure), controllerListener); \
         status = audioDecoder->open(codec, secure, controllerListener, audioDecoderController); \
+        UT_LOG_INFO("Result open(IN:codec[%d], IN:secure[%d], IN:controllerListener[0x%X], OUT:audioDecoderController[0x%X]), status:[isOK:%s, exception:%s]", \
+            codec, UT_Control_GetMapString(bool_mapTable, secure), controllerListener, audioDecoderController, \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
         UT_ASSERT_EQUAL(audioDecoderController, nullptr); \
     } while (0)
@@ -253,22 +273,28 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
         bool _aidl_return; \
+        UT_LOG_INFO("Calling close(IN:audioDecoderController[0x%X], OUT:_aidl_return[])", audioDecoderController); \
         status = audioDecoder->close(audioDecoderController, &_aidl_return); \
+        UT_LOG_INFO("Result close(IN:audioDecoderController[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+            audioDecoderController, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
         UT_ASSERT_TRUE(_aidl_return); \
-        status = audioDecoder->getState(&state); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::CLOSED); \
+        AUDIODECODER_GET_STATE((audioDecoder), State::CLOSED); \
     } while (0)
 
 #define AUDIODECODER_CLOSE_FAILURE(audioDecoder, audioDecoderController, exception) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
         bool _aidl_return; \
+        UT_LOG_INFO("Calling close(IN:audioDecoderController[0x%X], OUT:_aidl_return[])", audioDecoderController); \
         status = audioDecoder->close(audioDecoderController, &_aidl_return); \
+        UT_LOG_INFO("Result close(IN:audioDecoderController[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+            audioDecoderController, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
         UT_ASSERT_FALSE(_aidl_return); \
     } while (0)
@@ -277,7 +303,12 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
+        UT_LOG_INFO("Calling registerEventListener(IN:eventListener[0x%X], OUT:_aidl_return[])", eventListener); \
         status = audioDecoder->registerEventListener(eventListener, &_aidl_return); \
+        UT_LOG_INFO("Result registerEventListener(IN:eventListener[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+            eventListener, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
         UT_ASSERT_TRUE(_aidl_return); \
     } while (0)
@@ -286,7 +317,12 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
+        UT_LOG_INFO("Calling registerEventListener(IN:eventListener[0x%X], OUT:_aidl_return[])", eventListener); \
         status = audioDecoder->registerEventListener(eventListener, &_aidl_return); \
+        UT_LOG_INFO("Result registerEventListener(IN:eventListener[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+            eventListener, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_FALSE(_aidl_return); \
     } while (0)
@@ -295,7 +331,12 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
+        UT_LOG_INFO("Calling unregisterEventListener(IN:eventListener[0x%X], OUT:_aidl_return[])", eventListener); \
         status = audioDecoder->unregisterEventListener(eventListener, &_aidl_return); \
+        UT_LOG_INFO("Result unregisterEventListener(IN:eventListener[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+            eventListener, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
         UT_ASSERT_TRUE(_aidl_return); \
     } while (0)
@@ -304,7 +345,12 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
+        UT_LOG_INFO("Calling unregisterEventListener(IN:eventListener[0x%X], OUT:_aidl_return[])", eventListener); \
         status = audioDecoder->unregisterEventListener(eventListener, &_aidl_return); \
+        UT_LOG_INFO("Result unregisterEventListener(IN:eventListener[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+            eventListener, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_FALSE(_aidl_return); \
     } while (0)
@@ -312,47 +358,60 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
+        UT_LOG_INFO("Calling start()"); \
         status = audioDecoderController->start(); \
+        UT_LOG_INFO("Result start(), status:[isOK:%s, exception:%s]", \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
-        status = audioDecoder->getState(&state); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::STARTED); \
+        AUDIODECODER_GET_STATE((audioDecoder), State::STARTED); \
     } while (0)
 
 #define AUDIODECODER_START_FAILURE(audioDecoderController, exception) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
+        UT_LOG_INFO("Calling start()"); \
         status = audioDecoderController->start(); \
+        UT_LOG_INFO("Result start(), status:[isOK:%s, exception:%s]", \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
     } while (0)
 
 #define AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
+        UT_LOG_INFO("Calling stop()"); \
         status = audioDecoderController->stop(); \
+        UT_LOG_INFO("Result stop(), status:[isOK:%s, exception:%s]", \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
-        status = audioDecoder->getState(&state); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::READY); \
+        AUDIODECODER_GET_STATE((audioDecoder), State::READY); \
     } while (0)
 
 #define AUDIODECODER_STOP_FAILURE(audioDecoderController, exception) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
+        UT_LOG_INFO("Calling stop()"); \
         status = audioDecoderController->stop(); \
+        UT_LOG_INFO("Result stop(), status:[isOK:%s, exception:%s]", \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
     } while (0)
 
 #define AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, nsPresentationTime, bufferHandle, trimEndNs, trimStartNs, exception) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
         bool _aidl_return; \
+        UT_LOG_INFO("Calling decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%X], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[])", \
+            nsPresentationTime, bufferHandle, trimStartNs, trimEndNs); \
         status = audioDecoderController->decodeBuffer(nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, &_aidl_return); \
+        UT_LOG_INFO("Result decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%X], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+            nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
     } while (0)
@@ -360,22 +419,26 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_FLUSH_SUCCESS(audioDecoder, audioDecoderController, reset) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
+        UT_LOG_INFO("Calling flush(IN: reset[%s])", UT_Control_GetMapString(bool_mapTable, reset)); \
         status = audioDecoderController->flush(reset); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        status = audioDecoder->getState(&state); \
+        UT_LOG_INFO("Result flush(IN: reset[%s]), status:[isOK:%s, exception:%s]", UT_Control_GetMapString(bool_mapTable, reset), \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
         if (reset) \
-            UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::STARTED); \
+            AUDIODECODER_GET_STATE((audioDecoder), State::READY); \
         else \
-            UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::READY); \
+            AUDIODECODER_GET_STATE((audioDecoder), State::STARTED); \
     } while (0)
 
 #define AUDIODECODER_FLUSH_FAILURE(audioDecoderController, reset, exception) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
+        UT_LOG_INFO("Calling flush(IN: reset[%s])", UT_Control_GetMapString(bool_mapTable, reset)); \
         status = audioDecoderController->flush(reset); \
+        UT_LOG_INFO("Result flush(IN: reset[%s]), status:[isOK:%s, exception:%s]", UT_Control_GetMapString(bool_mapTable, reset), \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
     } while (0)
 
@@ -383,59 +446,74 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         ::com::rdk::hal::State state; \
+        UT_LOG_INFO("Calling signalDiscontinuity()"); \
         status = audioDecoderController->signalDiscontinuity(); \
+        UT_LOG_INFO("Result signalDiscontinuity(), status:[isOK:%s, exception:%s]", \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
-        status = audioDecoder->getState(&state); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::STARTED); \
+        AUDIODECODER_GET_STATE((audioDecoder), State::STARTED); \
     } while (0)
 
 #define AUDIODECODER_SIGNAL_DISCONTINUITY_FAILURE(audioDecoderController, exception) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
+        UT_LOG_INFO("Calling signalDiscontinuity()"); \
         status = audioDecoderController->signalDiscontinuity(); \
+        UT_LOG_INFO("Result signalDiscontinuity(), status:[isOK:%s, exception:%s]", \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
     } while (0)
 
 #define AUDIODECODER_SIGNAL_EOS_SUCCESS(audioDecoder, audioDecoderController) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
+        UT_LOG_INFO("Calling signalEOS()"); \
         status = audioDecoderController->signalEOS(); \
+        UT_LOG_INFO("Result signalEOS(), status:[isOK:%s, exception:%s]", \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
-        status = audioDecoder->getState(&state); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::STARTED); \
+        AUDIODECODER_GET_STATE((audioDecoder), State::STARTED); \
     } while (0)
 
 #define AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, exception) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
+        UT_LOG_INFO("Calling signalEOS()"); \
         status = audioDecoderController->signalEOS(); \
+        UT_LOG_INFO("Result signalEOS(), status:[isOK:%s, exception:%s]", \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
     } while (0)
 
 #define AUDIODECODER_PARSE_CSD_SUCCESS(audioDecoder, audioDecoderController, csdAudioFormat, codecData) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
         bool _aidl_return; \
+        UT_LOG_INFO("Calling parseCodecSpecificData(IN:csdAudioFormat[%d], IN:codecData[0x%X], OUT:_aidl_return[])", csdAudioFormat, codecData); \
         status = audioDecoderController->parseCodecSpecificData(csdAudioFormat, codecData, &_aidl_return); \
+        UT_LOG_INFO("Calling parseCodecSpecificData(IN:csdAudioFormat[%d], IN:codecData[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", csdAudioFormat, codecData, \
+            UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
         UT_ASSERT_TRUE(_aidl_return); \
-        status = audioDecoder->getState(&state); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::STARTED); \
+        AUDIODECODER_GET_STATE((audioDecoder), State::STARTED); \
     } while (0)
 
 #define AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, codecData, exception) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
         bool _aidl_return; \
+        UT_LOG_INFO("Calling parseCodecSpecificData(IN:csdAudioFormat[%d], IN:codecData[0x%X], OUT:_aidl_return[])", csdAudioFormat, codecData); \
         status = audioDecoderController->parseCodecSpecificData(csdAudioFormat, codecData, &_aidl_return); \
+        UT_LOG_INFO("Calling parseCodecSpecificData(IN:csdAudioFormat[%d], IN:codecData[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", csdAudioFormat, codecData, \
+            UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
         UT_ASSERT_FALSE(_aidl_return); \
     } while (0)
@@ -452,7 +530,6 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_SETPROPERTY_FAILURE(audioDecoderController, property, propertyValue, exception) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
         bool _aidl_return; \
         status = audioDecoderController->setProperty(property, propertyValue, &_aidl_return); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
@@ -542,10 +619,9 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecodermanager_getAudioDecoderIds_pos)
     std::vector<IAudioDecoder::Id> secondDecoderIds;
     std::vector<int32_t> decoderId;
     std::unordered_set<int> decoderId_from_profile;
-    ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(initialDecoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(initialDecoderIds);
 
     for (const auto& obj : initialDecoderIds) {
         decoderId.push_back(obj.value);
@@ -554,7 +630,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecodermanager_getAudioDecoderIds_pos)
     UT_ASSERT_TRUE(vts_audiodecoder_helper_areElementsUnique(decoderId));
 
     /* Get the Audio decoder IDs second time */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(secondDecoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(secondDecoderIds);
 
     UT_ASSERT_EQUAL(initialDecoderIds.size(), secondDecoderIds.size());
 
@@ -612,24 +688,22 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecodermanager_getAudioDecoder_pos)
     std::optional<PropertyValue> resource_id_2;
     std::vector<IAudioDecoder::Id> decoderIds;
     Property property = Property::RESOURCE_ID;
-    ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         Status status;
 
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audiodecoder_1, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audiodecoder_1);
 
         status = audiodecoder_1->getProperty(property, &resource_id_1);
         UT_ASSERT_TRUE(status.isOk());
 
-        status = gAudioDecoderManager->getAudioDecoder(id, &audiodecoder_2);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_TRUE(audiodecoder_2 != nullptr);
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audiodecoder_2);
 
         status = audiodecoder_2->getProperty(property, &resource_id_2);
         UT_ASSERT_TRUE(status.isOk());
@@ -672,7 +746,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecodermanager_getAudioDecoder_neg)
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     if(decoderIds.size() > 1)
         std::sort(decoderIds.begin(), decoderIds.end());
@@ -719,15 +793,14 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_getCapabilities_pos)
     Capabilities capabilities;
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
-    ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
@@ -769,12 +842,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_getProperty_pos)
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get RESOURCE_ID */
         for (auto property : testProperties)
@@ -818,12 +891,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_getProperty_neg)
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         status = audioDecoder->getProperty(Invalidproperty, &propertyValue);
         UT_ASSERT_FALSE(status.isOk());
@@ -853,20 +926,17 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_getState_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
-    ::com::rdk::hal::State state;
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
-        status = audioDecoder->getState(&state);
-        UT_ASSERT_TRUE(status.isOk());
-        UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::CLOSED);
+        AUDIODECODER_GET_STATE(audioDecoder, State::CLOSED);
     }
 }
 
@@ -900,12 +970,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_open_pos)
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
@@ -964,12 +1034,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_open_neg)
     bool _aidl_return;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
@@ -1032,12 +1102,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_close_pos)
     bool _aidl_return;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
@@ -1089,12 +1159,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_close_neg)
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
@@ -1148,14 +1218,14 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_registerEventListener_pos)
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
 
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Register events */
         AUDIODECODER_REGISTER_EVENT_SUCCESS(audioDecoder, eventListener);
@@ -1197,14 +1267,14 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_registerEventListener_neg)
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
 
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Register events with invalid listener */
         AUDIODECODER_REGISTER_EVENT_FAILURE(audioDecoder, nullptr);
@@ -1250,14 +1320,14 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_unregisterEventListener_pos)
     bool _aidl_return;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
 
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Register events */
         AUDIODECODER_REGISTER_EVENT_SUCCESS(audioDecoder, eventListener);
@@ -1299,14 +1369,14 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_unregisterEventListener_neg)
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
 
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Un-register the events */
         AUDIODECODER_UNREGISTER_EVENT_FAILURE(audioDecoder, eventListener);
@@ -1359,12 +1429,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_start_pos)
     bool _aidl_return;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
@@ -1425,12 +1495,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_start_neg)
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
@@ -1495,12 +1565,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_stop_pos)
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
@@ -1563,12 +1633,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_stop_neg)
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
@@ -1641,12 +1711,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_decodeBuffer_neg)
     int32_t invalid_trimEndNs    = -500;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
@@ -1725,12 +1795,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_flush_pos)
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
@@ -1803,12 +1873,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_flush_neg)
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
@@ -1886,12 +1956,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalDiscontinuity_pos)
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
@@ -1955,12 +2025,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalDiscontinuity_neg)
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
@@ -2031,12 +2101,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalEOS_pos)
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
@@ -2100,12 +2170,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalEOS_neg)
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
@@ -2182,12 +2252,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_parseCodecSpecificData_pos)
     std::vector<uint8_t> codecData = {0x12, 0x10};
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
@@ -2267,12 +2337,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_parseCodecSpecificData_neg)
     std::vector<uint8_t> invalid_codecData_2 = {};
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
@@ -2423,12 +2493,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_setProperty_pos)
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
@@ -2512,12 +2582,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_setProperty_neg)
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds, status);
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
         /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder, status);
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
