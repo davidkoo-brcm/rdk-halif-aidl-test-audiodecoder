@@ -39,6 +39,8 @@ namespace com {
         namespace hal {
             namespace audiodecoder {
 
+#define NUM_AUDIO_DECODER 2
+
                 class AudioDecoderManager :public android::BinderService<AudioDecoderManager>,
                                            public BnAudioDecoderManager {
                 public:
@@ -53,8 +55,10 @@ namespace com {
 
                 class AudioDecoder :public android::BinderService<AudioDecoder>,
                                     public BnAudioDecoder {
+                private:
+                    IAudioDecoder::Id id;
                 public:
-                    AudioDecoder();
+                    AudioDecoder(IAudioDecoder::Id id);
                     virtual ~AudioDecoder();
 
                     android::binder::Status getCapabilities( audiodecoder::Capabilities* _aidl_return ) override;
@@ -68,8 +72,10 @@ namespace com {
 
                 class AudioDecoderController :public android::BinderService<AudioDecoderController>,
                                               public BnAudioDecoderController {
+                private:
+                    IAudioDecoder::Id id;
                 public:
-                    AudioDecoderController();
+                    AudioDecoderController(IAudioDecoder::Id id);
                     virtual ~AudioDecoderController();
 
                     android::binder::Status start() override;

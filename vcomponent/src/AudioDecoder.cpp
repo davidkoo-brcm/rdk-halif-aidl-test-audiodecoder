@@ -33,9 +33,20 @@ namespace com
         {
             namespace audiodecoder
             {
+                State g_audiodecoder_state[NUM_AUDIO_DECODER] = {State::UNKNOWN, State::UNKNOWN};
+                ::std::vector<::com::rdk::hal::audiodecoder::Codec> supportedCodecs = {
+                    com::rdk::hal::audiodecoder::Codec::PCM,
+                    com::rdk::hal::audiodecoder::Codec::DOLBY_AC3_PLUS_JOC,
+                    com::rdk::hal::audiodecoder::Codec::MP3
+                };
 
+                IAudioDecoder::Id supported_id[NUM_AUDIO_DECODER];
                 AudioDecoderManager::AudioDecoderManager()
                 {
+                    for (int32_t i = 0;i<NUM_AUDIO_DECODER;i++)
+                    {
+                        supported_id[i].value = i;
+                    }
                     printf("AudioDecoderManager service initialized\n");
                 }
 
@@ -48,24 +59,42 @@ namespace com
 
                 android::binder::Status AudioDecoderManager::getAudioDecoderIds(  std::vector<IAudioDecoder::Id>* _aidl_return  )
                 {
-                    IAudioDecoder::Id id1;
-                    id1.value = 0; // Set value
-                    IAudioDecoder::Id id2;
-                    id2.value = 1; // Set value
-                    _aidl_return->push_back(id1);
-                    _aidl_return->push_back(id2);
+                    for (int32_t i = 0;i<NUM_AUDIO_DECODER;i++)
+                    {
+                        _aidl_return->push_back(supported_id[i]);
+                    }
                     return android::binder::Status::ok();
                 }
 
                 android::binder::Status AudioDecoderManager::getAudioDecoder(  const IAudioDecoder::Id& decoderResourceId, android::sp<IAudioDecoder>* _aidl_return  )
                 {
-                    android::sp<IAudioDecoder> audioDecoder = new AudioDecoder();
+                    android::binder::Status status;
+                    int32_t found = 0;
+                    for(int32_t i = 0; i < NUM_AUDIO_DECODER; i++)
+                    {
+                        if(supported_id[i].value == decoderResourceId.value)
+                        {
+                            found = 1;
+                            break;
+                        }
+                    }
+                    if(!found)
+                    {
+                        *_aidl_return = nullptr;
+                        android::String8 str8("Illigal argument");
+                        status.setException(android::binder::Status::EX_ILLEGAL_ARGUMENT, str8);
+                        return status;
+                    }
+
+                    android::sp<IAudioDecoder> audioDecoder = new AudioDecoder(decoderResourceId);
+                    g_audiodecoder_state[decoderResourceId.value] = State::CLOSED;
                     *_aidl_return = audioDecoder;
                     return android::binder::Status::ok();
                 }
 
-                AudioDecoder::AudioDecoder()
+                AudioDecoder::AudioDecoder(IAudioDecoder::Id id)
                 {
+                    this->id = id;
                     printf("AudioDecoder service initialized\n");
                 }
 
@@ -94,7 +123,7 @@ namespace com
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_NULL_POINTER);
                     }
                     com::rdk::hal::PropertyValue value;
-                    switch (property) 
+                    switch (property)
                     {
                         case audiodecoder::Property::RESOURCE_ID:
                             value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(/* your resource ID here */ 42);
@@ -147,20 +176,52 @@ namespace com
 
                 android::binder::Status AudioDecoder::getState(  State* _aidl_return  )
                 {
-                    *_aidl_return = State::CLOSED;
+                    *_aidl_return = g_audiodecoder_state[this->id.value];
                     return android::binder::Status::ok();
                 }
 
-
-
                 android::binder::Status AudioDecoder::open(  audiodecoder::Codec codec, bool secure, const android::sp<audiodecoder::IAudioDecoderControllerListener>& audioDecoderControllerListener, android::sp<audiodecoder::IAudioDecoderController>* _aidl_return  )
                 {
-                    *_aidl_return = new AudioDecoderController();
+                    android::binder::Status status;
+
+                    if(std::find(supportedCodecs.begin(), supportedCodecs.end(), codec) == supportedCodecs.end())
+                    {
+                        *_aidl_return = nullptr;
+                        android::String8 str8("Illigal argument");
+                        status.setException(android::binder::Status::EX_ILLEGAL_ARGUMENT, str8);
+                        return status;
+                    }
+                    if(audioDecoderControllerListener == nullptr)
+                    {
+                        *_aidl_return = nullptr;
+                        android::String8 str8("Illigal argument");
+                        status.setException(android::binder::Status::EX_ILLEGAL_ARGUMENT, str8);
+                        return status;
+                    }
+                    if(g_audiodecoder_state[this->id.value] != State::CLOSED)
+                    {
+                        *_aidl_return = nullptr;
+                        android::String8 str8("Illigal state");
+                        status.setException(android::binder::Status::EX_ILLEGAL_STATE, str8);
+                        return status;
+                    }
+                    *_aidl_return = new AudioDecoderController(this->id);
+                    g_audiodecoder_state[this->id.value] = State::READY;
                     return android::binder::Status::ok();
                 }
 
                 android::binder::Status AudioDecoder::close(  const android::sp<audiodecoder::IAudioDecoderController>& audioDecoderController, bool* _aidl_return  )
                 {
+                    android::binder::Status status;
+                    if(g_audiodecoder_state[this->id.value] != State::READY)
+                    {
+                        * _aidl_return = false;
+                        android::String8 str8("Illigal state");
+                        status.setException(android::binder::Status::EX_ILLEGAL_STATE, str8);
+                        return status;
+                    }
+                    g_audiodecoder_state[this->id.value] = State::CLOSED;
+                    * _aidl_return = true;
                     return android::binder::Status::ok();
                 }
 
@@ -176,8 +237,9 @@ namespace com
                     return android::binder::Status::ok();
                 }
 
-                AudioDecoderController::AudioDecoderController()
+                AudioDecoderController::AudioDecoderController(IAudioDecoder::Id id)
                 {
+                    this->id = id;
                     printf("AudioDecoderController service initialized");
                 }
 
@@ -188,11 +250,13 @@ namespace com
 
                 android::binder::Status AudioDecoderController::start()
                 {
+                    g_audiodecoder_state[this->id.value] = State::STARTED;
                     return android::binder::Status::ok();
                 }
 
                 android::binder::Status AudioDecoderController::stop()
                 {
+                    g_audiodecoder_state[this->id.value] = State::READY;
                     return android::binder::Status::ok();
                 }
 
@@ -205,17 +269,17 @@ namespace com
                 {
                     return android::binder::Status::ok();
                 }
-    
+
                 android::binder::Status AudioDecoderController::signalDiscontinuity()
                 {
                     return android::binder::Status::ok();
                 }
-    
+
                 android::binder::Status AudioDecoderController::signalEOS()
                 {
                     return android::binder::Status::ok();
                 }
-    
+
                 android::binder::Status AudioDecoderController::parseCodecSpecificData(  rdk::hal::audiodecoder::CSDAudioFormat csdAudioFormat, const std::vector<uint8_t>& codecData, bool* _aidl_return  )
                 {
                     return android::binder::Status::ok();
