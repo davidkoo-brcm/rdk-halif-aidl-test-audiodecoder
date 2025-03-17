@@ -57,6 +57,7 @@ namespace com {
                                     public BnAudioDecoder {
                 private:
                     IAudioDecoder::Id id;
+                    bool event_listener;
                 public:
                     AudioDecoder(IAudioDecoder::Id id);
                     virtual ~AudioDecoder();

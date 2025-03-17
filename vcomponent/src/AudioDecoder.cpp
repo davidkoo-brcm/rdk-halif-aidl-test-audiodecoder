@@ -95,6 +95,7 @@ namespace com
                 AudioDecoder::AudioDecoder(IAudioDecoder::Id id)
                 {
                     this->id = id;
+                    this->event_listener = false;
                     printf("AudioDecoder service initialized\n");
                 }
 
@@ -215,7 +216,7 @@ namespace com
                     android::binder::Status status;
                     if(g_audiodecoder_state[this->id.value] != State::READY)
                     {
-                        * _aidl_return = false;
+                        *_aidl_return = false;
                         android::String8 str8("Illigal state");
                         status.setException(android::binder::Status::EX_ILLEGAL_STATE, str8);
                         return status;
@@ -227,13 +228,33 @@ namespace com
 
                 android::binder::Status AudioDecoder::registerEventListener(  const android::sp<audiodecoder::IAudioDecoderEventListener>& audioDecoderEventListener, bool* _aidl_return  )
                 {
+                    android::binder::Status status;
+
+                    if(this->event_listener == true)
+                    {
+                        *_aidl_return = false;
+                        android::String8 str8("Illigal state");
+                        status.setException(android::binder::Status::EX_ILLEGAL_STATE, str8);
+                        return status;
+                    }
                     *_aidl_return = true;
+                    this->event_listener = true;
                     return android::binder::Status::ok();
                 }
 
                 android::binder::Status AudioDecoder::unregisterEventListener(  const android::sp<audiodecoder::IAudioDecoderEventListener>& audioDecoderEventListener, bool* _aidl_return  )
                 {
+                    android::binder::Status status;
+
+                    if(this->event_listener ==false)
+                    {
+                        *_aidl_return = false;
+                        android::String8 str8("Illigal state");
+                        status.setException(android::binder::Status::EX_ILLEGAL_STATE, str8);
+                        return status;
+                    }
                     *_aidl_return = true;
+                    this->event_listener = false;
                     return android::binder::Status::ok();
                 }
 
@@ -250,33 +271,109 @@ namespace com
 
                 android::binder::Status AudioDecoderController::start()
                 {
+                    android::binder::Status status;
+                    if(g_audiodecoder_state[this->id.value] != State::READY)
+                    {
+                        android::String8 str8("Illigal state");
+                        status.setException(android::binder::Status::EX_ILLEGAL_STATE, str8);
+                        return status;
+                    }
                     g_audiodecoder_state[this->id.value] = State::STARTED;
                     return android::binder::Status::ok();
                 }
 
                 android::binder::Status AudioDecoderController::stop()
                 {
+                    android::binder::Status status;
+                    if(g_audiodecoder_state[this->id.value] != State::STARTED)
+                    {
+                        android::String8 str8("Illigal state");
+                        status.setException(android::binder::Status::EX_ILLEGAL_STATE, str8);
+                        return status;
+                    }
                     g_audiodecoder_state[this->id.value] = State::READY;
                     return android::binder::Status::ok();
                 }
 
                 android::binder::Status AudioDecoderController::decodeBuffer(  int64_t nsPresentationTime, int64_t bufferHandle, int32_t trimStartNs, int32_t trimEndNs, bool* _aidl_return  )
                 {
+                    android::binder::Status status;
+                    if(g_audiodecoder_state[this->id.value] != State::STARTED)
+                    {
+                        *_aidl_return = false;
+                        android::String8 str8("Illigal state");
+                        status.setException(android::binder::Status::EX_ILLEGAL_STATE, str8);
+                        return status;
+                    }
+                    if(nsPresentationTime < 0)
+                    {
+                        *_aidl_return = false;
+                        android::String8 str8("Illigal state");
+                        status.setException(android::binder::Status::EX_ILLEGAL_ARGUMENT, str8);
+                        return status;
+                    }
+                    if(trimStartNs < 0)
+                    {
+                        *_aidl_return = false;
+                        android::String8 str8("Illigal state");
+                        status.setException(android::binder::Status::EX_ILLEGAL_ARGUMENT, str8);
+                        return status;
+                    }
+                    if(trimEndNs < 0)
+                    {
+                        *_aidl_return = false;
+                        android::String8 str8("Illigal state");
+                        status.setException(android::binder::Status::EX_ILLEGAL_ARGUMENT, str8);
+                        return status;
+                    }
+                    if(trimStartNs > trimEndNs)
+                    {
+                        *_aidl_return = false;
+                        android::String8 str8("Illigal state");
+                        status.setException(android::binder::Status::EX_ILLEGAL_ARGUMENT, str8);
+                        return status;
+                    }
+                    *_aidl_return = true;
                     return android::binder::Status::ok();
                 }
 
                 android::binder::Status AudioDecoderController::flush(  bool reset  )
                 {
+                    android::binder::Status status;
+                    if(g_audiodecoder_state[this->id.value] != State::STARTED)
+                    {
+                        android::String8 str8("Illigal state");
+                        status.setException(android::binder::Status::EX_ILLEGAL_STATE, str8);
+                        return status;
+                    }
+                    if (reset)
+                    {
+                        g_audiodecoder_state[this->id.value] = State::READY;
+                    }
                     return android::binder::Status::ok();
                 }
 
                 android::binder::Status AudioDecoderController::signalDiscontinuity()
                 {
+                    android::binder::Status status;
+                    if(g_audiodecoder_state[this->id.value] != State::STARTED)
+                    {
+                        android::String8 str8("Illigal state");
+                        status.setException(android::binder::Status::EX_ILLEGAL_STATE, str8);
+                        return status;
+                    }
                     return android::binder::Status::ok();
                 }
 
                 android::binder::Status AudioDecoderController::signalEOS()
                 {
+                    android::binder::Status status;
+                    if(g_audiodecoder_state[this->id.value] != State::STARTED)
+                    {
+                        android::String8 str8("Illigal state");
+                        status.setException(android::binder::Status::EX_ILLEGAL_STATE, str8);
+                        return status;
+                    }
                     return android::binder::Status::ok();
                 }
 

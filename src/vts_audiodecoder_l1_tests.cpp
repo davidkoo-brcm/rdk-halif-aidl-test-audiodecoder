@@ -262,10 +262,10 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling close(IN:audioDecoderController[0x%X], OUT:_aidl_return[])", audioDecoderController); \
+        UT_LOG_INFO("Calling close(IN:audioDecoderController[0x%X], OUT:_aidl_return[])", audioDecoderController.get()); \
         status = audioDecoder->close(audioDecoderController, &_aidl_return); \
         UT_LOG_INFO("Result close(IN:audioDecoderController[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
-            audioDecoderController, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+            audioDecoderController.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
@@ -277,10 +277,10 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling close(IN:audioDecoderController[0x%X], OUT:_aidl_return[])", audioDecoderController); \
+        UT_LOG_INFO("Calling close(IN:audioDecoderController[0x%X], OUT:_aidl_return[])", audioDecoderController.get()); \
         status = audioDecoder->close(audioDecoderController, &_aidl_return); \
         UT_LOG_INFO("Result close(IN:audioDecoderController[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
-            audioDecoderController, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+            audioDecoderController.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
@@ -291,27 +291,28 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling registerEventListener(IN:eventListener[0x%X], OUT:_aidl_return[])", eventListener); \
+        UT_LOG_INFO("Calling registerEventListener(IN:eventListener[0x%X], OUT:_aidl_return[])", eventListener.get()); \
         status = audioDecoder->registerEventListener(eventListener, &_aidl_return); \
         UT_LOG_INFO("Result registerEventListener(IN:eventListener[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
-            eventListener, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+            eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
         UT_ASSERT_TRUE(_aidl_return); \
     } while (0)
 
-#define AUDIODECODER_REGISTER_EVENT_FAILURE(audioDecoder, eventListener) \
+#define AUDIODECODER_REGISTER_EVENT_FAILURE(audioDecoder, eventListener, exception) \
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling registerEventListener(IN:eventListener[0x%X], OUT:_aidl_return[])", eventListener); \
+        UT_LOG_INFO("Calling registerEventListener(IN:eventListener[0x%X], OUT:_aidl_return[])", eventListener.get()); \
         status = audioDecoder->registerEventListener(eventListener, &_aidl_return); \
         UT_LOG_INFO("Result registerEventListener(IN:eventListener[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
-            eventListener, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+            eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
         UT_ASSERT_FALSE(_aidl_return); \
     } while (0)
 
@@ -319,10 +320,10 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling unregisterEventListener(IN:eventListener[0x%X], OUT:_aidl_return[])", eventListener); \
+        UT_LOG_INFO("Calling unregisterEventListener(IN:eventListener[0x%X], OUT:_aidl_return[])", eventListener.get()); \
         status = audioDecoder->unregisterEventListener(eventListener, &_aidl_return); \
         UT_LOG_INFO("Result unregisterEventListener(IN:eventListener[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
-            eventListener, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+            eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
@@ -333,10 +334,10 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling unregisterEventListener(IN:eventListener[0x%X], OUT:_aidl_return[])", eventListener); \
+        UT_LOG_INFO("Calling unregisterEventListener(IN:eventListener[0x%X], OUT:_aidl_return[])", eventListener.get()); \
         status = audioDecoder->unregisterEventListener(eventListener, &_aidl_return); \
         UT_LOG_INFO("Result unregisterEventListener(IN:eventListener[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
-            eventListener, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+            eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
@@ -1179,14 +1180,14 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_close_neg)
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
-            sp<IAudioDecoderController> audioDecoderController;
+            sp<IAudioDecoderController> audioDecoderController, audioDecoderController_nullptr = nullptr;
             sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
 
             /* Open the decoder */
             AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController);
 
             /* Close with invalid controller */
-            AUDIODECODER_CLOSE_FAILURE(audioDecoder, nullptr, Status::EX_NULL_POINTER);
+            AUDIODECODER_CLOSE_FAILURE(audioDecoder, audioDecoderController_nullptr, Status::EX_NULL_POINTER);
 
             /* Close the decoder */
             AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController);
@@ -1280,18 +1281,19 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_registerEventListener_neg)
     for(const auto& _decoderId: decoderIds)
     {
         sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
+        sp<IAudioDecoderEventListener> eventListener_nullptr = nullptr;
 
         /* Get Audio decoder handle */
         AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Register events with invalid listener */
-        AUDIODECODER_REGISTER_EVENT_FAILURE(audioDecoder, nullptr);
+        AUDIODECODER_REGISTER_EVENT_FAILURE(audioDecoder, eventListener_nullptr, Status::EX_NULL_POINTER);
 
         /* Register events */
         AUDIODECODER_REGISTER_EVENT_SUCCESS(audioDecoder, eventListener);
 
         /* Register events again */
-        AUDIODECODER_REGISTER_EVENT_FAILURE(audioDecoder, eventListener);
+        AUDIODECODER_REGISTER_EVENT_FAILURE(audioDecoder, eventListener, Status::EX_ILLEGAL_STATE);
 
         /* Un-register the events */
         AUDIODECODER_UNREGISTER_EVENT_SUCCESS(audioDecoder, eventListener);
@@ -1382,6 +1384,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_unregisterEventListener_neg)
     for(const auto& _decoderId: decoderIds)
     {
         sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
+        sp<IAudioDecoderEventListener> eventListener_nullptr = nullptr;
 
         /* Get Audio decoder handle */
         AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
@@ -1393,7 +1396,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_unregisterEventListener_neg)
         AUDIODECODER_REGISTER_EVENT_SUCCESS(audioDecoder, eventListener);
 
         /* Un-register the events with nullptr*/
-        AUDIODECODER_UNREGISTER_EVENT_FAILURE(audioDecoder, nullptr);
+        AUDIODECODER_UNREGISTER_EVENT_FAILURE(audioDecoder, eventListener_nullptr);
 
         /* Un-register the events */
         AUDIODECODER_UNREGISTER_EVENT_SUCCESS(audioDecoder, eventListener);
