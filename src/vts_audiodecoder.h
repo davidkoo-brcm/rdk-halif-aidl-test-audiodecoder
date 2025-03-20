@@ -144,7 +144,7 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities) \
     do { \
         ::android::binder::Status status; \
-        UT_LOG_INFO("Calling getCapabilities(OUT:capabilities)", _decoderId); \
+        UT_LOG_INFO("Calling getCapabilities(OUT:capabilities)"); \
         audioDecoder->getCapabilities(&capabilities); \
         UT_LOG_INFO("Result getCapabilities(OUT:capabilities), status:[isOK:%s, exception:%s]", \
                                 UT_Control_GetMapString(bool_mapTable, status.isOk()), \

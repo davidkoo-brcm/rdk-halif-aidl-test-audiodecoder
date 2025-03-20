@@ -247,15 +247,13 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecodermanager_getAudioDecoder_pos)
 
         /* Get Audio decoder handle */
         AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audiodecoder_1);
-
-        status = audiodecoder_1->getProperty(property, &resource_id_1);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get the resource ID */
+        AUDIODECODER_GET_PROPERTY_SUCCESS(audiodecoder_1, property, resource_id_1);
 
         /* Get Audio decoder handle */
         AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audiodecoder_2);
-
-        status = audiodecoder_2->getProperty(property, &resource_id_2);
-        UT_ASSERT_TRUE(status.isOk());
+        /* Get the resource ID */
+        AUDIODECODER_GET_PROPERTY_SUCCESS(audiodecoder_2, property, resource_id_2);
 
         int32_t _resource_id_1 = resource_id_1->value->get<PropertyValue::Value::Tag::intValue>();
         int32_t _resource_id_2 = resource_id_2->value->get<PropertyValue::Value::Tag::intValue>();
