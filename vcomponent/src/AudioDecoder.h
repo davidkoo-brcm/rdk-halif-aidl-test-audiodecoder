@@ -33,11 +33,21 @@
 #include <string>
 #include <utils/StrongPointer.h>
 #include <vector>
+#include <mutex>
+#include <condition_variable>
+#include <future>
+#include <chrono>
+#include <thread>
+#include <ctime>
+#include <sstream>
+#include <iomanip>
 
 namespace com {
     namespace rdk {
         namespace hal {
             namespace audiodecoder {
+
+#define NUM_AUDIO_DECODER 2
 
                 class AudioDecoderManager :public android::BinderService<AudioDecoderManager>,
                                            public BnAudioDecoderManager {
@@ -53,8 +63,11 @@ namespace com {
 
                 class AudioDecoder :public android::BinderService<AudioDecoder>,
                                     public BnAudioDecoder {
+                private:
+                    IAudioDecoder::Id id;
+                    bool event_listener;
                 public:
-                    AudioDecoder();
+                    AudioDecoder(IAudioDecoder::Id id);
                     virtual ~AudioDecoder();
 
                     android::binder::Status getCapabilities( audiodecoder::Capabilities* _aidl_return ) override;
@@ -68,8 +81,10 @@ namespace com {
 
                 class AudioDecoderController :public android::BinderService<AudioDecoderController>,
                                               public BnAudioDecoderController {
+                private:
+                    IAudioDecoder::Id id;
                 public:
-                    AudioDecoderController();
+                    AudioDecoderController(IAudioDecoder::Id id);
                     virtual ~AudioDecoderController();
 
                     android::binder::Status start() override;
