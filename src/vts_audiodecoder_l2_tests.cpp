@@ -793,16 +793,11 @@ UT_ASSERT_TRUE(foundClosingToClosed);
 }
 }
 
-int main(int argc, char **argv) {
-    int opt;
-    int result;
-    ::testing::InitGoogleTest(&argc, argv);
-    if(getService() == -1)
-    {
-        return -1;
-    }
-    result = RUN_ALL_TESTS();
-    return (result);
+int main(int argc, char **argv)
+{
+    UT_status_t result;
+    UT_init(argc, argv);
+    result = UT_run_tests();
+    return result;
 }
-
 
