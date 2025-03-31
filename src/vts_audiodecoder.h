@@ -62,8 +62,11 @@
  *
  */
 
- #ifndef __VTS_AUDIODECODER_H__
- #define __VTS_AUDIODECODER_H__
+#ifndef __VTS_AUDIODECODER_H__
+#define __VTS_AUDIODECODER_H__
+
+#include <thread>
+#include <chrono>
 
 #include "com/rdk/hal/audiodecoder/IAudioDecoderManager.h"
 #include "com/rdk/hal/audiodecoder/BnAudioDecoderControllerListener.h"
@@ -102,6 +105,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     {"true",  (int32_t) true},
     {NULL, -1}
 };
+
+#define MAX_TRANSITORY_STATE_WAIT_MS  10
+#define MAX_FINAL_STATE_WAIT_MS  500
 
 #define AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds) \
     do { \
@@ -145,7 +151,7 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         UT_LOG_INFO("Calling getCapabilities(OUT:capabilities)"); \
-        audioDecoder->getCapabilities(&capabilities); \
+        audioDecoder->getCapabilities(capabilities); \
         UT_LOG_INFO("Result getCapabilities(OUT:capabilities), status:[isOK:%s, exception:%s]", \
                                 UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                                 UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -163,7 +169,6 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
                 UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                 UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_TRUE(vts_audiodecoder_helper_validatePropertyValue(_decoderId.value, propertyValue, property)); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
@@ -194,7 +199,7 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
-#define AUDIODECODER_OPEN_SUCCESS(audioDecoder, codec, secure, controllerListener, audioDecoderController) \
+#define AUDIODECODER_OPEN_SUCCESS(audioDecoder, codec, secure, controllerListener, audioDecoderController, stateCheck) \
     do { \
         ::android::binder::Status status; \
         \
@@ -210,8 +215,12 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         UT_ASSERT_NOT_EQUAL(audioDecoderController.get(), nullptr); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
         \
-        /* Check the state of the decoder */ \
-        AUDIODECODER_GET_STATE((audioDecoder), State::READY); \
+        if (stateCheck) \
+        { \
+            std::this_thread::sleep_for(std::chrono::milliseconds(MAX_FINAL_STATE_WAIT_MS)); \
+            /* Check the state of the decoder */ \
+            AUDIODECODER_GET_STATE((audioDecoder), State::READY); \
+        } \
     } while (0)
 
 #define AUDIODECODER_OPEN_FAILURE(audioDecoder, codec, secure, controllerListener, audioDecoderController, exception) \
@@ -229,7 +238,7 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         UT_ASSERT_EQUAL(audioDecoderController.get(), nullptr); \
     } while (0)
 
-#define AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController) \
+#define AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, stateCheck) \
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
@@ -242,7 +251,11 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         UT_ASSERT_TRUE(status.isOk()); \
         UT_ASSERT_TRUE(_aidl_return); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
-        AUDIODECODER_GET_STATE((audioDecoder), State::CLOSED); \
+        if (stateCheck) \
+        { \
+            std::this_thread::sleep_for(std::chrono::milliseconds(MAX_FINAL_STATE_WAIT_MS)); \
+            AUDIODECODER_GET_STATE((audioDecoder), State::CLOSED); \
+        } \
     } while (0)
 
 #define AUDIODECODER_CLOSE_FAILURE(audioDecoder, audioDecoderController, exception) \
@@ -319,7 +332,7 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         UT_ASSERT_FALSE(_aidl_return); \
     } while (0)
 
-#define AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController) \
+#define AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, stateCheck) \
     do { \
         ::android::binder::Status status; \
         UT_LOG_INFO("Calling start()"); \
@@ -328,8 +341,12 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
-        AUDIODECODER_GET_STATE((audioDecoder), State::STARTED); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        if (stateCheck) \
+        { \
+            std::this_thread::sleep_for(std::chrono::milliseconds(MAX_FINAL_STATE_WAIT_MS)); \
+            AUDIODECODER_GET_STATE((audioDecoder), State::STARTED); \
+        } \
     } while (0)
 
 #define AUDIODECODER_START_FAILURE(audioDecoderController, exception) \
@@ -344,7 +361,7 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         UT_ASSERT_FALSE(status.isOk()); \
     } while (0)
 
-#define AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController) \
+#define AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, stateCheck) \
     do { \
         ::android::binder::Status status; \
         UT_LOG_INFO("Calling stop()"); \
@@ -353,8 +370,12 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
-        AUDIODECODER_GET_STATE((audioDecoder), State::READY); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        if (stateCheck) \
+        { \
+            std::this_thread::sleep_for(std::chrono::milliseconds(MAX_FINAL_STATE_WAIT_MS)); \
+            AUDIODECODER_GET_STATE((audioDecoder), State::READY); \
+        } \
     } while (0)
 
 #define AUDIODECODER_STOP_FAILURE(audioDecoderController, exception) \
@@ -384,7 +405,7 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
     } while (0)
 
-#define AUDIODECODER_FLUSH_SUCCESS(audioDecoder, audioDecoderController, reset) \
+#define AUDIODECODER_FLUSH_SUCCESS(audioDecoder, audioDecoderController, reset, stateCheck) \
     do { \
         ::android::binder::Status status; \
         UT_LOG_INFO("Calling flush(IN: reset[%s])", UT_Control_GetMapString(bool_mapTable, reset)); \
@@ -394,10 +415,14 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
-        if (reset) \
-            AUDIODECODER_GET_STATE((audioDecoder), State::READY); \
-        else \
-            AUDIODECODER_GET_STATE((audioDecoder), State::STARTED); \
+        if (stateCheck) \
+        { \
+            std::this_thread::sleep_for(std::chrono::milliseconds(MAX_FINAL_STATE_WAIT_MS)); \
+            if (reset) \
+                AUDIODECODER_GET_STATE((audioDecoder), State::READY); \
+            else \
+                AUDIODECODER_GET_STATE((audioDecoder), State::STARTED); \
+        } \
     } while (0)
 
 #define AUDIODECODER_FLUSH_FAILURE(audioDecoderController, reset, exception) \
@@ -412,7 +437,7 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         UT_ASSERT_FALSE(status.isOk()); \
     } while (0)
 
-#define AUDIODECODER_SIGNAL_DISCONTINUITY_SUCCESS(audioDecoder, audioDecoderController) \
+#define AUDIODECODER_SIGNAL_DISCONTINUITY_SUCCESS(audioDecoder, audioDecoderController, stateCheck) \
     do { \
         ::android::binder::Status status; \
         ::com::rdk::hal::State state; \
@@ -422,8 +447,12 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
-        AUDIODECODER_GET_STATE((audioDecoder), State::STARTED); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        if (stateCheck) \
+        { \
+            std::this_thread::sleep_for(std::chrono::milliseconds(MAX_FINAL_STATE_WAIT_MS)); \
+            AUDIODECODER_GET_STATE((audioDecoder), State::STARTED); \
+        } \
     } while (0)
 
 #define AUDIODECODER_SIGNAL_DISCONTINUITY_FAILURE(audioDecoderController, exception) \
@@ -438,7 +467,7 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         UT_ASSERT_FALSE(status.isOk()); \
     } while (0)
 
-#define AUDIODECODER_SIGNAL_EOS_SUCCESS(audioDecoder, audioDecoderController) \
+#define AUDIODECODER_SIGNAL_EOS_SUCCESS(audioDecoder, audioDecoderController, stateCheck) \
     do { \
         ::android::binder::Status status; \
         UT_LOG_INFO("Calling signalEOS()"); \
@@ -447,8 +476,12 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
-        AUDIODECODER_GET_STATE((audioDecoder), State::STARTED); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        if (stateCheck) \
+        { \
+            std::this_thread::sleep_for(std::chrono::milliseconds(MAX_FINAL_STATE_WAIT_MS)); \
+            AUDIODECODER_GET_STATE((audioDecoder), State::STARTED); \
+        } \
     } while (0)
 
 #define AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, exception) \
@@ -463,7 +496,7 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         UT_ASSERT_FALSE(status.isOk()); \
     } while (0)
 
-#define AUDIODECODER_PARSE_CSD_SUCCESS(audioDecoder, audioDecoderController, csdAudioFormat, codecData) \
+#define AUDIODECODER_PARSE_CSD_SUCCESS(audioDecoder, audioDecoderController, csdAudioFormat, codecData, stateCheck) \
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
@@ -476,7 +509,11 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         UT_ASSERT_TRUE(status.isOk()); \
         UT_ASSERT_TRUE(_aidl_return); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
-        AUDIODECODER_GET_STATE((audioDecoder), State::STARTED); \
+        if (stateCheck) \
+        { \
+            std::this_thread::sleep_for(std::chrono::milliseconds(MAX_FINAL_STATE_WAIT_MS)); \
+            AUDIODECODER_GET_STATE((audioDecoder), State::STARTED); \
+        } \
     } while (0)
 
 #define AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, codecData, exception) \
@@ -563,6 +600,96 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
             AUDIODECODER_SETPROPERTY_FAILURE(audioDecoderController, property, propertyValue, exception); \
         } \
     } while (0)
+
+class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
+{
+    public:
+
+        AudioDecoderControllerListener() = default;
+        virtual ~AudioDecoderControllerListener() = default;
+
+        Status onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::std::optional<FrameMetadata>& metadata) override {
+            return ::android::binder::Status::ok();
+        }
+};
+
+class AudioDecoderEventListener : public BnAudioDecoderEventListener
+{
+    public:
+        AudioDecoderEventListener(): mCurrentState(State::CLOSED) {}
+        virtual ~AudioDecoderEventListener() = default;
+
+        Status onDecodeError(ErrorCode vendorErrorCode, int32_t errorCode) override
+        {
+            std::lock_guard<std::mutex> lock(mMutex);
+            mErrors.push_back(errorCode);
+            return Status::ok();
+        }
+        Status onStateChanged(State oldState,State newState) override
+        {
+            {
+                std::lock_guard<std::mutex> lock(mMutex);
+                mStateChanges.emplace_back(oldState, newState);
+                mCurrentState = newState;
+            }
+            mCV.notify_all(); // Unblock any waiting test code
+            return Status::ok();
+        }
+        /**
+         * Wait for the decoder to reach a particular State within a given timeout.
+         *
+         * @param desiredState The state we want to observe.
+         * @param timeout      How long to wait, e.g. std::chrono::milliseconds(500).
+         * @return true if the state was reached; false if we timed out waiting.
+         */
+        bool waitForState(State desiredState, std::chrono::milliseconds timeout)
+        {
+            std::unique_lock<std::mutex> lock(mMutex);
+            // Wait until mCurrentState == desiredState or until timeout
+            return mCV.wait_for(lock, timeout, [this, desiredState]() {
+                return (mCurrentState == desiredState);
+            });
+        }
+        // Accessors for test verifications if desired
+        std::vector<std::pair<State, State>> getStateChanges() const
+        {
+            std::lock_guard<std::mutex> lock(mMutex);
+            return mStateChanges;
+        }
+
+        void resetStateChanges()
+        {
+            std::lock_guard<std::mutex> lock(mMutex);
+            mStateChanges.clear();
+        }
+
+        bool checkStateTransistion(State expOldState, State expNewState)
+        {
+            bool foundClosedToOpening = false;
+            for (const auto &[oldState, newState] : mStateChanges)
+            {
+                if (oldState == expOldState && newState == expNewState)
+                {
+                    foundClosedToOpening = true;
+                    break;
+                }
+            }
+            return foundClosedToOpening;
+        }
+
+        std::vector<int32_t> getErrors() const
+        {
+            std::lock_guard<std::mutex> lock(mMutex);
+            return mErrors;
+        }
+    private:
+        mutable std::mutex mMutex;
+        std::condition_variable mCV;
+
+        State mCurrentState;
+        std::vector<std::pair<State, State>> mStateChanges;
+        std::vector<int32_t> mErrors;
+};
 
 #endif //__VTS_AUDIODECODER_H__
 

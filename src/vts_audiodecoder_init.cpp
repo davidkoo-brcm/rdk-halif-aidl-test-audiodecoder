@@ -68,6 +68,7 @@
 #include "vts_audiodecoder_parse_hfp.h"
 
 UT_status_t vts_audiodecoder_getAudioDecoderService();
+sp<IAudioDecoderManager> gAudioDecoderManager;
 
 UT_status_t VTS_AudioDecoder_init()
 {
