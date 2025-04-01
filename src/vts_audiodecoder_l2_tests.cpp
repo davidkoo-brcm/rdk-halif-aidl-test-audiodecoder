@@ -91,8 +91,7 @@ VTS_L2_AudioDecoder() : UTCore() {}
     ~VTS_L2_AudioDecoder() override = default;
 
     public:
-        sp<IAudioDecoderControllerListener> mControllerListener;
-        std::vector<std::tuple<sp<IAudioDecoder>, sp<AudioDecoderEventListener>, audiodecoder::Capabilities *>> mAudioDecoderList;
+        std::vector<std::tuple<sp<IAudioDecoder>, sp<AudioDecoderControllerListener>, sp<AudioDecoderEventListener>, audiodecoder::Capabilities *>> mAudioDecoderList;
 
     void SetUp() override
     {
@@ -100,12 +99,16 @@ VTS_L2_AudioDecoder() : UTCore() {}
         /* Get the Audio decoder IDs */
         AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
+        android::ProcessState::self()->startThreadPool();
+
         for(const auto& _decoderId: decoderIds)
         {
             sp<IAudioDecoder> audioDecoder;
             audiodecoder::Capabilities *capabilities = new audiodecoder::Capabilities();
 
             sp<AudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
+
+            sp<AudioDecoderControllerListener> controlListener = new AudioDecoderControllerListener();
 
             /* Get Audio decoder handle */
             AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
@@ -116,17 +119,21 @@ VTS_L2_AudioDecoder() : UTCore() {}
             /* Get Capabilities of Audio Decoder */
             AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
-            mAudioDecoderList.push_back({audioDecoder, eventListener, capabilities});
+            mAudioDecoderList.push_back({audioDecoder, controlListener, eventListener, capabilities});
         }
     }
 
     void checkCompleteStateTransition(sp<IAudioDecoder> decoder, sp<AudioDecoderEventListener> eventListener, State oldState, State intermediateState, State newState)
     {
+        ::com::rdk::hal::State currentState;
+
         UT_ASSERT_TRUE(eventListener->checkStateTransistion(oldState, intermediateState));
 
         eventListener->waitForState(newState, std::chrono::milliseconds(MAX_FINAL_STATE_WAIT_MS));
 
-        AUDIODECODER_GET_STATE(decoder, newState);
+        AUDIODECODER_GET_STATE(decoder, currentState);
+
+        UT_ASSERT_EQUAL(currentState, newState);
 
         UT_ASSERT_TRUE(eventListener->checkStateTransistion(intermediateState, newState));
 
@@ -135,13 +142,14 @@ VTS_L2_AudioDecoder() : UTCore() {}
 
     void TearDown() override
     {
-        for (const auto& [decoder, eventListener, capabilities] : mAudioDecoderList)
+        for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
         {
             /* Un-register the events */
             AUDIODECODER_UNREGISTER_EVENT_SUCCESS(decoder, eventListener);
-            delete capabilities;
         }
         mAudioDecoderList.clear();
+        //TODO: check right place to call joinThreadPool
+        //android::IPCThreadState::self()->joinThreadPool();
     }
 };
 
@@ -200,14 +208,14 @@ std::multimap<Property, android::String16> validStringProperties =
  */
 UT_ADD_TEST(VTS_L2_AudioDecoder, TestGetAndSetProperties)
 {
-    for (const auto& [decoder, eventListener, capabilities] : mAudioDecoderList)
+    for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
     {
         for(const auto& _codec: capabilities->supportedCodecs)
         {
             sp<IAudioDecoderController> audioDecoderController;
 
             /* Open the Decoder */
-            AUDIODECODER_OPEN_SUCCESS(decoder, _codec, capabilities->supportsSecure, mControllerListener, audioDecoderController, true);
+            AUDIODECODER_OPEN_SUCCESS(decoder, _codec, capabilities->supportsSecure, controlListener, audioDecoderController, true);
 
             /* Test int property values */
             for (const auto& [property, value] : validIntProperties)
@@ -270,20 +278,20 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, TestGetAndSetProperties_multipleInstance)
 {
     std::vector<sp<IAudioDecoderController>> audioDecoderControllersList;
 
-    for (const auto& [decoder, eventListener, capabilities] : mAudioDecoderList)
+    for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
     {
         Codec _codec = capabilities->supportedCodecs[0];
         sp<IAudioDecoderController> audioDecoderController;
 
         /* Open the Decoder */
-        AUDIODECODER_OPEN_SUCCESS(decoder, _codec, capabilities->supportsSecure, mControllerListener, audioDecoderController, true);
+        AUDIODECODER_OPEN_SUCCESS(decoder, _codec, capabilities->supportsSecure, controlListener, audioDecoderController, true);
 
         audioDecoderControllersList.push_back(audioDecoderController);
     }
 
     for (size_t i = 0; i < mAudioDecoderList.size(); ++i)
     {
-        const auto& [decoder, eventListener, capabilities] = mAudioDecoderList[i];
+        const auto& [decoder, controlListener, eventListener, capabilities] = mAudioDecoderList[i];
         const auto& audioDecoderController = audioDecoderControllersList[i];
 
         /* Test int property values */
@@ -327,7 +335,7 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, TestGetAndSetProperties_multipleInstance)
 
     for (size_t i = 0; i < mAudioDecoderList.size(); ++i)
     {
-        const auto& [decoder, eventListener, capabilities] = mAudioDecoderList[i];
+        const auto& [decoder, controlListener, eventListener, capabilities] = mAudioDecoderList[i];
         const auto& audioDecoderController = audioDecoderControllersList[i];
 
         /* Close the decoder */
@@ -352,14 +360,14 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, TestGetAndSetProperties_multipleInstance)
  */
 UT_ADD_TEST(VTS_L2_AudioDecoder, TestDecoderStateTransitions)
 {
-    for (const auto& [decoder, eventListener, capabilities] : mAudioDecoderList)
+    for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
     {
         for(const auto& _codec: capabilities->supportedCodecs)
         {
             sp<IAudioDecoderController> audioDecoderController;
 
             /* Open the Decoder */
-            AUDIODECODER_OPEN_SUCCESS(decoder, _codec, capabilities->supportsSecure, mControllerListener, audioDecoderController, false);
+            AUDIODECODER_OPEN_SUCCESS(decoder, _codec, capabilities->supportsSecure, controlListener, audioDecoderController, false);
             checkCompleteStateTransition(decoder, eventListener, State::CLOSED, State::OPENING, State::READY);
 
             /* Start the decoder */
@@ -406,13 +414,13 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, TestDecoderStateTransitions_mutipleInstance)
 {
     std::vector<sp<IAudioDecoderController>> audioDecoderControllersList;
 
-    for (const auto& [decoder, eventListener, capabilities] : mAudioDecoderList)
+    for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
     {
         Codec _codec = capabilities->supportedCodecs[0];
         sp<IAudioDecoderController> audioDecoderController;
 
         /* Open the Decoder */
-        AUDIODECODER_OPEN_SUCCESS(decoder, _codec, capabilities->supportsSecure, mControllerListener, audioDecoderController, false);
+        AUDIODECODER_OPEN_SUCCESS(decoder, _codec, capabilities->supportsSecure, controlListener, audioDecoderController, false);
         checkCompleteStateTransition(decoder, eventListener, State::CLOSED, State::OPENING, State::READY);
 
         audioDecoderControllersList.push_back(audioDecoderController);
@@ -420,7 +428,7 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, TestDecoderStateTransitions_mutipleInstance)
 
     for (size_t i = 0; i < mAudioDecoderList.size(); ++i)
     {
-        const auto& [decoder, eventListener, capabilities] = mAudioDecoderList[i];
+        const auto& [decoder, controlListener, eventListener, capabilities] = mAudioDecoderList[i];
         const auto& audioDecoderController = audioDecoderControllersList[i];
 
         /* Start the decoder */
@@ -446,7 +454,7 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, TestDecoderStateTransitions_mutipleInstance)
 
     for (size_t i = 0; i < mAudioDecoderList.size(); ++i)
     {
-        const auto& [decoder, eventListener, capabilities] = mAudioDecoderList[i];
+        const auto& [decoder, controlListener, eventListener, capabilities] = mAudioDecoderList[i];
         const auto& audioDecoderController = audioDecoderControllersList[i];
 
         /* Close the decoder */

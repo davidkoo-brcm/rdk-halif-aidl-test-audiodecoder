@@ -45,57 +45,27 @@ namespace com
                 }
 
                 /* Read only Properties */
-                State g_audiodecoder_state[NUM_AUDIO_DECODER] = {State::UNKNOWN, State::UNKNOWN};
-                ::std::vector<::com::rdk::hal::audiodecoder::Codec> supportedCodecs = {
-                    com::rdk::hal::audiodecoder::Codec::PCM,
-                    com::rdk::hal::audiodecoder::Codec::DOLBY_AC3_PLUS_JOC,
-                    com::rdk::hal::audiodecoder::Codec::MP3
+                std::vector<::com::rdk::hal::audiodecoder::Codec> g_supported_codecs[NUM_AUDIO_DECODER] = {
+                    {com::rdk::hal::audiodecoder::Codec::PCM,
+                     com::rdk::hal::audiodecoder::Codec::DOLBY_AC3_PLUS_JOC,
+                     com::rdk::hal::audiodecoder::Codec::MP3},
+                    {com::rdk::hal::audiodecoder::Codec::PCM,
+                     com::rdk::hal::audiodecoder::Codec::DOLBY_AC3_PLUS_JOC,
+                     com::rdk::hal::audiodecoder::Codec::MP3}
                 };
                 IAudioDecoder::Id g_supported_id[NUM_AUDIO_DECODER];
-                int32_t g_support_secure[NUM_AUDIO_DECODER];
-                int32_t g_metrics_frame_decoded[NUM_AUDIO_DECODER];
-                int32_t g_metrics_decode_errors[NUM_AUDIO_DECODER];
-                int32_t g_metrics_frames_dropped[NUM_AUDIO_DECODER];
-
-                /* Read Write Properties */
-                int32_t g_low_latency[NUM_AUDIO_DECODER];
-                AVSource g_av_source[NUM_AUDIO_DECODER];
-                int32_t g_ac4_presentation_group_index[NUM_AUDIO_DECODER];
-                android::String16 g_ac4_preferred_lang1[NUM_AUDIO_DECODER];
-                android::String16 g_ac4_preferred_lang2[NUM_AUDIO_DECODER];
-                int32_t g_ac4_associated_type[NUM_AUDIO_DECODER];
-                int32_t g_auto_selection_priority[NUM_AUDIO_DECODER];
-                int32_t g_ac4_mixer_balance[NUM_AUDIO_DECODER];
-                int32_t g_ac4_associated_audio_mixing_enable[NUM_AUDIO_DECODER];
 
                 AudioDecoderManager::AudioDecoderManager()
                 {
                     for (int32_t i = 0;i<NUM_AUDIO_DECODER;i++)
                     {
                         g_supported_id[i].value = i;
-                        g_low_latency[i] = 0;
-                        g_av_source[i] = AVSource::UNKNOWN;
-                        g_support_secure[i] = 1;
-                        g_ac4_presentation_group_index[i] = -1;
-                        g_ac4_preferred_lang1[i] = android::String16("");
-                        g_ac4_preferred_lang2[i] = android::String16("");
-                        g_ac4_associated_type[i] = -1;
-                        g_auto_selection_priority[i] = -1;
-                        g_ac4_mixer_balance[i] = 255;
-                        g_ac4_associated_audio_mixing_enable[i] = -1;
-                        g_metrics_frame_decoded[i] = 0;
-                        g_metrics_decode_errors[i] = 0;
-                        g_metrics_frames_dropped[i] = 0;
                     }
-                    printf("AudioDecoderManager service initialized\n");
                 }
 
                 AudioDecoderManager::~AudioDecoderManager()
                 {
-                    printf("AudioDecoderManager service destroyed\n");
                 }
-
-                android::sp<audiodecoder::IAudioDecoderEventListener> _audioDecoderEventListener;
 
                 android::binder::Status AudioDecoderManager::getAudioDecoderIds(  std::vector<IAudioDecoder::Id>* _aidl_return  )
                 {
@@ -125,32 +95,42 @@ namespace com
                     }
 
                     android::sp<IAudioDecoder> audioDecoder = new AudioDecoder(decoderResourceId);
-                    g_audiodecoder_state[decoderResourceId.value] = State::CLOSED;
                     *_aidl_return = audioDecoder;
                     return android::binder::Status::ok();
                 }
 
                 AudioDecoder::AudioDecoder(IAudioDecoder::Id id)
                 {
-                    this->id = id;
-                    this->event_listener = false;
-                    printf("AudioDecoder service initialized\n");
+                    this->mId = id;
+                    this->mEventListener = false;
+                    this->mAudioDecoderEventListener = nullptr;
+                    this->mLowLatency = 0;
+                    this->mAVSource = AVSource::UNKNOWN;
+                    this->mSupportsSecure = 1;
+                    this->mMetricsFrameDecoded = 0;
+                    this->mMetricsDecodeErrors = 0;
+                    this->mMetricsFramesDropped = 0;
+                    this->mAC4PresentationGroupIndex = -1;
+                    this->mAC4PreferredLang1 = android::String16("");
+                    this->mAC4PreferredLang2 = android::String16("");
+                    this->mAC4AssociatedType = -1;
+                    this->mAutoSelectionPriority = -1;
+                    this->mAC4MixerBalance = 255;
+                    this->mAC4AssociatedAudioMixingEnable = -1;
+
+                    this->setState(State::CLOSED);
+                    this->mSupportedCodecs = g_supported_codecs[this->mId.value];
                 }
 
                 AudioDecoder::~AudioDecoder()
                 {
-                    printf("AudioDecoder service destroyed\n");
                 }
 
                 android::binder::Status AudioDecoder::getCapabilities(  audiodecoder::Capabilities* _aidl_return  )
                 {
                     com::rdk::hal::audiodecoder::Capabilities capabilities;
-                    capabilities.supportedCodecs = {
-                            com::rdk::hal::audiodecoder::Codec::PCM,
-                            com::rdk::hal::audiodecoder::Codec::DOLBY_AC3_PLUS_JOC,
-                            com::rdk::hal::audiodecoder::Codec::MP3
-                    };
-                    capabilities.supportsSecure = true;
+                    capabilities.supportedCodecs = this->mSupportedCodecs;
+                    capabilities.supportsSecure = this->mSupportsSecure;
                     *_aidl_return = capabilities;
                     return android::binder::Status::ok();
                 }
@@ -165,46 +145,46 @@ namespace com
                     switch (property)
                     {
                         case audiodecoder::Property::RESOURCE_ID:
-                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(this->id.value);
+                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(this->mId.value);
                             break;
                         case audiodecoder::Property::LOW_LATENCY_MODE:
-                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(g_low_latency[this->id.value]);
+                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(this->mLowLatency);
                             break;
                         case audiodecoder::Property::AV_SOURCE:
-                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(static_cast<int32_t>(g_av_source[this->id.value]));
+                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(static_cast<int32_t>(this->mAVSource));
                             break;
                         case audiodecoder::Property::SECURE_AUDIO:
-                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(g_support_secure[this->id.value]);
+                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(this->mSupportsSecure);
                             break;
                         case audiodecoder::Property::AC4_PRESENTATION_GROUP_INDEX:
-                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(g_ac4_presentation_group_index[this->id.value]);
+                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(this->mAC4PresentationGroupIndex);
                             break;
                         case audiodecoder::Property::AC4_PREFERRED_LANG1:
-                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::stringValue>(g_ac4_preferred_lang1[this->id.value]);
+                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::stringValue>(this->mAC4PreferredLang1);
                             break;
                         case audiodecoder::Property::AC4_PREFERRED_LANG2:
-                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::stringValue>(g_ac4_preferred_lang2[this->id.value]);
+                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::stringValue>(this->mAC4PreferredLang2);
                             break;
                         case audiodecoder::Property::AC4_ASSOCIATED_TYPE:
-                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(g_ac4_associated_type[this->id.value]);
+                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(this->mAC4AssociatedType);
                             break;
                         case audiodecoder::Property::AC4_AUTO_SELECTION_PRIORITY:
-                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(g_auto_selection_priority[this->id.value]);
+                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(this->mAutoSelectionPriority);
                             break;
                         case audiodecoder::Property::AC4_MIXER_BALANCE:
-                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(g_ac4_mixer_balance[this->id.value]);
+                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(this->mAC4MixerBalance);
                             break;
                         case audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE:
-                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(g_ac4_associated_audio_mixing_enable[this->id.value]);
+                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(this->mAC4AssociatedAudioMixingEnable);
                             break;
                         case audiodecoder::Property::METRIC_FRAMES_DECODED:
-                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(g_metrics_frame_decoded[this->id.value]);
+                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(this->mMetricsFrameDecoded);
                             break;
                         case audiodecoder::Property::METRIC_DECODE_ERRORS:
-                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(g_metrics_decode_errors[this->id.value]);
+                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(this->mMetricsDecodeErrors);
                             break;
                         case audiodecoder::Property::METRIC_FRAMES_DROPPED:
-                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(g_metrics_frames_dropped[this->id.value]);
+                            value.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(this->mMetricsFramesDropped);
                             break;
                         default:
                             return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
@@ -215,15 +195,27 @@ namespace com
 
                 android::binder::Status AudioDecoder::getState(  State* _aidl_return  )
                 {
-                    *_aidl_return = g_audiodecoder_state[this->id.value];
+                    *_aidl_return = this->getState();
                     return android::binder::Status::ok();
+                }
+
+                State AudioDecoder::getState()
+                {
+                    std::lock_guard<std::mutex> lock(this->mStateMutex);
+                    State state = this->mAudioDecoderState;
+                    return state;
+                }
+                void AudioDecoder::setState(  State newState  )
+                {
+                    std::lock_guard<std::mutex> lock(this->mStateMutex);
+                    this->mAudioDecoderState = newState;
                 }
 
                 android::binder::Status AudioDecoder::open(  audiodecoder::Codec codec, bool secure, const android::sp<audiodecoder::IAudioDecoderControllerListener>& audioDecoderControllerListener, android::sp<audiodecoder::IAudioDecoderController>* _aidl_return  )
                 {
                     android::binder::Status status;
 
-                    if(std::find(supportedCodecs.begin(), supportedCodecs.end(), codec) == supportedCodecs.end())
+                    if(std::find(this->mSupportedCodecs.begin(), this->mSupportedCodecs.end(), codec) == this->mSupportedCodecs.end())
                     {
                         *_aidl_return = nullptr;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
@@ -233,26 +225,59 @@ namespace com
                         *_aidl_return = nullptr;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                     }
-                    if(g_audiodecoder_state[this->id.value] != State::CLOSED)
+
+                    if(this->getState() != State::CLOSED)
                     {
                         *_aidl_return = nullptr;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
-                    *_aidl_return = new AudioDecoderController(this->id);
-                    g_audiodecoder_state[this->id.value] = State::READY;
+
+                    /* To simulate State Transitions */
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+                    if (this->mEventListener)
+                        auto status = this->mAudioDecoderEventListener->onStateChanged(this->getState(), State::OPENING);
+
+                    this->setState(State::OPENING);
+
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+                    *_aidl_return = new AudioDecoderController(this->mId, this);
+
+                    if (this->mEventListener)
+                        this->mAudioDecoderEventListener->onStateChanged(State::OPENING, State::READY);
+
+                    this->setState(State::READY);
+
                     return android::binder::Status::ok();
                 }
 
                 android::binder::Status AudioDecoder::close(  const android::sp<audiodecoder::IAudioDecoderController>& audioDecoderController, bool* _aidl_return  )
                 {
                     android::binder::Status status;
-                    if(g_audiodecoder_state[this->id.value] != State::READY)
+                    if(this->getState() != State::READY)
                     {
                         *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
-                    g_audiodecoder_state[this->id.value] = State::CLOSED;
+
+                    /* To simulate State Transitions */
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+                    if (this->mEventListener)
+                        auto status = this->mAudioDecoderEventListener->onStateChanged(this->getState(), State::CLOSING);
+
+                    this->setState(State::CLOSING);
+
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
                     * _aidl_return = true;
+
+                    if (this->mEventListener)
+                        this->mAudioDecoderEventListener->onStateChanged(State::CLOSING, State::CLOSED);
+
+                    this->setState(State::CLOSED);
+
                     return android::binder::Status::ok();
                 }
 
@@ -260,13 +285,14 @@ namespace com
                 {
                     android::binder::Status status;
 
-                    if(this->event_listener == true)
+                    if(this->mEventListener == true)
                     {
                         *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
                     *_aidl_return = true;
-                    this->event_listener = true;
+                    this->mEventListener = true;
+                    this->mAudioDecoderEventListener = audioDecoderEventListener;
                     return android::binder::Status::ok();
                 }
 
@@ -274,53 +300,83 @@ namespace com
                 {
                     android::binder::Status status;
 
-                    if(this->event_listener ==false)
+                    if(this->mEventListener ==false)
                     {
                         *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
                     *_aidl_return = true;
-                    this->event_listener = false;
+                    this->mEventListener = false;
+                    this->mAudioDecoderEventListener = nullptr;
                     return android::binder::Status::ok();
                 }
 
-                AudioDecoderController::AudioDecoderController(IAudioDecoder::Id id)
+                AudioDecoderController::AudioDecoderController(IAudioDecoder::Id id, AudioDecoder *parentDecoder)
                 {
-                    this->id = id;
-                    printf("AudioDecoderController service initialized");
+                    this->mId = id;
+                    this->mParentDecoder = parentDecoder;
                 }
 
                 AudioDecoderController::~AudioDecoderController()
                 {
-                    printf("AudioDecoderController service destroyed");
                 }
 
                 android::binder::Status AudioDecoderController::start()
                 {
                     android::binder::Status status;
-                    if(g_audiodecoder_state[this->id.value] != State::READY)
+                    if(this->mParentDecoder->getState() != State::READY)
                     {
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
-                    g_audiodecoder_state[this->id.value] = State::STARTED;
+
+                    /* To simulate State Transitions */
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+                    if (this->mParentDecoder->mEventListener)
+                        auto status = this->mParentDecoder->mAudioDecoderEventListener->onStateChanged(this->mParentDecoder->getState(), State::STARTING);
+
+                    this->mParentDecoder->setState(State::STARTING);
+
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+                    if (this->mParentDecoder->mEventListener)
+                        this->mParentDecoder->mAudioDecoderEventListener->onStateChanged(State::STARTING, State::STARTED);
+
+                    this->mParentDecoder->setState(State::STARTED);
+
                     return android::binder::Status::ok();
                 }
 
                 android::binder::Status AudioDecoderController::stop()
                 {
                     android::binder::Status status;
-                    if(g_audiodecoder_state[this->id.value] != State::STARTED)
+                    if(this->mParentDecoder->getState() != State::STARTED)
                     {
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
-                    g_audiodecoder_state[this->id.value] = State::READY;
+
+                    /* To simulate State Transitions */
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+                    if (this->mParentDecoder->mEventListener)
+                        auto status = this->mParentDecoder->mAudioDecoderEventListener->onStateChanged(this->mParentDecoder->getState(), State::STOPPING);
+
+                    this->mParentDecoder->setState(State::STOPPING);
+
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+                    if (this->mParentDecoder->mEventListener)
+                        this->mParentDecoder->mAudioDecoderEventListener->onStateChanged(State::STOPPING, State::READY);
+
+                    this->mParentDecoder->setState(State::READY);
+
                     return android::binder::Status::ok();
                 }
 
                 android::binder::Status AudioDecoderController::decodeBuffer(  int64_t nsPresentationTime, int64_t bufferHandle, int32_t trimStartNs, int32_t trimEndNs, bool* _aidl_return  )
                 {
                     android::binder::Status status;
-                    if(g_audiodecoder_state[this->id.value] != State::STARTED)
+                    if(this->mParentDecoder->getState() != State::STARTED)
                     {
                         *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
@@ -352,13 +408,32 @@ namespace com
                 android::binder::Status AudioDecoderController::flush(  bool reset  )
                 {
                     android::binder::Status status;
-                    if(g_audiodecoder_state[this->id.value] != State::STARTED)
+                    if(this->mParentDecoder->getState() != State::STARTED)
                     {
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
+
+                    /* To simulate State Transitions */
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+                    if (this->mParentDecoder->mEventListener)
+                        auto status = this->mParentDecoder->mAudioDecoderEventListener->onStateChanged(this->mParentDecoder->getState(), State::FLUSHING);
+
+                    this->mParentDecoder->setState(State::FLUSHING);
+
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
                     if (reset)
                     {
-                        g_audiodecoder_state[this->id.value] = State::READY;
+                        if (this->mParentDecoder->mEventListener)
+                            this->mParentDecoder->mAudioDecoderEventListener->onStateChanged(State::FLUSHING, State::READY);
+                        this->mParentDecoder->setState(State::READY);
+                    }
+                    else
+                    {
+                        if (this->mParentDecoder->mEventListener)
+                            this->mParentDecoder->mAudioDecoderEventListener->onStateChanged(State::FLUSHING, State::STARTED);
+                        this->mParentDecoder->setState(State::STARTED);
                     }
                     return android::binder::Status::ok();
                 }
@@ -366,7 +441,7 @@ namespace com
                 android::binder::Status AudioDecoderController::signalDiscontinuity()
                 {
                     android::binder::Status status;
-                    if(g_audiodecoder_state[this->id.value] != State::STARTED)
+                    if(this->mParentDecoder->getState() != State::STARTED)
                     {
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
@@ -376,7 +451,7 @@ namespace com
                 android::binder::Status AudioDecoderController::signalEOS()
                 {
                     android::binder::Status status;
-                    if(g_audiodecoder_state[this->id.value] != State::STARTED)
+                    if(this->mParentDecoder->getState() != State::STARTED)
                     {
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
@@ -396,7 +471,7 @@ namespace com
                     switch (property)
                     {
                         case audiodecoder::Property::LOW_LATENCY_MODE:
-                            if(g_audiodecoder_state[this->id.value] != State::READY)
+                            if(this->mParentDecoder->getState() != State::READY)
                             {
                                 *_aidl_return = false;
                                 return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
@@ -408,10 +483,10 @@ namespace com
                                 *_aidl_return = false;
                                 return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                             }
-                            g_low_latency[this->id.value] = intvalue;
+                            this->mParentDecoder->mLowLatency = intvalue;
                             break;
                         case audiodecoder::Property::AV_SOURCE:
-                            if(g_audiodecoder_state[this->id.value] != State::READY)
+                            if(this->mParentDecoder->getState() != State::READY)
                             {
                                 *_aidl_return = false;
                                 return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
@@ -422,7 +497,7 @@ namespace com
                                 *_aidl_return = false;
                                 return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                             }
-                            g_av_source[this->id.value] = static_cast<AVSource>(intvalue);
+                            this->mParentDecoder->mAVSource = static_cast<AVSource>(intvalue);
                             break;
                         case audiodecoder::Property::AC4_PRESENTATION_GROUP_INDEX:
                             intvalue = propertyValue.value->get<PropertyValue::Value::Tag::intValue>();
@@ -432,7 +507,7 @@ namespace com
                                 *_aidl_return = false;
                                 return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                             }
-                            g_ac4_presentation_group_index[this->id.value] = intvalue;
+                            this->mParentDecoder->mAC4PresentationGroupIndex = intvalue;
                             break;
                         case audiodecoder::Property::AC4_PREFERRED_LANG1:
                             strvalue = propertyValue.value->get<PropertyValue::Value::Tag::stringValue>();
@@ -442,7 +517,7 @@ namespace com
                                 *_aidl_return = false;
                                 return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                             }
-                            g_ac4_preferred_lang1[this->id.value] = strvalue;
+                            this->mParentDecoder->mAC4PreferredLang1 = strvalue;
                             break;
                         case audiodecoder::Property::AC4_PREFERRED_LANG2:
                             strvalue = propertyValue.value->get<PropertyValue::Value::Tag::stringValue>();
@@ -452,7 +527,7 @@ namespace com
                                 *_aidl_return = false;
                                 return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                             }
-                            g_ac4_preferred_lang2[this->id.value] = strvalue;
+                            this->mParentDecoder->mAC4PreferredLang2 = strvalue;
                             break;
                         case audiodecoder::Property::AC4_ASSOCIATED_TYPE:
                             intvalue = propertyValue.value->get<PropertyValue::Value::Tag::intValue>();
@@ -462,7 +537,7 @@ namespace com
                                 *_aidl_return = false;
                                 return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                             }
-                            g_ac4_associated_type[this->id.value] = intvalue;
+                            this->mParentDecoder->mAC4AssociatedType = intvalue;
                             break;
                         case audiodecoder::Property::AC4_AUTO_SELECTION_PRIORITY:
                             intvalue = propertyValue.value->get<PropertyValue::Value::Tag::intValue>();
@@ -472,7 +547,7 @@ namespace com
                                 *_aidl_return = false;
                                 return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                             }
-                            g_auto_selection_priority[this->id.value] = intvalue;
+                            this->mParentDecoder->mAutoSelectionPriority = intvalue;
                             break;
                         case audiodecoder::Property::AC4_MIXER_BALANCE:
                             intvalue = propertyValue.value->get<PropertyValue::Value::Tag::intValue>();
@@ -482,7 +557,7 @@ namespace com
                                 *_aidl_return = false;
                                 return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                             }
-                            g_ac4_mixer_balance[this->id.value] = intvalue;
+                            this->mParentDecoder->mAC4MixerBalance = intvalue;
                             break;
                         case audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE:
                             intvalue = propertyValue.value->get<PropertyValue::Value::Tag::intValue>();
@@ -492,7 +567,7 @@ namespace com
                                 *_aidl_return = false;
                                 return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                             }
-                            g_ac4_associated_audio_mixing_enable[this->id.value] = intvalue;
+                            this->mParentDecoder->mAC4AssociatedAudioMixingEnable = intvalue;
                             break;
                         default:
                             *_aidl_return = false;
