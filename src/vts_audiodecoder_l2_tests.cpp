@@ -206,7 +206,7 @@ std::multimap<Property, android::String16> validStringProperties =
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L2_AudioDecoder, TestGetAndSetProperties)
+UT_ADD_TEST(VTS_L2_AudioDecoder, SetandGetProperties)
 {
     for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
     {
@@ -274,7 +274,7 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, TestGetAndSetProperties)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L2_AudioDecoder, TestGetAndSetProperties_multipleInstance)
+UT_ADD_TEST(VTS_L2_AudioDecoder, SetandGetProperties_multipleInstance)
 {
     std::vector<sp<IAudioDecoderController>> audioDecoderControllersList;
 
@@ -358,7 +358,7 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, TestGetAndSetProperties_multipleInstance)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L2_AudioDecoder, TestDecoderStateTransitions)
+UT_ADD_TEST(VTS_L2_AudioDecoder, StateTransitions)
 {
     for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
     {
@@ -410,7 +410,7 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, TestDecoderStateTransitions)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L2_AudioDecoder, TestDecoderStateTransitions_mutipleInstance)
+UT_ADD_TEST(VTS_L2_AudioDecoder, StateTransitions_mutipleInstance)
 {
     std::vector<sp<IAudioDecoderController>> audioDecoderControllersList;
 

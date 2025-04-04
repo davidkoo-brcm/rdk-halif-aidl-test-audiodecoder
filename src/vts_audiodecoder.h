@@ -321,7 +321,10 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
             eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_FALSE(status.isOk()); \
+        if (exception == Status::EX_NONE) \
+            UT_ASSERT_TRUE(status.isOk()); \
+        else \
+            UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
         UT_ASSERT_FALSE(_aidl_return); \
     } while (0)
@@ -341,7 +344,7 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
-#define AUDIODECODER_UNREGISTER_EVENT_FAILURE(audioDecoder, eventListener) \
+#define AUDIODECODER_UNREGISTER_EVENT_FAILURE(audioDecoder, eventListener, exception) \
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
@@ -351,7 +354,8 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
             eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
         UT_ASSERT_FALSE(_aidl_return); \
     } while (0)
 

@@ -576,7 +576,6 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_open_neg)
 
         invalidCodec = static_cast<Codec>(static_cast<int32_t>(capabilities.supportedCodecs.front()) - 1);
 
-        std::cout << "[BHANU] controller " << audioDecoderController.get() << std::endl;
         /* Send invalid audio codec value */
         AUDIODECODER_OPEN_FAILURE(audioDecoder, invalidCodec, capabilities.supportsSecure, controllerListener, audioDecoderController_nullptr, Status::EX_ILLEGAL_ARGUMENT);
 
@@ -812,7 +811,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_registerEventListener_neg)
         AUDIODECODER_REGISTER_EVENT_SUCCESS(audioDecoder, eventListener);
 
         /* Register events again */
-        AUDIODECODER_REGISTER_EVENT_FAILURE(audioDecoder, eventListener, Status::EX_ILLEGAL_STATE);
+        AUDIODECODER_REGISTER_EVENT_FAILURE(audioDecoder, eventListener, Status::EX_NONE);
 
         /* Un-register the events */
         AUDIODECODER_UNREGISTER_EVENT_SUCCESS(audioDecoder, eventListener);
@@ -909,19 +908,19 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_unregisterEventListener_neg)
         AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
         /* Un-register the events */
-        AUDIODECODER_UNREGISTER_EVENT_FAILURE(audioDecoder, eventListener);
+        AUDIODECODER_UNREGISTER_EVENT_FAILURE(audioDecoder, eventListener, Status::EX_NONE);
 
         /* Register events */
         AUDIODECODER_REGISTER_EVENT_SUCCESS(audioDecoder, eventListener);
 
         /* Un-register the events with nullptr*/
-        AUDIODECODER_UNREGISTER_EVENT_FAILURE(audioDecoder, eventListener_nullptr);
+        AUDIODECODER_UNREGISTER_EVENT_FAILURE(audioDecoder, eventListener_nullptr, Status::EX_NULL_POINTER);
 
         /* Un-register the events */
         AUDIODECODER_UNREGISTER_EVENT_SUCCESS(audioDecoder, eventListener);
 
         /* Un-register the events again */
-        AUDIODECODER_UNREGISTER_EVENT_FAILURE(audioDecoder, eventListener);
+        AUDIODECODER_UNREGISTER_EVENT_FAILURE(audioDecoder, eventListener, Status::EX_NONE);
     }
 }
 
@@ -973,7 +972,6 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_start_pos)
         {
             sp<IAudioDecoderController> audioDecoderController;
             sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
-            sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
 
             /* Open the Decoder */
             AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);

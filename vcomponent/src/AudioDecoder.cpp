@@ -288,7 +288,7 @@ namespace com
                     if(this->mEventListener == true)
                     {
                         *_aidl_return = false;
-                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
+                        return android::binder::Status::ok();
                     }
                     *_aidl_return = true;
                     this->mEventListener = true;
@@ -303,7 +303,7 @@ namespace com
                     if(this->mEventListener ==false)
                     {
                         *_aidl_return = false;
-                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
+                        return android::binder::Status::ok();
                     }
                     *_aidl_return = true;
                     this->mEventListener = false;
