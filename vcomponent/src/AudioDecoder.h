@@ -33,14 +33,18 @@
 #include <string>
 #include <utils/StrongPointer.h>
 #include <vector>
+#include <mutex>
 
 namespace com {
     namespace rdk {
         namespace hal {
             namespace audiodecoder {
 
+#define NUM_AUDIO_DECODER 2
+
                 class AudioDecoderManager :public android::BinderService<AudioDecoderManager>,
-                                           public BnAudioDecoderManager {
+                                           public BnAudioDecoderManager
+                {
                 public:
                     AudioDecoderManager();
                     virtual ~AudioDecoderManager();
@@ -52,10 +56,40 @@ namespace com {
                 };
 
                 class AudioDecoder :public android::BinderService<AudioDecoder>,
-                                    public BnAudioDecoder {
+                                    public BnAudioDecoder
+                {
                 public:
-                    AudioDecoder();
+                    /* Decoder Read-Only Properties */
+                    IAudioDecoder::Id mId;
+                    int32_t mSupportsSecure;
+                    int32_t mMetricsFrameDecoded;
+                    int32_t mMetricsDecodeErrors;
+                    int32_t mMetricsFramesDropped;
+
+                    /* Read Write Properties */
+                    int32_t mLowLatency;
+                    AVSource mAVSource;
+                    int32_t mAC4PresentationGroupIndex;
+                    android::String16 mAC4PreferredLang1;
+                    android::String16 mAC4PreferredLang2;
+                    int32_t mAC4AssociatedType;
+                    int32_t mAutoSelectionPriority;
+                    int32_t mAC4MixerBalance;
+                    int32_t mAC4AssociatedAudioMixingEnable;
+
+                    std::vector<::com::rdk::hal::audiodecoder::Codec> mSupportedCodecs;
+                    State mAudioDecoderState;
+                    std::mutex mStateMutex;
+
+                    /* Supporting variables */
+                    bool mEventListener;
+                    android::sp<audiodecoder::IAudioDecoderEventListener> mAudioDecoderEventListener;
+                public:
+                    AudioDecoder(IAudioDecoder::Id id);
                     virtual ~AudioDecoder();
+
+                    void setState(State state);
+                    State getState();
 
                     android::binder::Status getCapabilities( audiodecoder::Capabilities* _aidl_return ) override;
                     android::binder::Status getProperty( audiodecoder::Property property, std::optional<PropertyValue>* _aidl_return ) override;
@@ -67,9 +101,13 @@ namespace com {
                 };
 
                 class AudioDecoderController :public android::BinderService<AudioDecoderController>,
-                                              public BnAudioDecoderController {
+                                              public BnAudioDecoderController
+                {
+                private:
+                    IAudioDecoder::Id mId;
+                    AudioDecoder *mParentDecoder;
                 public:
-                    AudioDecoderController();
+                    AudioDecoderController(IAudioDecoder::Id id, AudioDecoder *parentDecoder);
                     virtual ~AudioDecoderController();
 
                     android::binder::Status start() override;
