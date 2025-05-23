@@ -1,37 +1,35 @@
-# AUDIODECODER L2 Low Level Test Specification and Procedure Documentation
+# AUDIO DECODER L2 Low Level Test Specification and Procedure Documentation
 
 ## Table of Contents
 
-       - [AUDIODECODER L2 Low Level Test Specification and Procedure Documentation](#audiodecoder-l2-low-level-test-specification-and-procedure-documentation)
-
-         - [Table of Contents](#table-of-contents)
-         - [Overview](#overview)
-           - [Acronyms, Terms and Abbreviations](#acronyms-terms-and-abbreviations)
-           - [Definitions](#definitions)
-           - [References](#references)
-         - [Level 2 Test Procedure](#level-2-test-procedure)
+- [Overview](#overview)
+- [Acronyms, Terms and Abbreviations](#acronyms-terms-and-abbreviations)
+- [Definitions](#definitions)
+- [References](#references)
+- [Level 2 Test Procedure](#level-2-test-procedure)
 
 ## Overview
 
-       This document describes the level 2 testing suite for the AUDIODECODER module.
+This document describes the level 2 testing suite for the AUDIO DECODER module.
 
 ### Acronyms, Terms and Abbreviations
 
-       - `HAL` \- Hardware Abstraction Layer, may include some common components
-       - `UT`  \- Unit Test(s)
-       - `OEM`  \- Original Equipment Manufacture
-       - `SoC`  \- System on a Chip
+- `HAL` \- Hardware Abstraction Layer, may include some common components
+- `UT`  \- Unit Test(s)
+- `OEM`  \- Original Equipment Manufacture
+- `SoC`  \- System on a Chip
 
 ### Definitions
 
-         - `ut-core` \- Common Testing Framework <https://github.com/rdkcentral/ut-core>, which wraps a open-source framework that can be expanded to the requirements for future framework.
+- `ut-core` \- Common Testing Framework <https://github.com/rdkcentral/ut-core>, which wraps a open-source framework that can be expanded to the requirements for future framework.
 
 ### References
+
 - `High Level Test Specification` - [audioDecoder_High-Level_TestSpecification.md](audioDecoder_High-Level_TestSpecification.md)
 
 ## Level 2 Test Procedure
 
-       The following functions are expecting to test the module operates correctly.
+The following functions are expecting to test the module operates correctly.
 
 ### Test 1
 
@@ -52,7 +50,7 @@ None
 **User Interaction :**
 If user chose to run the test in interactive mode, then the test case has to be selected via console.
 
-#### Test Procedure :
+**Test Procedure :**
 
 | Variation / Steps | Description | Test Data | Expected Result | Notes |
 | -- | --------- | ---------- | -------------- | ----- |
@@ -86,7 +84,7 @@ None
 **User Interaction :**
 If user chose to run the test in interactive mode, then the test case has to be selected via console.
 
-#### Test Procedure :
+**Test Procedure :**
 
 | Variation / Steps | Description | Test Data | Expected Result | Notes |
 | -- | --------- | ---------- | -------------- | ----- |
@@ -116,7 +114,7 @@ None
 **User Interaction :**
 If user chose to run the test in interactive mode, then the test case has to be selected via console.
 
-#### Test Procedure :
+**Test Procedure :**
 
 | Variation / Steps | Description | Test Data | Expected Result | Notes |
 | -- | --------- | ---------- | -------------- | ----- |
@@ -153,7 +151,7 @@ None
 **User Interaction :**
 If user chose to run the test in interactive mode, then the test case has to be selected via console.
 
-#### Test Procedure :
+**Test Procedure :**
 
 | Variation / Steps | Description | Test Data | Expected Result | Notes |
 | -- | --------- | ---------- | -------------- | ----- |
@@ -174,4 +172,3 @@ If user chose to run the test in interactive mode, then the test case has to be 
 | 15 | Close decoder using `close` | controller = valid controller, closed = false | closed = true | Should be successful |
 | 16 | Validate state transition to CLOSING using `getState` | state = valid state buffer | state = State::CLOSING | Should be successful |
 | 17 | Validate state transition to CLOSED using `getState` | state = valid state buffer | state = State::CLOSED | Should be successful |
-
