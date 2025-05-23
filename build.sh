@@ -49,6 +49,7 @@ fi
 # whiling running the script
 declare -r AIDL_BIN=`realpath ${AIDL_BIN}`
 declare -r LINUX_BINDER_OUT_DIR=`realpath ${LINUX_BINDER_OUT_DIR}`
+RDK_HAL_VERSION="${RDK_HAL_VERSION="main"}"
 
 install_linux_binder()
 {
@@ -67,7 +68,8 @@ generate_audiodecoder_hal() {
 
     # Clone the repository if not already present
     if [ ! -d "$RDK_HAL_DIR" ]; then
-        git clone -b develop 'ssh://git@github.com/rdkcentral/rdk-halif-aidl.git' $RDK_HAL_DIR
+        echo "Checking out version: " $RDK_HAL_VERSION
+        git clone -b $RDK_HAL_VERSION 'http://git@github.com/rdkcentral/rdk-halif-aidl.git' $RDK_HAL_DIR
     fi
 
     # Prepare cmake build directories and configuration for each module
@@ -100,12 +102,12 @@ build_ut_core()
 
 	pushd ${UT_CORE_DIR}
 
-	git fetch -q -t origin 
+	git fetch -q -t origin
 	# get the latest version of ut-core
 		if [ -z "$UT_CORE_VERSION" ]; then
 			UT_CORE_VERSION=`git tag | sort -Vr | head -n1`
 		fi
-	
+
 	git checkout $UT_CORE_VER
 
 	./build.sh TARGET=linux VARIANT=CPP
