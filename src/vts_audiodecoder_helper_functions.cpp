@@ -101,6 +101,49 @@ Codec  vts_audiodecoder_helper_StringTocodec(const std::string& format)
     return static_cast<Codec>(-1);
 }
 
+PCMFormat vts_audiodecoder_helper_StringToFormat(const std::string& format)
+{
+    static const std::unordered_map<std::string, PCMFormat> formatMap = {
+        {"F64LE", PCMFormat::F64LE},
+        {"F64BE", PCMFormat::F64BE},
+        {"F32LE", PCMFormat::F32LE},
+        {"F32BE", PCMFormat::F32BE},
+        {"S32LE", PCMFormat::S32LE},
+        {"S32BE", PCMFormat::S32BE},
+        {"U32LE", PCMFormat::U32LE},
+        {"U32BE", PCMFormat::U32BE},
+        {"S24_32LE", PCMFormat::S24_32LE},
+        {"S24_32BE", PCMFormat::S24_32BE},
+        {"U24_32LE", PCMFormat::U24_32LE},
+        {"U24_32BE", PCMFormat::U24_32BE},
+        {"S24LE", PCMFormat::S24LE},
+        {"S24BE", PCMFormat::S24BE},
+        {"U24LE", PCMFormat::U24LE},
+        {"U24BE", PCMFormat::U24BE},
+        {"S20LE", PCMFormat::S20LE},
+        {"S20BE", PCMFormat::S20BE},
+        {"U20LE", PCMFormat::U20LE},
+        {"U20BE", PCMFormat::U20BE},
+        {"S18LE", PCMFormat::S18LE},
+        {"S18BE", PCMFormat::S18BE},
+        {"U18LE", PCMFormat::U18LE},
+        {"U18BE", PCMFormat::U18BE},
+        {"S16LE", PCMFormat::S16LE},
+        {"S16BE", PCMFormat::S16BE},
+        {"U16LE", PCMFormat::U16LE},
+        {"U16BE", PCMFormat::U16BE},
+        {"S8", PCMFormat::S8},
+        {"U8", PCMFormat::U8},
+    };
+
+    auto it = formatMap.find(format);
+    if (it != formatMap.end())
+    {
+        return it->second;
+    }
+    return static_cast<PCMFormat>(-1);
+}
+
 void vts_audiodecoder_helper_validateCapabilities(int decoder_id, const Capabilities& capabilities)
 {
     bool decoderID = false;

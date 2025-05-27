@@ -72,6 +72,9 @@
 #include "com/rdk/hal/audiodecoder/BnAudioDecoderControllerListener.h"
 #include "com/rdk/hal/audiodecoder/BnAudioDecoderEventListener.h"
 
+#include "com/rdk/hal/avbuffer/IAVBuffer.h"
+#include "com/rdk/hal/avbuffer/BnAVBufferSpaceListener.h"
+
 using android::sp;
 using android::String16;
 using android::defaultServiceManager;
@@ -79,6 +82,10 @@ using android::binder::Status;
 
 using namespace com::rdk::hal;
 using namespace com::rdk::hal::audiodecoder;
+using namespace com::rdk::hal::avbuffer;
+
+extern sp<IAudioDecoderManager> gAudioDecoderManager;
+extern void *gTestConfiguration;
 
 /* Status::Exception */
 const static ut_control_keyStringMapping_t statusException_mapTable[] =
@@ -419,6 +426,21 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         UT_ASSERT_FALSE(status.isOk()); \
     } while (0)
 
+#define AUDIODECODER_DECODEBUFFER_SUCCESS(audioDecoderController, nsPresentationTime, bufferHandle, trimEndNs, trimStartNs) \
+    do { \
+        ::android::binder::Status status; \
+        bool _aidl_return; \
+        UT_LOG_INFO("Calling decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%X], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[])", \
+            nsPresentationTime, bufferHandle, trimStartNs, trimEndNs); \
+        status = audioDecoderController->decodeBuffer(nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, &_aidl_return); \
+        UT_LOG_INFO("Result decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%X], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+            nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+    } while (0)
+
 #define AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, nsPresentationTime, bufferHandle, trimEndNs, trimStartNs, exception) \
     do { \
         ::android::binder::Status status; \
@@ -649,6 +671,7 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
         virtual ~AudioDecoderControllerListener() = default;
 
         Status onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::std::optional<FrameMetadata>& metadata) override {
+            UT_LOG_INFO("Received frameoutput: %lld", nsPresentationTime);
             return ::android::binder::Status::ok();
         }
 };
@@ -667,7 +690,7 @@ class AudioDecoderEventListener : public BnAudioDecoderEventListener
         }
         Status onStateChanged(State oldState,State newState) override
         {
-            UT_LOG("\n=======State Change received: %d, %d=============\n", oldState, newState);
+            UT_LOG_INFO("\nState Change received: %s -> %s\n", com::rdk::hal::toString(oldState).c_str(), com::rdk::hal::toString(newState).c_str());
             {
                 std::lock_guard<std::mutex> lock(mMutex);
                 mStateChanges.emplace_back(oldState, newState);

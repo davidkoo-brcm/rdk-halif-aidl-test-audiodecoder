@@ -81,8 +81,6 @@
 /* Test class registration with UT_Core */
 UT_ADD_TEST_TO_GROUP(VTS_L2_AudioDecoder, UT_TESTS_L2)
 
-extern sp<IAudioDecoderManager> gAudioDecoderManager;
-
 class VTS_L2_AudioDecoder : public UTCore
 {
 public:

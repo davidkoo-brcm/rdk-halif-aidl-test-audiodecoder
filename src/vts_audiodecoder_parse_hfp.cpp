@@ -62,6 +62,7 @@
  *
  */
 
+#include "ut_kvp_profile.h"
 #include "vts_audiodecoder_helper_functions.h"
 #include "vts_audiodecoder_parse_hfp.h"
 

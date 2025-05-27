@@ -37,30 +37,30 @@ LINUX_BINDER_OUT_DIR=${LINUX_BINDER_OUT_DIR:-${DEF_LINUX_BINDER}/local}
 mkdir -p $BUILD_DIR
 
 if [ ! -x $AIDL_BIN ]; then
-	echo "AIDL_BIN: path does not exists, consdier building the linux_binder_idl in $DEF_LINUX_BINDER"
-	exit 1
+    echo "AIDL_BIN: path does not exists, consdier building the linux_binder_idl in $DEF_LINUX_BINDER"
+    exit 1
 fi
 if [ ! -d $LINUX_BINDER_OUT_DIR ]; then
-	echo "LINUX_BINDER_OUT_DIR: path does not exists, consider building the linux_binder_idl in $DEF_LINUX_BINDER"
-	exit 1
+    echo "LINUX_BINDER_OUT_DIR: path does not exists, consider building the linux_binder_idl in $DEF_LINUX_BINDER"
+    exit 1
 fi
 
 # Turning them into absolute path because we may calling change current working directory
 # whiling running the script
 declare -r AIDL_BIN=`realpath ${AIDL_BIN}`
 declare -r LINUX_BINDER_OUT_DIR=`realpath ${LINUX_BINDER_OUT_DIR}`
-RDK_HALIF_AIDL_VERSION="${RDK_HALIF_AIDL_VERSION="main"}"
 
 install_linux_binder()
 {
-	echo "Install linux-binder \`service manager, headers and libraries'"
-	install -d ${BUILD_INSTALL_PREFIX}/bin ${BUILD_INSTALL_PREFIX}/lib ${BUILD_INSTALL_PREFIX}/include
-	install -t ${BUILD_INSTALL_PREFIX}/bin ${LINUX_BINDER_OUT_DIR}/bin/*
-	install -t ${BUILD_INSTALL_PREFIX}/lib ${LINUX_BINDER_OUT_DIR}/lib/*
-	cp -apr ${LINUX_BINDER_OUT_DIR}/include/* ${BUILD_INSTALL_PREFIX}/include/
+    echo "Install linux-binder \`service manager, headers and libraries'"
+    install -d ${BUILD_INSTALL_PREFIX}/bin ${BUILD_INSTALL_PREFIX}/lib ${BUILD_INSTALL_PREFIX}/include
+    install -t ${BUILD_INSTALL_PREFIX}/bin ${LINUX_BINDER_OUT_DIR}/bin/*
+    install -t ${BUILD_INSTALL_PREFIX}/lib ${LINUX_BINDER_OUT_DIR}/lib/*
+    cp -apr ${LINUX_BINDER_OUT_DIR}/include/* ${BUILD_INSTALL_PREFIX}/include/
 }
 
-generate_audiodecoder_hal() {
+generate_audiodecoder_hal()
+{
     declare -r HAL_BUILD_DIR=${BUILD_DIR}/audiodecoder_aidl
     declare -r AUDIODECODER_VERSION=current
     declare -r AIDL_GEN_DIR="${BUILD_DIR}/audiodecoder_gen/$AUDIODECODER_VERSION"
@@ -68,8 +68,7 @@ generate_audiodecoder_hal() {
 
     # Clone the repository if not already present
     if [ ! -d "$RDK_HAL_DIR" ]; then
-        echo "Checking out version: " $RDK_HALIF_AIDL_VERSION
-        git clone -b $RDK_HALIF_AIDL_VERSION 'http://git@github.com/rdkcentral/rdk-halif-aidl.git' $RDK_HAL_DIR
+        git clone -b develop 'ssh://git@github.com/rdkcentral/rdk-halif-aidl.git' $RDK_HAL_DIR
     fi
 
     # Prepare cmake build directories and configuration for each module
@@ -82,56 +81,105 @@ generate_audiodecoder_hal() {
         $RDK_HAL_DIR
 }
 
+generate_avbuffer_hal()
+{
+    declare -r HAL_BUILD_DIR=${BUILD_DIR}/avbuffer_hal
+    declare -r VERSION=current
+    declare -r AIDL_GEN_DIR="${BUILD_DIR}/avbuffer_gen/$VERSION"
+    declare -r RDK_HAL_DIR=${TOP}/rdk-halif-aidl
+
+    # Clone the repository if not already present
+    if [ ! -d "$RDK_HAL_DIR" ]; then
+        git clone -b develop 'ssh://git@github.com/rdkcentral/rdk-halif-aidl.git' $RDK_HAL_DIR
+    fi
+
+    for m in avbuffer; do
+        cmake \
+        -DAIDL_BIN=$AIDL_BIN \
+        -DAIDL_GEN_DIR=$AIDL_GEN_DIR \
+        -DAIDL_SRC_VERSION=$VERSION \
+        -DAIDL_TARGET=$m  \
+        -B ${HAL_BUILD_DIR} \
+        $RDK_HAL_DIR
+    done
+}
+
+generate_videodecoder_hal()
+{
+    declare -r HAL_BUILD_DIR=${BUILD_DIR}/videodecoder_aidl
+    declare -r VIDEODECODER_VERSION=current
+    declare -r AIDL_GEN_DIR="${BUILD_DIR}/videodecoder_gen/$VIDEODECODER_VERSION"
+    declare -r RDK_HAL_DIR=${TOP}/rdk-halif-aidl
+
+    # Clone the repository if not already present
+    if [ ! -d "$RDK_HAL_DIR" ]; then
+        git clone -b develop 'ssh://git@github.com/rdkcentral/rdk-halif-aidl.git' $RDK_HAL_DIR
+    fi
+
+    cmake \
+        -DAIDL_BIN=$AIDL_BIN \
+        -DAIDL_GEN_DIR=$AIDL_GEN_DIR \
+        -DAIDL_SRC_VERSION=$VIDEODECODER_VERSION \
+        -DAIDL_TARGET=videodecoder \
+        -B ${HAL_BUILD_DIR} \
+        $RDK_HAL_DIR
+
+}
+
 build_vcomponent()
 {
     # Invoke Makefile to build the mock_service target
     make -j`nproc` \
-		-C ${TOP}/vcomponent
+        -C ${TOP}/vcomponent
 }
-
 
 build_ut_core()
 {
-	if [ ! -d ${UT_CORE_DIR} ]; then
-		git clone https://github.com/rdkcentral/ut-core.git ${UT_CORE_DIR}
-		if [ $? -ne 0 ]; then
-			echo "Failed to clone the repository. Exiting."
-			exit 1
-		fi
-	fi
+    if [ ! -d ${UT_CORE_DIR} ]; then
+        git clone https://github.com/rdkcentral/ut-core.git ${UT_CORE_DIR}
+        if [ $? -ne 0 ]; then
+            echo "Failed to clone the repository. Exiting."
+            exit 1
+        fi
+    fi
 
-	pushd ${UT_CORE_DIR}
+    pushd ${UT_CORE_DIR}
 
-	git fetch -q -t origin
-	# get the latest version of ut-core
-		if [ -z "$UT_CORE_VERSION" ]; then
-			UT_CORE_VERSION=`git tag | sort -Vr | head -n1`
-		fi
+    git fetch -q -t origin
+    # get the latest version of ut-core
+        if [ -z "$UT_CORE_VERSION" ]; then
+            UT_CORE_VERSION=`git tag | sort -Vr | head -n1`
+        fi
 
-	git checkout $UT_CORE_VER
+    git checkout $UT_CORE_VER
 
-	./build.sh TARGET=linux VARIANT=CPP
-	if [ $? -ne 0 ]; then
-		echo "Build script failed. Exiting."
-		exit 1
-	fi
+    ./build.sh TARGET=linux VARIANT=CPP
+    if [ $? -ne 0 ]; then
+        echo "Build script failed. Exiting."
+        exit 1
+    fi
 
-	echo "Build completed successfully."
-	popd
+    echo "Build completed successfully."
+    popd
 }
 
 install_test()
 {
-	declare -r INSTALL_PATH=${BUILD_DIR}/bin
+    declare -r INSTALL_PATH=${BUILD_DIR}/bin
 
-	install -t ${INSTALL_PATH} ${BUILD_INSTALL_PREFIX}/bin/*
-	install -t ${INSTALL_PATH} ${BUILD_INSTALL_PREFIX}/lib/*
-	install -t ${INSTALL_PATH} run.sh
-	cp -rf ${TOP}/profiles ${INSTALL_PATH}
+    install -t ${INSTALL_PATH} ${BUILD_INSTALL_PREFIX}/bin/*
+    install -t ${INSTALL_PATH} ${BUILD_INSTALL_PREFIX}/lib/*
+    install -t ${INSTALL_PATH} run.sh
+    cp -rf ${TOP}/profiles ${INSTALL_PATH}
+    cp -rf ${TOP}/test_configuration ${INSTALL_PATH}
+    mkdir -p ${INSTALL_PATH}/assets/streams/input
+    mkdir -p ${INSTALL_PATH}/assets/streams/reference
 }
 
 install_linux_binder
+generate_avbuffer_hal
 generate_audiodecoder_hal
+generate_videodecoder_hal
 build_vcomponent
 build_ut_core
 # Building test module using ut-core framework

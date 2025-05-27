@@ -66,9 +66,12 @@
 #include <ut_log.h>
 #include "vts_audiodecoder_helper_functions.h"
 #include "vts_audiodecoder_parse_hfp.h"
+#include "vts_audiodecoder_init.h"
+#include "vts_audiodecoder_parse_testconfig.h"
 
 UT_status_t vts_audiodecoder_getAudioDecoderService();
 sp<IAudioDecoderManager> gAudioDecoderManager;
+void *gTestConfiguration;
 
 UT_status_t VTS_AudioDecoder_init()
 {
@@ -81,8 +84,14 @@ UT_status_t VTS_AudioDecoder_init()
         UT_LOG_ERROR("Failed to process the HFP file");
         return UT_STATUS_FAILURE;
     }
+    gTestConfiguration = vts_kvp_create_instance(VTS_TEST_CONFIG_PATH);
 
     return UT_STATUS_OK;
+}
+
+void VTS_AudioDecoder_destroy()
+{
+    vts_kvp_destroy_instance(gTestConfiguration);
 }
 
 /** @} */ // End of AUDIO_DECODER_HALTEST_INIT
