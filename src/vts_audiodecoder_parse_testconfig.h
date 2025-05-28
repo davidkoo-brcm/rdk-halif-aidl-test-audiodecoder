@@ -85,6 +85,7 @@ typedef struct testStreamConfig
     int32_t numChannels;
     PCMFormat format;
     int32_t numOfFrames;
+    double rms_diff_threashold;
     std::vector<std::tuple<int32_t, int64_t>> frameDetails;
 }testStreamConfig_t;
 

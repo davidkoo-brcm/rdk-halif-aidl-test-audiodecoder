@@ -74,6 +74,8 @@
 #include <unordered_set>
 #include <tuple>
 #include <map>
+#include <chrono>
+
 
 #include "com/rdk/hal/avbuffer/IAVBuffer.h"
 #include "com/rdk/hal/avbuffer/BnAVBufferSpaceListener.h"
@@ -82,6 +84,8 @@
 #include "vts_audiodecoder_parse_hfp.h"
 #include "vts_audiodecoder_parse_testconfig.h"
 #include "vts_audiodecoder.h"
+
+using namespace std::chrono;
 
 /* Test class registration with UT_Core */
 UT_ADD_TEST_TO_GROUP(VTS_L3_AudioDecoder, UT_TESTS_L3)
@@ -281,6 +285,13 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel)
                 break;
             }
 
+            std::ifstream referenceFile(stream.reference, std::ios::binary);
+            if (!referenceFile)
+            {
+                UT_LOG_ERROR("Failed to open reference file: %s", stream.reference.c_str());
+                break;
+            }
+
             /* Open the Decoder */
             AUDIODECODER_OPEN_SUCCESS(decoder, stream.codec, false, controlListener, audioDecoderController, true);
 
@@ -289,13 +300,41 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel)
 
             for(const auto& [frameSize, framePTS]: stream.frameDetails)
             {
+                std::vector<uint8_t> decodedBuffer;
+                std::vector<uint8_t> inputBuffer; //TODO: replace with mapped buffer
+                std::vector<uint8_t> referenceBuffer;
+                size_t numSamples = 0, output_buffer_size;
+                PCMFormat format = PCMFormat::S16LE;
+                double rms_diff = 0.0;
+                int32_t trimEndNs = 0;
+                int32_t trimStartNs = 0;
+                std::chrono::steady_clock::time_point startTime, endTime;
+
                 /* Allocate the audio buffer */
                 AVBUFFER_ALLOC_SUCCESS(mAVBufferManager, audioPool, frameSize, audioBufferHandle);
 
+                inputBuffer.resize(frameSize);
+                inputFile.read(reinterpret_cast<char*>(inputBuffer.data()), frameSize);
+
                 //TODO: Fill the buffer and call decoder and verify the output
+                startTime = std::chrono::steady_clock::now();
                 //AUDIODECODER_DECODEBUFFER_SUCCESS(audioDecoderController, framePTS, audioBufferHandle, trimEndNs, trimStartNs);
-                //wait for the decoded output
-                //validate the decoded output
+
+                //TODO: wait for the decoded output
+                //controlListener->getNextFrame(decodedBuffer, numSamples, format, endTime);
+
+                //output_buffer_size = numSamples * vts_bytesPerSample(format);
+                //referenceBuffer.resize(output_buffer_size);
+                //referenceFile.read(reinterpret_cast<char*>(referenceBuffer.data()), output_buffer_size);
+
+                //TODO: validate the decoded output
+                //rms_diff = vts_computeRMSDiff(referenceBuffer.data(), decodedBuffer.data(), numSamples, format);
+                //UT_ASSERT_TRUE(rms_diff <= stream.rms_diff_threashold);
+
+                //TODO: print decode time
+                //auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
+                //UT_LOG_INFO("Decode Time [PTS: %lld]: %lld", framePTS, duration.count());
+                //UT_LOG_INFO("test: %lld",std::chrono::duration_cast<std::chrono::microseconds>(startTime.time_since_epoch()).count());
 
                 /* Free the audio buffer */
                 AVBUFFER_FREE_SUCCESS(mAVBufferManager, audioBufferHandle);
@@ -310,6 +349,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel)
 
         /* Destroy Audio Pool */
         AVBUFFER_DESTROY_POOL_SUCCESS(mAVBufferManager, audioPool);
+
+        /* TODO: check if this required or not */
+        //controlListener->shutdown();
     }
 }
 

@@ -62,6 +62,11 @@
  *
  */
 
+#include <cmath>
+#include <cstdint>
+#include <cstring>
+#include <stdexcept>
+
 #include "vts_audiodecoder_helper_functions.h"
 #include "vts_audiodecoder_parse_hfp.h"
 
@@ -290,6 +295,101 @@ bool vts_audiodecoder_helper_validatePropertyValue(int decoder_id, const std::op
         default:
             return true;
     }
+}
+
+static uint32_t readLE(const uint8_t* data, size_t bytes)
+{
+    uint32_t val = 0;
+    for (size_t i = 0; i < bytes; ++i) val |= data[i] << (8 * i);
+    return val;
+}
+
+static inline uint32_t readBE(const uint8_t* data, size_t bytes)
+{
+    uint32_t val = 0;
+    for (size_t i = 0; i < bytes; ++i) val |= data[i] << (8 * (bytes - 1 - i));
+    return val;
+}
+
+static inline double bytesToDouble(const uint8_t* data, PCMFormat format)
+{
+    switch (format)
+    {
+        case PCMFormat::F64LE: return *reinterpret_cast<const double*>(data);
+        case PCMFormat::F64BE: {
+            uint64_t raw = readBE(data, 8);
+            double d;
+            std::memcpy(&d, &raw, 8);
+            return d;
+        }
+        case PCMFormat::F32LE: return *reinterpret_cast<const float*>(data);
+        case PCMFormat::F32BE: {
+            uint32_t raw = readBE(data, 4);
+            float f;
+            std::memcpy(&f, &raw, 4);
+            return f;
+        }
+        case PCMFormat::S32LE: return (int32_t)readLE(data, 4) / 2147483648.0;
+        case PCMFormat::S32BE: return (int32_t)readBE(data, 4) / 2147483648.0;
+        case PCMFormat::U32LE: return (readLE(data, 4) - 2147483648U) / 2147483648.0;
+        case PCMFormat::U32BE: return (readBE(data, 4) - 2147483648U) / 2147483648.0;
+        case PCMFormat::S24_32LE:
+        case PCMFormat::S24LE: return ((int32_t)(readLE(data, 3) << 8)) / 2147483648.0;
+        case PCMFormat::S24_32BE:
+        case PCMFormat::S24BE: return ((int32_t)(readBE(data, 3) << 8)) / 2147483648.0;
+        case PCMFormat::U24_32LE:
+        case PCMFormat::U24LE: return ((readLE(data, 3) << 8) - 0x800000) / 8388608.0;
+        case PCMFormat::U24_32BE:
+        case PCMFormat::U24BE: return ((readBE(data, 3) << 8) - 0x800000) / 8388608.0;
+        case PCMFormat::S20LE: return ((int32_t)(readLE(data, 3) << 12)) / 2147483648.0;
+        case PCMFormat::S20BE: return ((int32_t)(readBE(data, 3) << 12)) / 2147483648.0;
+        case PCMFormat::U20LE: return ((readLE(data, 3) << 12) - 0x800000) / 8388608.0;
+        case PCMFormat::U20BE: return ((readBE(data, 3) << 12) - 0x800000) / 8388608.0;
+        case PCMFormat::S18LE: return ((int32_t)(readLE(data, 3) << 14)) / 2147483648.0;
+        case PCMFormat::S18BE: return ((int32_t)(readBE(data, 3) << 14)) / 2147483648.0;
+        case PCMFormat::U18LE: return ((readLE(data, 3) << 14) - 0x800000) / 8388608.0;
+        case PCMFormat::U18BE: return ((readBE(data, 3) << 14) - 0x800000) / 8388608.0;
+        case PCMFormat::S16LE: return (int16_t)readLE(data, 2) / 32768.0;
+        case PCMFormat::S16BE: return (int16_t)readBE(data, 2) / 32768.0;
+        case PCMFormat::U16LE: return (readLE(data, 2) - 32768) / 32768.0;
+        case PCMFormat::U16BE: return (readBE(data, 2) - 32768) / 32768.0;
+        case PCMFormat::S8:    return static_cast<int8_t>(*data) / 128.0;
+        case PCMFormat::U8:    return (*data - 128) / 128.0;
+    }
+}
+
+size_t vts_bytesPerSample(PCMFormat format)
+{
+    switch (format) {
+        case PCMFormat::F64LE: case PCMFormat::F64BE: return 8;
+        case PCMFormat::F32LE: case PCMFormat::F32BE: return 4;
+        case PCMFormat::S32LE: case PCMFormat::S32BE: case PCMFormat::U32LE: case PCMFormat::U32BE: return 4;
+        case PCMFormat::S24_32LE: case PCMFormat::S24_32BE: case PCMFormat::U24_32LE: case PCMFormat::U24_32BE: return 4;
+        case PCMFormat::S24LE: case PCMFormat::S24BE: case PCMFormat::U24LE: case PCMFormat::U24BE:
+        case PCMFormat::S20LE: case PCMFormat::S20BE: case PCMFormat::U20LE: case PCMFormat::U20BE:
+        case PCMFormat::S18LE: case PCMFormat::S18BE: case PCMFormat::U18LE: case PCMFormat::U18BE: return 3;
+        case PCMFormat::S16LE: case PCMFormat::S16BE: case PCMFormat::U16LE: case PCMFormat::U16BE: return 2;
+        case PCMFormat::S8: case PCMFormat::U8: return 1;
+    }
+}
+
+double vts_computeRMSDiff(const void* ref_buf, const void* act_buf, size_t num_samples, PCMFormat format)
+{
+    const uint8_t* ref = static_cast<const uint8_t*>(ref_buf);
+    const uint8_t* act = static_cast<const uint8_t*>(act_buf);
+    const size_t bps = vts_bytesPerSample(format);
+
+    double sum_sq = 0.0;
+
+    for (size_t i = 0; i < num_samples; ++i)
+    {
+        double r = bytesToDouble(ref + i * bps, format);
+        double a = bytesToDouble(act + i * bps, format);
+        double diff = r - a;
+        sum_sq += diff * diff;
+    }
+
+    return std::sqrt(sum_sq / num_samples);
 }
 
 /** @} */ // End of AUDIO_DECODER_HALTEST_HELPER

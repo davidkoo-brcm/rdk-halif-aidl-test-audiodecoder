@@ -67,6 +67,8 @@
 
 #include <thread>
 #include <chrono>
+#include <deque>
+#include <condition_variable>
 
 #include "com/rdk/hal/audiodecoder/IAudioDecoderManager.h"
 #include "com/rdk/hal/audiodecoder/BnAudioDecoderControllerListener.h"
@@ -79,6 +81,7 @@ using android::sp;
 using android::String16;
 using android::defaultServiceManager;
 using android::binder::Status;
+using namespace std::chrono;
 
 using namespace com::rdk::hal;
 using namespace com::rdk::hal::audiodecoder;
@@ -666,14 +669,72 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
 {
     public:
-
-        AudioDecoderControllerListener() = default;
+        AudioDecoderControllerListener() : BnAudioDecoderControllerListener(), mShutdownFlag(false){}
         virtual ~AudioDecoderControllerListener() = default;
 
-        Status onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::std::optional<FrameMetadata>& metadata) override {
-            UT_LOG_INFO("Received frameoutput: %lld", nsPresentationTime);
+        Status onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::std::optional<FrameMetadata>& metadata) override
+        {
+            //UT_LOG_INFO("Received frameoutput: %lld", nsPresentationTime);
+            //TODO: update these variables
+            uint32_t numSamples = 0;
+            uint32_t bps = 0;
+
+            //TODO: Update the code with av buffer helper
+            AudioFrame frame;
+            frame.receiveTime = std::chrono::steady_clock::now();
+            frame.numSamples = numSamples;
+            frame.data.resize(numSamples * bps);
+            //std::memcpy(frame.data.data(), decodedData, frame.data.size());
+            frame.format = metadata->format;
+
+            {
+                std::lock_guard<std::mutex> lock(mQueueMutex);
+                mFrameQueue.push_back(std::move(frame));
+            }
+
+            mFrameAvailable.notify_one();
+
             return ::android::binder::Status::ok();
         }
+        bool getNextFrame(std::vector<uint8_t>& outBuffer, size_t& outNumSamples, PCMFormat& format, std::chrono::steady_clock::time_point &receiveTime)
+        {
+            std::unique_lock<std::mutex> lock(mQueueMutex);
+
+            mFrameAvailable.wait(lock, [this]{
+                return !mFrameQueue.empty() || mShutdownFlag;
+            });
+
+            if (mShutdownFlag && mFrameQueue.empty())
+            {
+                return false;
+            }
+            AudioFrame frame = std::move(mFrameQueue.front());
+            mFrameQueue.pop_front();
+
+            outNumSamples = frame.numSamples;
+            outBuffer = std::move(frame.data);
+            format = frame.format;
+            receiveTime = frame.receiveTime;
+            return true;
+        }
+        void shutdown()
+        {
+            mShutdownFlag = true;
+            mFrameAvailable.notify_all();
+        }
+    private:
+        struct AudioFrame
+        {
+            std::vector<uint8_t> data;
+            size_t numSamples;
+            PCMFormat format;
+            std::chrono::steady_clock::time_point receiveTime;
+        };
+
+        std::deque<AudioFrame> mFrameQueue;
+        std::mutex mQueueMutex;
+        std::condition_variable mFrameAvailable;
+        std::atomic<bool> mShutdownFlag;
 };
 
 class AudioDecoderEventListener : public BnAudioDecoderEventListener
@@ -690,7 +751,7 @@ class AudioDecoderEventListener : public BnAudioDecoderEventListener
         }
         Status onStateChanged(State oldState,State newState) override
         {
-            UT_LOG_INFO("\nState Change received: %s -> %s\n", com::rdk::hal::toString(oldState).c_str(), com::rdk::hal::toString(newState).c_str());
+            UT_LOG_INFO("State Change received: %s -> %s", com::rdk::hal::toString(oldState).c_str(), com::rdk::hal::toString(newState).c_str());
             {
                 std::lock_guard<std::mutex> lock(mMutex);
                 mStateChanges.emplace_back(oldState, newState);

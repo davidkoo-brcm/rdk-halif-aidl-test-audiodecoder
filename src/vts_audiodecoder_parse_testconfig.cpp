@@ -129,6 +129,7 @@ UT_status_t vts_testconfig_getStream_details(void* pInstance, char *module, char
         std::string numOfFrames = streamsList + "." + std::to_string(i) + "num_of_frames";
         std::string frameSize   = streamsList + "." + std::to_string(i) + "frame_size";
         std::string framePTS    = streamsList + "." + std::to_string(i) + "PTS";
+        std::string rmsDiff     = streamsList + "." + std::to_string(i) + "rms_diff_threshold";
 
         ut_kvp_getStringField(kvpInstance, input.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
         fullPath = currentPath;
@@ -138,7 +139,7 @@ UT_status_t vts_testconfig_getStream_details(void* pInstance, char *module, char
 
         ut_kvp_getStringField(kvpInstance, reference.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
         fullPath = currentPath;
-        fullPath.append(streamInputPath);
+        fullPath.append(streamRefPath);
         fullPath.append(resultKVP);
         streamDetails.reference = fullPath.string();
 
@@ -161,6 +162,9 @@ UT_status_t vts_testconfig_getStream_details(void* pInstance, char *module, char
             int64_t PTS = ut_kvp_getUInt64Field(kvpInstance, eachPTS.c_str());
             streamDetails.frameDetails.push_back({size, PTS});
         }
+
+        streamDetails.rms_diff_threashold = ut_kvp_getDoubleField(kvpInstance, rmsDiff.c_str());
+
         streamDetailsList.push_back(streamDetails);
     }
 

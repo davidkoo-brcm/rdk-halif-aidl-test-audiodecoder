@@ -1,7 +1,7 @@
 IAudioDecoderManager:
   stream_download_path: "http://<>/streams"
   input_streams_path: "assets/streams/input"
-  reference_streams_path: "assets/streams/reference"
+  reference_streams_path: "assets/streams/reference/"
   L3:
     Decode_NonTunnel:
       Streams:
@@ -35,4 +35,5 @@ IAudioDecoderManager:
             - 149333331
             - 170666664
             - 191999997
+          rms_diff_threshold: 0.5
 
