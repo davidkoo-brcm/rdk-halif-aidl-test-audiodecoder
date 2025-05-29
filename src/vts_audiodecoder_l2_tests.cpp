@@ -208,12 +208,112 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, SetandGetProperties)
 {
     for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
     {
-        for(const auto& _codec: capabilities->supportedCodecs)
+        for (bool secureDecode : {true, false})
         {
+            //Skip if the plafrom doesn't support secure decode
+            if (secureDecode && !capabilities->supportsSecure)
+            {
+                continue;
+            }
+
+            for(const auto& _codec: capabilities->supportedCodecs)
+            {
+                sp<IAudioDecoderController> audioDecoderController;
+
+                /* Open the Decoder */
+                AUDIODECODER_OPEN_SUCCESS(decoder, _codec, secureDecode, controlListener, audioDecoderController, true);
+
+                /* Test int property values */
+                for (const auto& [property, value] : validIntProperties)
+                {
+                    PropertyValue setPropertyValue;
+                    std::optional<PropertyValue> getPropertyValue;
+
+                    setPropertyValue.value = PropertyValue::Value::make<PropertyValue::Value::Tag::intValue>(value);
+
+                    /* set the property */
+                    AUDIODECODER_SETPROPERTY_SUCCESS(audioDecoderController, property, setPropertyValue);
+
+                    /* get the property */
+                    AUDIODECODER_GET_PROPERTY_SUCCESS(decoder, property, getPropertyValue);
+
+                    int32_t getValue = getPropertyValue->value->get<PropertyValue::Value::Tag::intValue>();
+
+                    UT_ASSERT_EQUAL(value, getValue);
+                }
+
+                /* Test String property values */
+                for (const auto& [property, value] : validStringProperties)
+                {
+                    PropertyValue setPropertyValue;
+                    std::optional<PropertyValue> getPropertyValue;
+
+                    setPropertyValue.value = PropertyValue::Value::make<PropertyValue::Value::Tag::stringValue>(value);
+
+                    /* set the property */
+                    AUDIODECODER_SETPROPERTY_SUCCESS(audioDecoderController, property, setPropertyValue);
+
+                    /* get the property */
+                    AUDIODECODER_GET_PROPERTY_SUCCESS(decoder, property, getPropertyValue);
+
+                    android::String16 getValue = getPropertyValue->value->get<PropertyValue::Value::Tag::stringValue>();
+
+                    UT_ASSERT_EQUAL(value, getValue);
+                }
+
+                /* Close the decoder */
+                AUDIODECODER_CLOSE_SUCCESS(decoder, audioDecoderController, true);
+            }
+        }
+    }
+}
+
+/**
+ * @brief Test the ability to read and set properties on multi instances of audio decoder
+ *
+ * This test verifies that properties can be set and retrieved correctly on audio decoders.
+ * It ensures that the property LOW_LATENCY_MODE can be set to a specific value and then
+ * retrieved to confirm the setting was applied correctly.
+ *
+ * **Test Group ID:** 02@n
+ * **Test Case ID:** 002@n
+ *
+ * **Test Procedure:**
+ * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
+ */
+UT_ADD_TEST(VTS_L2_AudioDecoder, SetandGetProperties_multipleInstance)
+{
+    std::vector<sp<IAudioDecoderController>> audioDecoderControllersList;
+
+    for (bool secureDecode : {true, false})
+    {
+        for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
+        {
+            Codec _codec = capabilities->supportedCodecs[0];
             sp<IAudioDecoderController> audioDecoderController;
 
+            //Skip if the plafrom doesn't support secure decode
+            if (secureDecode && !capabilities->supportsSecure)
+            {
+                audioDecoderControllersList.push_back(nullptr);
+                continue;
+            }
             /* Open the Decoder */
-            AUDIODECODER_OPEN_SUCCESS(decoder, _codec, capabilities->supportsSecure, controlListener, audioDecoderController, true);
+            AUDIODECODER_OPEN_SUCCESS(decoder, _codec, secureDecode, controlListener, audioDecoderController, true);
+
+            audioDecoderControllersList.push_back(audioDecoderController);
+        }
+
+        for (size_t i = 0; i < mAudioDecoderList.size(); ++i)
+        {
+            const auto& [decoder, controlListener, eventListener, capabilities] = mAudioDecoderList[i];
+            const auto& audioDecoderController = audioDecoderControllersList[i];
+
+            //Skip if the plafrom doesn't support secure decode
+            if (secureDecode && !capabilities->supportsSecure)
+            {
+                continue;
+            }
 
             /* Test int property values */
             for (const auto& [property, value] : validIntProperties)
@@ -252,95 +352,25 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, SetandGetProperties)
 
                 UT_ASSERT_EQUAL(value, getValue);
             }
+        }
+
+        for (size_t i = 0; i < mAudioDecoderList.size(); ++i)
+        {
+            const auto& [decoder, controlListener, eventListener, capabilities] = mAudioDecoderList[i];
+            const auto& audioDecoderController = audioDecoderControllersList[i];
+
+            //Skip if the plafrom doesn't support secure decode
+            if (secureDecode && !capabilities->supportsSecure)
+            {
+                continue;
+            }
 
             /* Close the decoder */
             AUDIODECODER_CLOSE_SUCCESS(decoder, audioDecoderController, true);
         }
+
+        audioDecoderControllersList.clear();
     }
-}
-
-/**
- * @brief Test the ability to read and set properties on multi instances of audio decoder
- *
- * This test verifies that properties can be set and retrieved correctly on audio decoders.
- * It ensures that the property LOW_LATENCY_MODE can be set to a specific value and then
- * retrieved to confirm the setting was applied correctly.
- *
- * **Test Group ID:** 02@n
- * **Test Case ID:** 002@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L2_AudioDecoder, SetandGetProperties_multipleInstance)
-{
-    std::vector<sp<IAudioDecoderController>> audioDecoderControllersList;
-
-    for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
-    {
-        Codec _codec = capabilities->supportedCodecs[0];
-        sp<IAudioDecoderController> audioDecoderController;
-
-        /* Open the Decoder */
-        AUDIODECODER_OPEN_SUCCESS(decoder, _codec, capabilities->supportsSecure, controlListener, audioDecoderController, true);
-
-        audioDecoderControllersList.push_back(audioDecoderController);
-    }
-
-    for (size_t i = 0; i < mAudioDecoderList.size(); ++i)
-    {
-        const auto& [decoder, controlListener, eventListener, capabilities] = mAudioDecoderList[i];
-        const auto& audioDecoderController = audioDecoderControllersList[i];
-
-        /* Test int property values */
-        for (const auto& [property, value] : validIntProperties)
-        {
-            PropertyValue setPropertyValue;
-            std::optional<PropertyValue> getPropertyValue;
-
-            setPropertyValue.value = PropertyValue::Value::make<PropertyValue::Value::Tag::intValue>(value);
-
-            /* set the property */
-            AUDIODECODER_SETPROPERTY_SUCCESS(audioDecoderController, property, setPropertyValue);
-
-            /* get the property */
-            AUDIODECODER_GET_PROPERTY_SUCCESS(decoder, property, getPropertyValue);
-
-            int32_t getValue = getPropertyValue->value->get<PropertyValue::Value::Tag::intValue>();
-
-            UT_ASSERT_EQUAL(value, getValue);
-        }
-
-        /* Test String property values */
-        for (const auto& [property, value] : validStringProperties)
-        {
-            PropertyValue setPropertyValue;
-            std::optional<PropertyValue> getPropertyValue;
-
-            setPropertyValue.value = PropertyValue::Value::make<PropertyValue::Value::Tag::stringValue>(value);
-
-            /* set the property */
-            AUDIODECODER_SETPROPERTY_SUCCESS(audioDecoderController, property, setPropertyValue);
-
-            /* get the property */
-            AUDIODECODER_GET_PROPERTY_SUCCESS(decoder, property, getPropertyValue);
-
-            android::String16 getValue = getPropertyValue->value->get<PropertyValue::Value::Tag::stringValue>();
-
-            UT_ASSERT_EQUAL(value, getValue);
-        }
-    }
-
-    for (size_t i = 0; i < mAudioDecoderList.size(); ++i)
-    {
-        const auto& [decoder, controlListener, eventListener, capabilities] = mAudioDecoderList[i];
-        const auto& audioDecoderController = audioDecoderControllersList[i];
-
-        /* Close the decoder */
-        AUDIODECODER_CLOSE_SUCCESS(decoder, audioDecoderController, true);
-    }
-
-    audioDecoderControllersList.clear();
 }
 
 /**
@@ -360,37 +390,46 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, StateTransitions)
 {
     for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
     {
-        for(const auto& _codec: capabilities->supportedCodecs)
+        for (bool secureDecode : {true, false})
         {
-            sp<IAudioDecoderController> audioDecoderController;
+            //Skip if the plafrom doesn't support secure decode
+            if (secureDecode && !capabilities->supportsSecure)
+            {
+                continue;
+            }
 
-            /* Open the Decoder */
-            AUDIODECODER_OPEN_SUCCESS(decoder, _codec, capabilities->supportsSecure, controlListener, audioDecoderController, false);
-            checkCompleteStateTransition(decoder, eventListener, State::CLOSED, State::OPENING, State::READY);
+            for(const auto& _codec: capabilities->supportedCodecs)
+            {
+                sp<IAudioDecoderController> audioDecoderController;
 
-            /* Start the decoder */
-            AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
-            checkCompleteStateTransition(decoder, eventListener, State::READY, State::STARTING, State::STARTED);
+                /* Open the Decoder */
+                AUDIODECODER_OPEN_SUCCESS(decoder, _codec, secureDecode, controlListener, audioDecoderController, false);
+                checkCompleteStateTransition(decoder, eventListener, State::CLOSED, State::OPENING, State::READY);
 
-            /* Flush the decoder with reset flag false*/
-            AUDIODECODER_FLUSH_SUCCESS(decoder, audioDecoderController, false, false);
-            checkCompleteStateTransition(decoder, eventListener, State::STARTED, State::FLUSHING, State::STARTED);
+                /* Start the decoder */
+                AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
+                checkCompleteStateTransition(decoder, eventListener, State::READY, State::STARTING, State::STARTED);
 
-            /* Flush the decoder with reset flag true*/
-            AUDIODECODER_FLUSH_SUCCESS(decoder, audioDecoderController, true, false);
-            checkCompleteStateTransition(decoder, eventListener, State::STARTED, State::FLUSHING, State::READY);
+                /* Flush the decoder with reset flag false*/
+                AUDIODECODER_FLUSH_SUCCESS(decoder, audioDecoderController, false, false);
+                checkCompleteStateTransition(decoder, eventListener, State::STARTED, State::FLUSHING, State::STARTED);
 
-            /* Start the decoder */
-            AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
-            checkCompleteStateTransition(decoder, eventListener, State::READY, State::STARTING, State::STARTED);
+                /* Flush the decoder with reset flag true*/
+                AUDIODECODER_FLUSH_SUCCESS(decoder, audioDecoderController, true, false);
+                checkCompleteStateTransition(decoder, eventListener, State::STARTED, State::FLUSHING, State::READY);
 
-            /* Stop the decoder */
-            AUDIODECODER_STOP_SUCCESS(decoder, audioDecoderController, false);
-            checkCompleteStateTransition(decoder, eventListener, State::STARTED, State::STOPPING, State::READY);
+                /* Start the decoder */
+                AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
+                checkCompleteStateTransition(decoder, eventListener, State::READY, State::STARTING, State::STARTED);
 
-            /* Close the decoder */
-            AUDIODECODER_CLOSE_SUCCESS(decoder, audioDecoderController, false);
-            checkCompleteStateTransition(decoder, eventListener, State::READY, State::CLOSING, State::CLOSED);
+                /* Stop the decoder */
+                AUDIODECODER_STOP_SUCCESS(decoder, audioDecoderController, false);
+                checkCompleteStateTransition(decoder, eventListener, State::STARTED, State::STOPPING, State::READY);
+
+                /* Close the decoder */
+                AUDIODECODER_CLOSE_SUCCESS(decoder, audioDecoderController, false);
+                checkCompleteStateTransition(decoder, eventListener, State::READY, State::CLOSING, State::CLOSED);
+            }
         }
     }
 }
@@ -412,55 +451,77 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, StateTransitions_mutipleInstance)
 {
     std::vector<sp<IAudioDecoderController>> audioDecoderControllersList;
 
-    for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
+    for (bool secureDecode : {true, false})
     {
-        Codec _codec = capabilities->supportedCodecs[0];
-        sp<IAudioDecoderController> audioDecoderController;
+        for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
+        {
+            Codec _codec = capabilities->supportedCodecs[0];
+            sp<IAudioDecoderController> audioDecoderController;
 
-        /* Open the Decoder */
-        AUDIODECODER_OPEN_SUCCESS(decoder, _codec, capabilities->supportsSecure, controlListener, audioDecoderController, false);
-        checkCompleteStateTransition(decoder, eventListener, State::CLOSED, State::OPENING, State::READY);
+            //Skip if the plafrom doesn't support secure decode
+            if (secureDecode && !capabilities->supportsSecure)
+            {
+                audioDecoderControllersList.push_back(nullptr);
+                continue;
+            }
 
-        audioDecoderControllersList.push_back(audioDecoderController);
+            /* Open the Decoder */
+            AUDIODECODER_OPEN_SUCCESS(decoder, _codec, secureDecode, controlListener, audioDecoderController, false);
+            checkCompleteStateTransition(decoder, eventListener, State::CLOSED, State::OPENING, State::READY);
+
+            audioDecoderControllersList.push_back(audioDecoderController);
+        }
+
+        for (size_t i = 0; i < mAudioDecoderList.size(); ++i)
+        {
+            const auto& [decoder, controlListener, eventListener, capabilities] = mAudioDecoderList[i];
+            const auto& audioDecoderController = audioDecoderControllersList[i];
+
+            //Skip if the plafrom doesn't support secure decode
+            if (secureDecode && !capabilities->supportsSecure)
+            {
+                continue;
+            }
+
+            /* Start the decoder */
+            AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
+            checkCompleteStateTransition(decoder, eventListener, State::READY, State::STARTING, State::STARTED);
+
+            /* Flush the decoder with reset flag false*/
+            AUDIODECODER_FLUSH_SUCCESS(decoder, audioDecoderController, false, false);
+            checkCompleteStateTransition(decoder, eventListener, State::STARTED, State::FLUSHING, State::STARTED);
+
+            /* Flush the decoder with reset flag true*/
+            AUDIODECODER_FLUSH_SUCCESS(decoder, audioDecoderController, true, false);
+            checkCompleteStateTransition(decoder, eventListener, State::STARTED, State::FLUSHING, State::READY);
+
+            /* Start the decoder */
+            AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
+            checkCompleteStateTransition(decoder, eventListener, State::READY, State::STARTING, State::STARTED);
+
+            /* Stop the decoder */
+            AUDIODECODER_STOP_SUCCESS(decoder, audioDecoderController, false);
+            checkCompleteStateTransition(decoder, eventListener, State::STARTED, State::STOPPING, State::READY);
+        }
+
+        for (size_t i = 0; i < mAudioDecoderList.size(); ++i)
+        {
+            const auto& [decoder, controlListener, eventListener, capabilities] = mAudioDecoderList[i];
+            const auto& audioDecoderController = audioDecoderControllersList[i];
+
+            //Skip if the plafrom doesn't support secure decode
+            if (secureDecode && !capabilities->supportsSecure)
+            {
+                continue;
+            }
+
+            /* Close the decoder */
+            AUDIODECODER_CLOSE_SUCCESS(decoder, audioDecoderController, false);
+            checkCompleteStateTransition(decoder, eventListener, State::READY, State::CLOSING, State::CLOSED);
+        }
+
+        audioDecoderControllersList.clear();
     }
-
-    for (size_t i = 0; i < mAudioDecoderList.size(); ++i)
-    {
-        const auto& [decoder, controlListener, eventListener, capabilities] = mAudioDecoderList[i];
-        const auto& audioDecoderController = audioDecoderControllersList[i];
-
-        /* Start the decoder */
-        AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
-        checkCompleteStateTransition(decoder, eventListener, State::READY, State::STARTING, State::STARTED);
-
-        /* Flush the decoder with reset flag false*/
-        AUDIODECODER_FLUSH_SUCCESS(decoder, audioDecoderController, false, false);
-        checkCompleteStateTransition(decoder, eventListener, State::STARTED, State::FLUSHING, State::STARTED);
-
-        /* Flush the decoder with reset flag true*/
-        AUDIODECODER_FLUSH_SUCCESS(decoder, audioDecoderController, true, false);
-        checkCompleteStateTransition(decoder, eventListener, State::STARTED, State::FLUSHING, State::READY);
-
-        /* Start the decoder */
-        AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
-        checkCompleteStateTransition(decoder, eventListener, State::READY, State::STARTING, State::STARTED);
-
-        /* Stop the decoder */
-        AUDIODECODER_STOP_SUCCESS(decoder, audioDecoderController, false);
-        checkCompleteStateTransition(decoder, eventListener, State::STARTED, State::STOPPING, State::READY);
-    }
-
-    for (size_t i = 0; i < mAudioDecoderList.size(); ++i)
-    {
-        const auto& [decoder, controlListener, eventListener, capabilities] = mAudioDecoderList[i];
-        const auto& audioDecoderController = audioDecoderControllersList[i];
-
-        /* Close the decoder */
-        AUDIODECODER_CLOSE_SUCCESS(decoder, audioDecoderController, false);
-        checkCompleteStateTransition(decoder, eventListener, State::READY, State::CLOSING, State::CLOSED);
-    }
-
-    audioDecoderControllersList.clear();
 }
 
 /** @} */ // End of AUDIO_DECODER_HALTEST L2 File

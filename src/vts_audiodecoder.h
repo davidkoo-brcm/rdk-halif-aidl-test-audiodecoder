@@ -680,6 +680,8 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
             uint32_t bps = 0;
 
             //TODO: Update the code with av buffer helper
+            //TODO: frameBufferHandle is -1 in tunnel mode
+            //TODO: metadata its not alway valid
             AudioFrame frame;
             frame.receiveTime = std::chrono::steady_clock::now();
             frame.numSamples = numSamples;
