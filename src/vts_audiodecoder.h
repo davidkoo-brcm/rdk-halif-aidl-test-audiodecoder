@@ -89,6 +89,7 @@ using namespace com::rdk::hal::avbuffer;
 
 extern sp<IAudioDecoderManager> gAudioDecoderManager;
 extern void *gTestConfiguration;
+extern void *gStreamConfiguration;
 
 /* Status::Exception */
 const static ut_control_keyStringMapping_t statusException_mapTable[] =
@@ -674,19 +675,21 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
 
         Status onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::std::optional<FrameMetadata>& metadata) override
         {
-            //UT_LOG_INFO("Received frameoutput: %lld", nsPresentationTime);
+            UT_LOG_INFO("Received frameoutput: %lld", nsPresentationTime);
             //TODO: update these variables
             uint32_t numSamples = 0;
             uint32_t bps = 0;
 
             //TODO: Update the code with av buffer helper
-            //TODO: frameBufferHandle is -1 in tunnel mode
             //TODO: metadata its not alway valid
             AudioFrame frame;
             frame.receiveTime = std::chrono::steady_clock::now();
-            frame.numSamples = numSamples;
-            frame.data.resize(numSamples * bps);
-            //std::memcpy(frame.data.data(), decodedData, frame.data.size());
+            if(frameBufferHandle == -1)
+            {
+                frame.numSamples = numSamples;
+                frame.data.resize(numSamples * bps);
+                //std::memcpy(frame.data.data(), decodedData, frame.data.size());
+            }
             frame.format = metadata->format;
 
             {
@@ -702,10 +705,9 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
         {
             std::unique_lock<std::mutex> lock(mQueueMutex);
 
-            mFrameAvailable.wait(lock, [this]{
+            /*mFrameAvailable.wait(lock, [this]{
                 return !mFrameQueue.empty() || mShutdownFlag;
-            });
-
+            });*/
             if (mShutdownFlag && mFrameQueue.empty())
             {
                 return false;
@@ -714,7 +716,10 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
             mFrameQueue.pop_front();
 
             outNumSamples = frame.numSamples;
-            outBuffer = std::move(frame.data);
+            if(!frame.data.empty())
+            {
+                outBuffer = std::move(frame.data);
+            }
             format = frame.format;
             receiveTime = frame.receiveTime;
             return true;

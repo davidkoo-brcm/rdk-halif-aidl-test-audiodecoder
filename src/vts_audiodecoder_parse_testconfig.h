@@ -71,7 +71,8 @@
 #include "vts_audiodecoder_helper_functions.h"
 #include "vts_audiodecoder_parse_hfp.h"
 
-#define VTS_TEST_CONFIG_PATH "test_configuration/vts_l3_stream_config.yaml"
+#define VTS_TEST_CONFIG_PATH "./test_configuration/vts_l3_test_config.yaml"
+#define VTS_STREAM_CONFIG_PATH "./test_configuration/vts_stream_list.yaml"
 #define STREAM_DOWNLOAD_PATH "IAudioDecoderManager.stream_download_path"
 #define STREAM_INPUT_PATH "IAudioDecoderManager.input_streams_path"
 #define STREAM_REF_PATH "IAudioDecoderManager.reference_streams_path"
@@ -90,7 +91,7 @@ typedef struct testStreamConfig
 }testStreamConfig_t;
 
 void* vts_kvp_create_instance(char *fileName);
-UT_status_t vts_testconfig_getStream_details(void* pInstance, char *module, char *testGroup, char *testName, std::vector<testStreamConfig_t>& streamDetails);
+UT_status_t vts_testconfig_getStream_details(void* pTestInstance, void *pStreamInstance, char *module, char *testGroup, char *testName, std::vector<testStreamConfig_t>& streamDetails);
 void vts_kvp_destroy_instance(void *instance);
 
 #endif //__VTS_AUDIODECODER_PARSE_TESTCONFIG_H__

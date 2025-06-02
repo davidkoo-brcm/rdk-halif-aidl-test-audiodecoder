@@ -72,6 +72,7 @@
 UT_status_t vts_audiodecoder_getAudioDecoderService();
 sp<IAudioDecoderManager> gAudioDecoderManager;
 void *gTestConfiguration;
+void *gStreamConfiguration;
 
 UT_status_t VTS_AudioDecoder_init()
 {

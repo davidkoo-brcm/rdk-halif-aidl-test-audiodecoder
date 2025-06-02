@@ -6,24 +6,6 @@ IAudioDecoderManager:
     Decode_NonTunnel:
       Streams:
         - id: 1
-          input: tones_48k_2_256.aac
-          reference: tones_48k_2_256_ref.pcm
-          codec: AAC_LC # refer enum Codec for more Codec details
-          sample_rate: 48000
-          channels: 2
-          format: S16LE # refer enum PCMFormat for more format details
-          num_of_frames: 10
-          frame_size:
-            - 288
-            - 312
-            - 372
-            - 370
-            - 344
-            - 362
-            - 360
-            - 356
-            - 355
-            - 334
           PTS:
             - 0
             - 21333333
@@ -36,4 +18,3 @@ IAudioDecoderManager:
             - 170666664
             - 191999997
           rms_diff_threshold: 0.5
-
