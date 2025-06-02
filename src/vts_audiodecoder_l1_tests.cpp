@@ -134,7 +134,7 @@ UT_status_t vts_audiodecoder_getAudioDecoderService()
 * |04|Get the supported decoder IDs from the profile file|Profile file|Profile should contain supported decoder IDs|Should Pass|
 * |05|Ensure the sizes and values of profile file and inital set should match|initialDecoderIds.size(), initialDecoderIds[i].value|Sizes and values should match|Should Pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecodermanager_getAudioDecoderIds_pos)
+UT_ADD_TEST(VTS_L1_AudioDecoder, getAudioDecoderIds_pos)
 {
     int i = 0;
     std::vector<IAudioDecoder::Id> initialDecoderIds;
@@ -202,7 +202,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecodermanager_getAudioDecoderIds_pos)
 * |03|Invoke getAudioDecoder again with same id; check status|id, audiodecoder|Status is OK and audiodecoder is not NULL|Should Pass|
 * |04|Compare RESOURCE_ID from both invocations|resource_id_1, resource_id_2|RESOURCE_IDs are equal|Should Pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecodermanager_getAudioDecoder_pos)
+UT_ADD_TEST(VTS_L1_AudioDecoder, getAudioDecoder_pos)
 {
     sp<IAudioDecoder> audiodecoder_1;
     sp<IAudioDecoder> audiodecoder_2;
@@ -257,7 +257,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecodermanager_getAudioDecoder_pos)
 * |03|Get audio decoder with invalid id (max id value + 1)|(max id value + 1), audiodecoder|status.isOk() should be false and audiodecoder should be nullptr|Should Pass|
 * |04|Get audio decoder for UNDEFINED ID|UNDEFINED, audiodecoder|status.isOk() should be false and audiodecoder should be nullptr|Should Pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecodermanager_getAudioDecoder_neg)
+UT_ADD_TEST(VTS_L1_AudioDecoder, getAudioDecoder_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -303,7 +303,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecodermanager_getAudioDecoder_neg)
 * |01|Invoke getCapabilities() with the Capabilities instance for all supported audiodecoders|Capabilities instance|Status should be ok|Should Pass|
 * |02|Validate the capabilities obtained with HFP|Capabilities instance|Successful validation of capabilities|Should Pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_getCapabilities_pos)
+UT_ADD_TEST(VTS_L1_AudioDecoder, getCapabilities_pos)
 {
     Capabilities capabilities;
     std::vector<IAudioDecoder::Id> decoderIds;
@@ -345,7 +345,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_getCapabilities_pos)
 * |01|Initialize audioDecoder object and iterate through the properties list for supported audio decoders|decoder, property list[RESOURCE_ID, SECURE_AUDIO, METRIC_FRAMES_DECODED, METRIC_DECODE_ERRORS, METRIC_FRAMES_DROPPED]|Status should be ok|Should Pass|
 * |02|Validate the property obtained with HFP|property value|Successful validation of property|Should Pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_getProperty_pos)
+UT_ADD_TEST(VTS_L1_AudioDecoder, getProperty_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -394,7 +394,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_getProperty_pos)
 * |----------------|-----------|---------|---------------|-----|
 * |01|Call getProperty function with invalid property value for all supported decoders|decoder, invalid property|Status should be invalid|Should Pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_getProperty_neg)
+UT_ADD_TEST(VTS_L1_AudioDecoder, getProperty_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -434,7 +434,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_getProperty_neg)
 * |01|Invoke getState to retrieve the state of all available decoders|status.isOk()|status.isOk() should be true|Should Pass|
 * |02|Validate the retrieved state|state|State should be valid|Should Pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_getState_pos)
+UT_ADD_TEST(VTS_L1_AudioDecoder, getState_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -488,7 +488,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_getState_pos)
 * |03|Verify the state of the decoder after open|state|state should be READY|Should pass|
 * |04|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_open_pos)
+UT_ADD_TEST(VTS_L1_AudioDecoder, open_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -547,7 +547,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_open_pos)
 * |07|Open the decoder again with valid parameters|valid parameters to open|status.isOk() = false and audioDecoderController = nullptr|Should be successful|
 * |08|Close the decoder|None|status.isOk() = true|Should be successful|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_open_neg)
+UT_ADD_TEST(VTS_L1_AudioDecoder, open_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -620,7 +620,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_open_neg)
 * |03|Verify the state of the decoder after open|state|state should be READY|Should pass|
 * |04|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_close_pos)
+UT_ADD_TEST(VTS_L1_AudioDecoder, close_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -678,7 +678,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_close_pos)
 * |05|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 * |06|Close the audio decoder again|audioDecoderController, _aidl_return|status.isOk() should be false, _aidl_return = false|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_close_neg)
+UT_ADD_TEST(VTS_L1_AudioDecoder, close_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -738,7 +738,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_close_neg)
 * |02|register decoder events|listener|status should be ok|Should pass|
 * |03|un-register decoder events|listener|status should be ok|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_registerEventListener_pos)
+UT_ADD_TEST(VTS_L1_AudioDecoder, registerEventListener_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -787,7 +787,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_registerEventListener_pos)
 * |04|register decoder events again|listener|status should not be ok|Should pass|
 * |05|un-register decoder events|listener|status should be ok|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_registerEventListener_neg)
+UT_ADD_TEST(VTS_L1_AudioDecoder, registerEventListener_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -840,7 +840,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_registerEventListener_neg)
 * |02|register decoder events|listener|status should be ok|Should pass|
 * |03|un-register decoder events|listener|status should be ok|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_unregisterEventListener_pos)
+UT_ADD_TEST(VTS_L1_AudioDecoder, unregisterEventListener_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -890,7 +890,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_unregisterEventListener_pos)
 * |05|un-register decoder events|listener|status should be ok|Should pass|
 * |06|un-register decoder events again|listener|status should not be ok|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_unregisterEventListener_neg)
+UT_ADD_TEST(VTS_L1_AudioDecoder, unregisterEventListener_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -949,7 +949,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodecoder_unregisterEventListener_neg)
 * |06|Stop the decoder|None|state should be READY, status should be ok|Should pass|
 * |07|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_start_pos)
+UT_ADD_TEST(VTS_L1_AudioDecoder, start_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -1015,7 +1015,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_start_pos)
 * |08|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 * |09|start the decoder again|None|status should not be ok|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_start_neg)
+UT_ADD_TEST(VTS_L1_AudioDecoder, start_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -1085,7 +1085,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_start_neg)
 * |06|Stop the decoder|None|state should be READY, status should be ok|Should pass|
 * |07|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_stop_pos)
+UT_ADD_TEST(VTS_L1_AudioDecoder, stop_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -1152,7 +1152,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_stop_pos)
 * |08|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 * |09|stop the decoder again|None|status should not be ok|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_stop_neg)
+UT_ADD_TEST(VTS_L1_AudioDecoder, stop_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -1223,7 +1223,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_stop_neg)
 * |07|Stop the decoder|None|state should be READY, status should be ok|Should pass|
 * |08|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_decodeBuffer_neg)
+UT_ADD_TEST(VTS_L1_AudioDecoder, decodeBuffer_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -1315,7 +1315,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_decodeBuffer_neg)
 * |09|Stop the decoder|None|state should be READY, status should be ok|Should pass|
 * |10|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_flush_pos)
+UT_ADD_TEST(VTS_L1_AudioDecoder, flush_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -1393,7 +1393,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_flush_pos)
 * |12|Flush the decoder before start with reset flag false|reset=false|status should not be ok|Should pass|
 * |13|Flush the decoder before start with reset flag true|reset=true|status should not be ok|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_flush_neg)
+UT_ADD_TEST(VTS_L1_AudioDecoder, flush_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -1476,7 +1476,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_flush_neg)
 * |07|Stop the decoder|None|state should be READY, status should be ok|Should pass|
 * |08|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalDiscontinuity_pos)
+UT_ADD_TEST(VTS_L1_AudioDecoder, signalDiscontinuity_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -1545,7 +1545,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalDiscontinuity_pos)
 * |08|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 * |09|Signal discontinuity to the decoder after close|None|status should not be ok|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalDiscontinuity_neg)
+UT_ADD_TEST(VTS_L1_AudioDecoder, signalDiscontinuity_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -1621,7 +1621,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalDiscontinuity_neg)
 * |07|Stop the decoder|None|state should be READY, status should be ok|Should pass|
 * |08|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalEOS_pos)
+UT_ADD_TEST(VTS_L1_AudioDecoder, signalEOS_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -1690,7 +1690,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalEOS_pos)
 * |08|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 * |09|Signal EOS to the decoder after close|None|status should not be ok|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalEOS_neg)
+UT_ADD_TEST(VTS_L1_AudioDecoder, signalEOS_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -1765,7 +1765,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_signalEOS_neg)
 * |07|Stop the decoder|None|state should be READY, status should be ok|Should pass|
 * |08|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_parseCodecSpecificData_pos)
+UT_ADD_TEST(VTS_L1_AudioDecoder, parseCodecSpecificData_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -1848,7 +1848,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_parseCodecSpecificData_pos)
 * |07|Stop the decoder|None|state should be READY, status should be ok|Should pass|
 * |08|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_parseCodecSpecificData_neg)
+UT_ADD_TEST(VTS_L1_AudioDecoder, parseCodecSpecificData_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -2019,7 +2019,7 @@ std::multimap<Property, android::String16> invalidStringPropertyAll =
 * |10|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 * |11|set the properties listed in table|property|status should be ok|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_setProperty_pos)
+UT_ADD_TEST(VTS_L1_AudioDecoder, setProperty_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
@@ -2108,7 +2108,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_setProperty_pos)
 * |09|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 * |10|set the valid properties which can be set in only READY state|property|invalid state error|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, audiodeccontr_setProperty_neg)
+UT_ADD_TEST(VTS_L1_AudioDecoder, setProperty_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
