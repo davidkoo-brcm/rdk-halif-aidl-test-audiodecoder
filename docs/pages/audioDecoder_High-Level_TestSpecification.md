@@ -52,7 +52,7 @@ The output of an audio decoder can take two routes:
 
 - List of audio test streams: [Audio TestStreams](audioDecoder_TestStreams.md)
 
-- Each Test should refer [audiodecoder_L3_testConfig.yml](../../audiodecoder_L3_testConfig.yml) for the streams and information like `PTS`, frame sizes for the test.
+- Each Test should refer [vts_l3_test_config.yaml](../../test_configuration/vts_l3_test_config.yaml) for the streams and information like `PTS`, frame sizes for the test.
 
 ## L2 Test Specification
 

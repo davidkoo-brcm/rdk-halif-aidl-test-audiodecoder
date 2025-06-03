@@ -1,5 +1,3 @@
-include_0: test_configuration/vts_audio_mp3_streams.yaml
-
 AudioStreams:
   tones_48k_2_256_aac:
     input: tones_48k_2_256.aac
