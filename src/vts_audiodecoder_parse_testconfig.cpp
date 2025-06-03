@@ -122,6 +122,7 @@ UT_status_t vts_testconfig_getStream_details(void* pTestInstance, void *pStreamI
         char resultKVP[UT_KVP_MAX_ELEMENT_SIZE] = {0};
         uint32_t streamId;
         testStreamConfig_t streamDetails;
+        std::vector<int32_t> errorFrameNum;
 
         std::string id       = streamsList + "." + std::to_string(i) + "id";
         streamId = ut_kvp_getUInt32Field(kvpTestInstance, id.c_str());
@@ -134,8 +135,11 @@ UT_status_t vts_testconfig_getStream_details(void* pTestInstance, void *pStreamI
         std::string format      = streamsDetails + "." + std::to_string(streamId) + "." +"format";
         std::string numOfFrames = streamsDetails + "." + std::to_string(streamId) + "." +"num_of_frames";
         std::string frameSize   = streamsDetails + "." + std::to_string(streamId) + "." +"frame_size";
+        std::string errorFrames = streamsDetails + "." + std::to_string(streamId) + "." +"error_frames";
         std::string framePTS    = streamsList + "." + std::to_string(i) + "." +"PTS";
         std::string rmsDiff     = streamsList + "." + std::to_string(i) + "." +"rms_diff_threshold";
+        std::string trimStart   = streamsList + "." + std::to_string(i) + "." +"trim.0";
+        std::string trimEnd   = streamsList + "." + std::to_string(i) + "." +"trim.1";
 
         ut_kvp_getStringField(kvpStreamInstance, input.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
         fullPath = currentPath;
@@ -160,16 +164,36 @@ UT_status_t vts_testconfig_getStream_details(void* pTestInstance, void *pStreamI
 
         streamDetails.numOfFrames = ut_kvp_getUInt32Field(kvpStreamInstance, numOfFrames.c_str());
 
+        if(ut_kvp_fieldPresent(kvpStreamInstance, errorFrames.c_str()))
+        {
+            int32_t count = ut_kvp_getListCount(kvpStreamInstance, errorFrames.c_str());
+            for (int32_t j = 0; j < count; j++)
+            {
+                std::string error = errorFrames + "." + std::to_string(j);
+                int32_t frameNum = ut_kvp_getUInt32Field(kvpStreamInstance, error.c_str());
+                errorFrameNum.push_back(frameNum);
+            }
+        }
+
         for(int32_t j = 0; j < streamDetails.numOfFrames; j++)
         {
+            bool errorFrame = false;
+
             std::string eachFrame = frameSize + "." + std::to_string(j);
             std::string eachPTS = framePTS + "." + std::to_string(j);
             int32_t size = ut_kvp_getUInt32Field(kvpStreamInstance, eachFrame.c_str());
             int64_t PTS = ut_kvp_getUInt64Field(kvpTestInstance, eachPTS.c_str());
-            streamDetails.frameDetails.push_back({size, PTS});
+            if (std::find(errorFrameNum.begin(), errorFrameNum.end(), j+1) != errorFrameNum.end())
+            {
+                errorFrame = true;
+            }
+            streamDetails.frameDetails.push_back({size, PTS, errorFrame});
         }
 
         streamDetails.rms_diff_threashold = ut_kvp_getDoubleField(kvpTestInstance, rmsDiff.c_str());
+
+        streamDetails.trimStartNs = ut_kvp_getUInt64Field(kvpTestInstance, trimStart.c_str());
+        streamDetails.trimEndNs = ut_kvp_getUInt64Field(kvpTestInstance, trimEnd.c_str());
 
         streamDetailsList.push_back(streamDetails);
     }

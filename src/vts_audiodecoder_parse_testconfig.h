@@ -87,7 +87,10 @@ typedef struct testStreamConfig
     PCMFormat format;
     int32_t numOfFrames;
     double rms_diff_threashold;
-    std::vector<std::tuple<int32_t, int64_t>> frameDetails;
+    int64_t trimStartNs;
+    int64_t trimEndNs;
+    /* Frame size, PTS, error frame */
+    std::vector<std::tuple<int32_t, int64_t, bool>> frameDetails;
 }testStreamConfig_t;
 
 void* vts_kvp_create_instance(char *fileName);

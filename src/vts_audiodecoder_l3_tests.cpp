@@ -281,8 +281,8 @@ public:
         return true;
     }
 
-    void decodeAudioFrame(sp<IAudioDecoder> decoder, Codec codec, bool secure, sp<AudioDecoderControllerListener> listener,
-                                std::ifstream &inputFile, std::ifstream &refFile, testStreamConfig_t stream, sp<IAVBuffer> avBufferManager, Pool audioPool)
+    void decodeAudioStream(sp<IAudioDecoder> decoder, Codec codec, bool secure, sp<AudioDecoderControllerListener> listener,
+                           std::ifstream &inputFile, std::ifstream &refFile, testStreamConfig_t stream, sp<IAVBuffer> avBufferManager, Pool audioPool)
     {
 
         sp<IAudioDecoderController> audioDecoderController;
@@ -294,7 +294,7 @@ public:
         /* Start the decoder */
         AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, true);
 
-        for(const auto& [frameSize, framePTS]: stream.frameDetails)
+        for(const auto& [frameSize, framePTS, errorFrame]: stream.frameDetails)
         {
             std::vector<uint8_t> decodedBuffer;
             std::vector<uint8_t> inputBuffer; //TODO: replace with mapped buffer
@@ -327,6 +327,7 @@ public:
             //listener->getNextFrame(decodedBuffer, numSamples, format, endTime);
 
             /* Verify the decodec buffer in non-tunnel mode */
+            /* TODO: Check for trim start and end */
             if(!decodedBuffer.empty())
             {
                 output_buffer_size = numSamples * vts_bytesPerSample(format);
@@ -344,8 +345,16 @@ public:
             /* Get decoder metrics after decoding */
             UT_ASSERT_TRUE(getDecoderMetrics(decoder, endFramesDecoded, endFrameErrors, endFramesDropped));
 
+            startFramesDecoded++;
+
+            /* If frame is a error frame increase the error count */
+            if(errorFrame)
+            {
+                startFrameErrors++;
+            }
+
             /* Validate the decoder metrics */
-            UT_ASSERT_TRUE(startFramesDecoded == (endFramesDecoded + 1));
+            UT_ASSERT_TRUE(startFramesDecoded == endFramesDecoded);
             UT_ASSERT_TRUE(startFrameErrors == endFrameErrors);
             UT_ASSERT_TRUE(startFramesDropped == endFramesDropped);
 #endif
@@ -361,45 +370,14 @@ public:
         AUDIODECODER_CLOSE_SUCCESS(decoder, audioDecoderController, true);
     }
 
-    void TearDown() override
+    void decodeAll(std::vector<testStreamConfig_t>& streamDetails, bool secureDecode)
     {
         for (const auto& [_decoderId, decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
         {
-            /* Un-register the events */
-            AUDIODECODER_UNREGISTER_EVENT_SUCCESS(decoder, eventListener);
-        }
-        mAudioDecoderList.clear();
-        //TODO: check right place to call joinThreadPool
-        //android::IPCThreadState::self()->joinThreadPool();
-    }
-};
+            Pool audioPool;
+            sp<IAVBufferSpaceListener> listener = new AVBufferSpaceListener();
+            HeapMetrics beforeHeapMetrics, afterHeapMetrics;
 
-/**
- * @brief Test the ability to decode audio frames in non-tunnel mode
- *
- * This test verifies that decoder can decode the audio frames in non-tunnel mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 001@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel)
-{
-    char *testName = "Decode_NonTunnel";
-    std::vector<testStreamConfig_t> streamDetails;
-
-    vts_testconfig_getStream_details(gTestConfiguration, gStreamConfiguration, gModuleName, gTestGroup, testName, streamDetails);
-
-    for (const auto& [_decoderId, decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
-    {
-        Pool audioPool;
-        sp<IAVBufferSpaceListener> listener = new AVBufferSpaceListener();
-        HeapMetrics beforeHeapMetrics, afterHeapMetrics;
-
-        for (bool secureDecode : {true, false})
-        {
             //Skip if the plafrom doesn't support secure decode
             if (secureDecode && !capabilities->supportsSecure)
             {
@@ -430,7 +408,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel)
                     UT_LOG_ERROR("Failed to open reference file: %s", stream.reference.c_str());
                     break;
                 }
-                decodeAudioFrame(decoder, stream.codec, secureDecode, controlListener, inputFile, referenceFile, stream, mAVBufferManager, audioPool);
+                decodeAudioStream(decoder, stream.codec, secureDecode, controlListener, inputFile, referenceFile, stream, mAVBufferManager, audioPool);
                 break;
             }
 
@@ -440,18 +418,164 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel)
             /* Get heap metrics */
             AVBUFFER_GETMETRICS(mAVBufferManager, secureDecode, afterHeapMetrics);
 
+            /* check if the decoder freed all the buffer pools */
             UT_ASSERT_TRUE(beforeHeapMetrics.secure == afterHeapMetrics.secure);
             UT_ASSERT_TRUE(beforeHeapMetrics.bytesUsed == afterHeapMetrics.bytesUsed);
             UT_ASSERT_TRUE(beforeHeapMetrics.bytesTotal == afterHeapMetrics.bytesTotal);
-
-            /* check if the decoder freed all the buffer pools */
 
             /* TODO: check if this required or not */
             //controlListener->shutdown();
         }
     }
+
+    void TearDown() override
+    {
+        for (const auto& [_decoderId, decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
+        {
+            /* Un-register the events */
+            AUDIODECODER_UNREGISTER_EVENT_SUCCESS(decoder, eventListener);
+        }
+        mAudioDecoderList.clear();
+        //TODO: check right place to call joinThreadPool
+        //android::IPCThreadState::self()->joinThreadPool();
+    }
+};
+
+/**
+ * @brief Test the ability to decode audio frames in non-tunnel mode
+ *
+ * This test verifies that decoder can decode the audio frames in non-tunnel mode.
+ *
+ * **Test Group ID:** 03@n
+ * **Test Case ID:** 001@n
+ *
+ * **Test Procedure:**
+ * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
+ */
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel)
+{
+    char *testName = "Decode_NonTunnel";
+    std::vector<testStreamConfig_t> streamDetails;
+    bool secureMode = false;
+
+    vts_testconfig_getStream_details(gTestConfiguration, gStreamConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+
+    decodeAll(streamDetails, secureMode);
 }
 
+/**
+ * @brief Test the ability to decode audio frames in secure mode and in non-tunnel mode
+ *
+ * This test verifies that decoder can decode the audio frames in secure mode and in non-tunnel mode.
+ *
+ * **Test Group ID:** 03@n
+ * **Test Case ID:** 002@n
+ *
+ * **Test Procedure:**
+ * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
+ */
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel_Secure)
+{
+    char *testName = "Decode_NonTunnel_Secure";
+    std::vector<testStreamConfig_t> streamDetails;
+    bool secureMode = true;
+
+    vts_testconfig_getStream_details(gTestConfiguration, gStreamConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+
+    decodeAll(streamDetails, secureMode);
+}
+
+/**
+ * @brief Test the ability to decode audio frames in tunnel mode
+ *
+ * This test verifies that decoder can decode the audio frames in tunnel mode.
+ *
+ * **Test Group ID:** 03@n
+ * **Test Case ID:** 003@n
+ *
+ * **Test Procedure:**
+ * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
+ */
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Tunnel)
+{
+    char *testName = "Decode_Tunnel";
+    std::vector<testStreamConfig_t> streamDetails;
+    bool secureMode = false;
+
+    vts_testconfig_getStream_details(gTestConfiguration, gStreamConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+
+    decodeAll(streamDetails, secureMode);
+}
+
+/**
+ * @brief Test the ability to decode audio frames in secure mode and in tunnel mode
+ *
+ * This test verifies that decoder can decode the audio frames in secure mode and in tunnel mode.
+ *
+ * **Test Group ID:** 03@n
+ * **Test Case ID:** 004@n
+ *
+ * **Test Procedure:**
+ * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
+ */
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Tunnel_Secure)
+{
+    char *testName = "Decode_Tunnel_Secure";
+    std::vector<testStreamConfig_t> streamDetails;
+    bool secureMode = true;
+
+    vts_testconfig_getStream_details(gTestConfiguration, gStreamConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+
+    decodeAll(streamDetails, secureMode);
+}
+
+/**
+ * @brief Test the ability to handle invalid audio frames in secure and non secure mode and in tunnel and non-tunnel mode
+ *
+ * This test verifies that decoder can handle invalid audio frames.
+ *
+ * **Test Group ID:** 03@n
+ * **Test Case ID:** 005@n
+ *
+ * **Test Procedure:**
+ * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
+ */
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Inavlid_Frames)
+{
+    char *testName = "Decode_Inavlid_Frames";
+    std::vector<testStreamConfig_t> streamDetails;
+
+    vts_testconfig_getStream_details(gTestConfiguration, gStreamConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+
+    for (bool secureDecode : {false, true})
+    {
+        decodeAll(streamDetails, secureDecode);
+    }
+}
+
+/**
+ * @brief Test the trim functionality of the decoder
+ *
+ * This test verifies trim functionality.
+ *
+ * **Test Group ID:** 03@n
+ * **Test Case ID:** 006@n
+ *
+ * **Test Procedure:**
+ * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
+ */
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Trim)
+{
+    char *testName = "Decode_Trim";
+    std::vector<testStreamConfig_t> streamDetails;
+
+    vts_testconfig_getStream_details(gTestConfiguration, gStreamConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+
+    for (bool secureDecode : {false, true})
+    {
+        decodeAll(streamDetails, secureDecode);
+    }
+}
 /** @} */ // End of AUDIO_DECODER_HALTEST L3 File
 /** @} */ // End of AUDIO_DECODER_HALTEST
 /** @} */ // End of AUDIO_DECODER Module

@@ -681,7 +681,7 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
             uint32_t bps = 0;
 
             //TODO: Update the code with av buffer helper
-            //TODO: metadata its not alway valid
+            //TODO: metadata its not always valid
             AudioFrame frame;
             frame.receiveTime = std::chrono::steady_clock::now();
             if(frameBufferHandle == -1)
