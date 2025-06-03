@@ -1,0 +1,20 @@
+AudioStreams:
+  tones_48k_2_256_mp3:
+    input: tones_48k_2_256.mp3
+    reference: tones_48k_2_256_ref.pcm
+    codec: MP3 # refer enum Codec for more Codec details
+    sample_rate: 48000
+    channels: 2
+    format: S16LE # refer enum PCMFormat for more format details
+    num_of_frames: 10
+    frame_size:
+      - 288
+      - 312
+      - 372
+      - 370
+      - 344
+      - 362
+      - 360
+      - 356
+      - 355
+      - 334
