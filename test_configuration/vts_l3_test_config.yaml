@@ -1,3 +1,5 @@
+include: test_configuration/vts_audio_streams.yaml
+
 IAudioDecoderManager:
   stream_download_path: "http://<>/streams"
   input_streams_path: "assets/streams/input"
@@ -5,7 +7,7 @@ IAudioDecoderManager:
   L3:
     Decode_NonTunnel:
       Streams:
-        - id: 1
+        - Name: tones_48k_2_256_aac
           PTS:
             - 0
             - 21333333
@@ -23,7 +25,7 @@ IAudioDecoderManager:
           rms_diff_threshold: 0.5
     Decode_NonTunnel_Secure:
       Streams:
-        - id: 1
+        - Name: tones_48k_2_256_aac
           PTS:
             - 0
             - 21333333
@@ -41,7 +43,7 @@ IAudioDecoderManager:
           rms_diff_threshold: 0.5
     Decode_Tunnel:
       Streams:
-        - id: 1
+        - Name: tones_48k_2_256_aac
           PTS:
             - 0
             - 21333333
@@ -59,7 +61,7 @@ IAudioDecoderManager:
           rms_diff_threshold: 0.5
     Decode_Tunnel_Secure:
       Streams:
-        - id: 1
+        - Name: tones_48k_2_256_aac
           PTS:
             - 0
             - 21333333
@@ -77,7 +79,7 @@ IAudioDecoderManager:
           rms_diff_threshold: 0.5
     Decode_Inavlid_Frames:
       Streams:
-        - id: 1
+        - Name: tones_48k_2_256_aac
           PTS:
             - 0
             - 21333333

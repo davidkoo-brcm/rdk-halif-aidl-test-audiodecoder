@@ -89,7 +89,6 @@ using namespace com::rdk::hal::avbuffer;
 
 extern sp<IAudioDecoderManager> gAudioDecoderManager;
 extern void *gTestConfiguration;
-extern void *gStreamConfiguration;
 
 /* Status::Exception */
 const static ut_control_keyStringMapping_t statusException_mapTable[] =

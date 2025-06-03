@@ -203,7 +203,6 @@ public:
 
         mAVBufferManager = vts_avbuffer_getService();
         gTestConfiguration = vts_kvp_create_instance(VTS_TEST_CONFIG_PATH);
-        gStreamConfiguration = vts_kvp_create_instance(VTS_STREAM_CONFIG_PATH);
 
         /* Get the Audio decoder IDs */
         AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
@@ -458,7 +457,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel)
     std::vector<testStreamConfig_t> streamDetails;
     bool secureMode = false;
 
-    vts_testconfig_getStream_details(gTestConfiguration, gStreamConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+    vts_testconfig_getStream_details(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
 
     decodeAll(streamDetails, secureMode);
 }
@@ -480,7 +479,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel_Secure)
     std::vector<testStreamConfig_t> streamDetails;
     bool secureMode = true;
 
-    vts_testconfig_getStream_details(gTestConfiguration, gStreamConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+    vts_testconfig_getStream_details(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
 
     decodeAll(streamDetails, secureMode);
 }
@@ -502,7 +501,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Tunnel)
     std::vector<testStreamConfig_t> streamDetails;
     bool secureMode = false;
 
-    vts_testconfig_getStream_details(gTestConfiguration, gStreamConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+    vts_testconfig_getStream_details(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
 
     decodeAll(streamDetails, secureMode);
 }
@@ -524,7 +523,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Tunnel_Secure)
     std::vector<testStreamConfig_t> streamDetails;
     bool secureMode = true;
 
-    vts_testconfig_getStream_details(gTestConfiguration, gStreamConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+    vts_testconfig_getStream_details(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
 
     decodeAll(streamDetails, secureMode);
 }
@@ -545,7 +544,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Inavlid_Frames)
     char *testName = "Decode_Inavlid_Frames";
     std::vector<testStreamConfig_t> streamDetails;
 
-    vts_testconfig_getStream_details(gTestConfiguration, gStreamConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+    vts_testconfig_getStream_details(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
 
     for (bool secureDecode : {false, true})
     {
@@ -569,7 +568,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Trim)
     char *testName = "Decode_Trim";
     std::vector<testStreamConfig_t> streamDetails;
 
-    vts_testconfig_getStream_details(gTestConfiguration, gStreamConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+    vts_testconfig_getStream_details(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
 
     for (bool secureDecode : {false, true})
     {
