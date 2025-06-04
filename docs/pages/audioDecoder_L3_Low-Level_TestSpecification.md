@@ -34,7 +34,7 @@ This document outlines the L3 test design for the Audio Decoder module.
 
 The test setup is defined in [vts_l3_test_config.yaml](../../test_configuration/vts_l3_test_config.yaml), , which specifies the streams, PTS values, frame sizes, and other key parameters required for L3 validation. This configuration includes references to supporting YAML files such as [vts_audio_aac_streams.yaml](../../test_configuration/vts_audio_aac_streams.yaml) files required by the test.
 
-### Test Configuration File
+### Example Test Configuration File
 
 ```yaml
 include_0: test_configuration/vts_audio_aac_streams.yaml
@@ -77,7 +77,7 @@ IAudioDecoderManager:
 - rms_diff_threshold: Maximum allowed `rms` difference for output validation
 - decode_time_threshold: Time budget per frame for decoding, in nanoseconds
 
-### Stream Configuration File
+### Example Stream Configuration File
 
 ```yaml
 AudioStreams:
