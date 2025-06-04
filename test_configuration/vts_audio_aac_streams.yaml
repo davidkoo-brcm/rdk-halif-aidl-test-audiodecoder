@@ -27,16 +27,16 @@ AudioStreams:
     format: S16LE # refer enum PCMFormat for more format details
     num_of_frames: 10
     frame_size:
-      - 288
-      - 312
-      - 372
-      - 370
-      - 344
-      - 362
-      - 360
-      - 356
-      - 355
-      - 334
+      - 203
+      - 176
+      - 223
+      - 190
+      - 204
+      - 200
+      - 194
+      - 207
+      - 185
+      - 201
   tones_48k_1_256_error_1_aac:
     input: tones_48k_1_256_error_1.aac
     reference: tones_48k_1_256_error_1_ref.pcm

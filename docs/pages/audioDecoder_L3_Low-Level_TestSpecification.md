@@ -35,7 +35,7 @@ This document outlines the L3 test design for the Audio Decoder module.
 
 ## Test Configuration
 
-The test setup is defined in [vts_l3_test_config.yaml](../../test_configuration/vts_l3_test_config.yaml), , which specifies the streams, `PTS` values, frame sizes, and other key parameters required for L3 validation. This configuration includes references to supporting `YAML` files such as [vts_audio_aac_streams.yaml](../../test_configuration/vts_audio_aac_streams.yaml) files required by the test.
+The test configuration is defined in [vts_l3_test_config.yaml](../../test_configuration/vts_l3_test_config.yaml), , which specifies the streams, `PTS` values, frame sizes, and other key parameters required for L3 validation. This configuration includes references to supporting `YAML` files such as [vts_audio_aac_streams.yaml](../../test_configuration/vts_audio_aac_streams.yaml) files required by the test.
 
 ### Example Test Configuration File
 
@@ -51,6 +51,23 @@ IAudioDecoderManager:
     Decode_NonTunnel:
       Streams:
         - Name: tones_48k_2_256_aac
+          PTS:
+            - 0
+            - 21333333
+            - 42666666
+            - 63999999
+            - 85333332
+            - 106666665
+            - 127999998
+            - 149333331
+            - 170666664
+            - 191999997
+          trim:
+            - 127999998 #Start in Nano seconds
+            - 149333331 #End
+          rms_diff_threshold: 0.5
+          decode_time_threshold: 10000000 #Time in nano seconds
+        - Name: tones_48k_1_256_aac
           PTS:
             - 0
             - 21333333
@@ -103,6 +120,25 @@ AudioStreams:
       - 356
       - 355
       - 334
+  tones_48k_1_256_aac:
+    input: tones_48k_1_256.aac
+    reference: tones_48k_1_256_ref.pcm
+    codec: AAC_LC # refer enum Codec for more Codec details
+    sample_rate: 48000
+    channels: 1
+    format: S16LE # refer enum PCMFormat for more format details
+    num_of_frames: 10
+    frame_size:
+      - 203
+      - 176
+      - 223
+      - 190
+      - 204
+      - 200
+      - 194
+      - 207
+      - 185
+      - 201
 ```
 
 #### Key Parameters
@@ -135,7 +171,7 @@ classDiagram
     note for L3_Testcases "uses vts_l3_test_config.yaml"
 ```
 
-The VTS_L3_AudioDecoder class overrides the `SetUp()` and `TearDown()` methods from the `GTEST_API_` base class to handle test initialization and clean-up tasks common across test cases.
+The `VTS_L3_AudioDecoder` class overrides the `SetUp()` and `TearDown()` methods from the `GTEST_API_` base class to handle test initialization and clean-up tasks common across test cases.
 
 |#|Override Function|Description|API|
 |-|-----------------|-----------|---|
