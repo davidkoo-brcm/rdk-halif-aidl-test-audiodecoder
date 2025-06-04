@@ -217,6 +217,8 @@ sequenceDiagram
     VTS_L3_AudioDecoder(Decode_NonTunnel)->>VTS_L3_AudioDecoder(Decode_NonTunnel): Parse vts_l3_test_config.yaml
     VTS_L3_AudioDecoder(Decode_NonTunnel)->>VTS_L3_AudioDecoder(Decode_NonTunnel): SetUp()
     loop For each decoder
+        VTS_L3_AudioDecoder(Decode_NonTunnel)->>AV Buffer HAL: getHeapMetrics()
+        AV Buffer HAL-->>VTS_L3_AudioDecoder(Decode_NonTunnel): AV Buffer metrics
         VTS_L3_AudioDecoder(Decode_NonTunnel)->>AV Buffer HAL: createAudioPool()
         AV Buffer HAL-->>VTS_L3_AudioDecoder(Decode_NonTunnel): Return pool handle
         loop For each non-tunnel stream
@@ -230,17 +232,19 @@ sequenceDiagram
                 VTS_L3_AudioDecoder(Decode_NonTunnel)->>AudioDecoder HAL: decodeBuffer()
                 VTS_L3_AudioDecoder(Decode_NonTunnel)->>VTS_L3_AudioDecoder(Decode_NonTunnel): Wait for onFrameOutput()
                 AudioDecoder HAL-->>VTS_L3_AudioDecoder(Decode_NonTunnel): onFrameOutput()
+                VTS_L3_AudioDecoder(Decode_NonTunnel)->>VTS_L3_AudioDecoder(Decode_NonTunnel): Validate decode time
                 VTS_L3_AudioDecoder(Decode_NonTunnel)->>VTS_L3_AudioDecoder(Decode_NonTunnel): Compare decoded frame<br>with reference frame
                 VTS_L3_AudioDecoder(Decode_NonTunnel)->>VTS_L3_AudioDecoder(Decode_NonTunnel): Validate decoder metrics
-                VTS_L3_AudioDecoder(Decode_NonTunnel)->>VTS_L3_AudioDecoder(Decode_NonTunnel): Validate decode time
                 VTS_L3_AudioDecoder(Decode_NonTunnel)->>AV Buffer HAL: free()
             end
             VTS_L3_AudioDecoder(Decode_NonTunnel)->>AudioDecoder HAL: stop()
             VTS_L3_AudioDecoder(Decode_NonTunnel)->>AudioDecoder HAL: close()
         end
         VTS_L3_AudioDecoder(Decode_NonTunnel)->>AV Buffer HAL: destroyPool()
+        VTS_L3_AudioDecoder(Decode_NonTunnel)->>AV Buffer HAL: getHeapMetrics()
+        AV Buffer HAL-->>VTS_L3_AudioDecoder(Decode_NonTunnel): AV Buffer metrics
         VTS_L3_AudioDecoder(Decode_NonTunnel)->>VTS_L3_AudioDecoder(Decode_NonTunnel): Validate AV buffer pool metrics
-        VTS_L3_AudioDecoder(Decode_NonTunnel)->>VTS_L3_AudioDecoder(Decode_NonTunnel): TearDown()
     end
+    VTS_L3_AudioDecoder(Decode_NonTunnel)->>VTS_L3_AudioDecoder(Decode_NonTunnel): TearDown()
 ```
 
