@@ -6,6 +6,8 @@
 - [Acronyms, Terms and Abbreviations](#acronyms-terms-and-abbreviations)
 - [References](#references)
 - [Test Configuration](#test-configuration)
+- [Class Design](#class-design)
+- [Common Validation Functions](#common-validation-functions)
 - [L3 Tests](#l3-tests)
 
 
@@ -19,18 +21,18 @@
 
 ## Overview
 
-This document describes the L3 Test Specification for the Audio Decoder.
+This document outlines the L3 test design for the Audio Decoder module.
 
-### References
+## References
 
-- `High Level Test Specification` - [audioDecoder_High-Level_TestSpecification.md](audioDecoder_High-Level_TestSpecification.md)
+- High Level Test Specification - [audioDecoder_High-Level_TestSpecification.md](audioDecoder_High-Level_TestSpecification.md)
 - Audio Decoder Interface Definitions - [Audio Decoder HAL](https://github.com/rdkcentral/rdk-halif-aidl/tree/v0.6/audiodecoder/current/com/rdk/hal/audiodecoder)
 - Audio Decoder Overview - [Audio Decoder Overview](https://rdkcentral.github.io/rdk-halif-aidl/halif/audio_decoder/current/audio_decoder/)
 - Audio test streams: [Audio TestStreams](audioDecoder_TestStreams.md)
 
 ## Test Configuration
 
-Test refer [vts_l3_test_config.yaml](../../test_configuration/vts_l3_test_config.yaml) for the streams and information like `PTS`, frame sizes for the test. This file includes the stream information `yaml` [vts_audio_aac_streams.yaml](../../test_configuration/vts_audio_aac_streams.yaml) files required by the test.
+The test setup is defined in [vts_l3_test_config.yaml](../../test_configuration/vts_l3_test_config.yaml), , which specifies the streams, PTS values, frame sizes, and other key parameters required for L3 validation. This configuration includes references to supporting YAML files such as [vts_audio_aac_streams.yaml](../../test_configuration/vts_audio_aac_streams.yaml) files required by the test.
 
 ### Test Configuration File
 
@@ -61,15 +63,19 @@ IAudioDecoderManager:
             - 127999998 #Start in Nano seconds
             - 149333331 #End
           rms_diff_threshold: 0.5
+          decode_time_threshold: 10000000 #Time in nano seconds
 ```
 
+#### Key Parameters
+
 - stream_download_path: URL path to download the audio test streams
-- input_streams_path: Target path to copy the input audio streams
-- reference_streams_path: Target path to copy the reference streams
-- Name: Name of the stream referred from stream configuration files
-- PTS: PTS values of each frame
-- trim: trim start and end values in Nano seconds
-- rms_diff_threshold: `rms` threshold value to validate the decoded output
+- input_streams_path: Local path where input streams are stored
+- reference_streams_path: Local path for reference PCM streams
+- Name: Identifier for the stream, as defined in the stream configuration file
+- PTS: Presentation Time Stamps (per frame) in nanoseconds
+- trim: Start and end trim points in Nano seconds
+- rms_diff_threshold: Maximum allowed `rms` difference for output validation
+- decode_time_threshold: Time budget per frame for decoding, in nanoseconds
 
 ### Stream Configuration File
 
@@ -96,18 +102,22 @@ AudioStreams:
       - 334
 ```
 
+#### Key Parameters
+
 - input: Stream name
 - reference: Reference stream name
 - codec: audio codec information, Refer `Codec` enum
-- sample_rate: Sample rate of the stream in Hz
-- channels: No. of Channels of the stream
+- sample_rate: Sample rate in Hz
+- channels: Number of audio channels
 - format: `pcm` format of the reference stream. Refer `PCMFormat` enum
-- num_of_frames: No. of frames in the stream
-- frame_size: Frame size of each frame in bytes
+- num_of_frames: Total number of frames in the stream
+- frame_size: Byte size for each frame, listed in order
 
 ## Class Design
 
-The class diagram below illustrates the flow of audio decoder test cases
+The L3 audio decoder tests are implemented using the C++ variant of `ut-core`. For more information on the framework, refer to [ut-core](https://github.com/rdkcentral/ut-core/blob/4.7.0/README.md)
+
+The following class diagram shows the inheritance structure and configuration dependencies for the test suite:
 
 ```mermaid
 ---
@@ -122,27 +132,76 @@ classDiagram
     note for L3_Testcases "uses vts_l3_test_config.yaml"
 ```
 
-VTS_L3_AudioDecoder class overrides `SetUp()` and `TearDown()` functions of `GTEST_API_` class. These function executes common pre and post requirements for all the tests
+The VTS_L3_AudioDecoder class overrides the `SetUp()` and `TearDown()` methods from the `GTEST_API_` base class to handle test initialization and clean-up tasks common across test cases.
 
 |#|Override Function|Description|API|
 |-|-----------------|-----------|---|
-|1|Setup|Gets the service manager handle, Gets the supported audio decoder id and handles, Gets the decoder handles, Registers event listener, Gets decoder capabilities|getAudioDecoderIds(), getAudioDecoder(), registerEventListener(), getCapabilities()|
-|2|TearDown|Un-registers the events|unregisterEventListener()|
+|1|Setup|Initializes the test by acquiring service handles, supported decoder IDs, decoder capabilities, and registering event listeners|getAudioDecoderIds(), getAudioDecoder(), registerEventListener(), getCapabilities()|
+|2|TearDown|Cleans up by unregistering event listeners|unregisterEventListener()|
+
+## Common Validation Functions
+
+### Validate Decoded Buffer
+
+The decoded PCM output is validated by comparing its Root Mean Square (RMS) value against the reference stream. The comparison uses the `rms_diff_threshold` defined in the [vts_l3_test_config.yaml](../../test_configuration/vts_l3_test_config.yaml) configuration file.
+
+### Validate Decoder Metrics
+
+The following decoder metrics are validated before and after decoding to ensure accurate tracking:
+
+- `METRIC_FRAMES_DECODED`
+- `METRIC_DECODE_ERRORS`
+- `METRIC_FRAMES_DROPPED`
+
+These are retrieved using the `getProperty()` API. The test confirms that the metrics increment correctly during the decoding process.
+
+### Validate Decode Time
+
+The time taken to decode each frame is calculated as the difference between `decodeBuffer()` and the corresponding `onFrameOutput()` event. The result is validated against the `decode_time_threshold` specified in the configuration [vts_l3_test_config.yaml](../../test_configuration/vts_l3_test_config.yaml)
+
+### Validate AV Buffers
+
+This check ensures that both the test suite and the decoder HAL properly release allocated audio buffers. It compares memory usage at the beginning and end of each test using the `getHeapMetrics()` API to confirm no memory leaks or unreleased buffers remain.
 
 ## L3 Tests
 
 ### Decode_NonTunnel
 
+The following sequence diagram illustrates the flow of the `Decode_NonTunnel` test scenario, executed by the `VTS_L3_AudioDecoder` class:
+
 ```mermaid
 sequenceDiagram
     participant VTS_L3_AudioDecoder(Decode_NonTunnel)
-    participant Decoder HAL
+    participant AudioDecoder HAL
+    participant AV Buffer HAL
 
-    VTS_L3_AudioDecoder(Decode_NonTunnel)->>Decoder HAL: getServiceManager
-    Decoder HAL-->>VTS_L3_AudioDecoder(Decode_NonTunnel): Service Manager Handle
-
-
-
-
+    VTS_L3_AudioDecoder(Decode_NonTunnel)->>VTS_L3_AudioDecoder(Decode_NonTunnel): Parse vts_l3_test_config.yaml
+    VTS_L3_AudioDecoder(Decode_NonTunnel)->>VTS_L3_AudioDecoder(Decode_NonTunnel): SetUp()
+    loop For each decoder
+        VTS_L3_AudioDecoder(Decode_NonTunnel)->>AV Buffer HAL: createAudioPool()
+        AV Buffer HAL-->>VTS_L3_AudioDecoder(Decode_NonTunnel): Return pool handle
+        loop For each non-tunnel stream
+            VTS_L3_AudioDecoder(Decode_NonTunnel)->>AudioDecoder HAL: open()
+            AudioDecoder HAL-->>VTS_L3_AudioDecoder(Decode_NonTunnel): Return controller handle
+            VTS_L3_AudioDecoder(Decode_NonTunnel)->>AudioDecoder HAL: start()
+            loop For each frame
+                VTS_L3_AudioDecoder(Decode_NonTunnel)->>AV Buffer HAL: alloc()
+                AV Buffer HAL-->>VTS_L3_AudioDecoder(Decode_NonTunnel): Return buffer handle
+                VTS_L3_AudioDecoder(Decode_NonTunnel)->>VTS_L3_AudioDecoder(Decode_NonTunnel): Read frame from file<br>Copy to buffer using buffer helper
+                VTS_L3_AudioDecoder(Decode_NonTunnel)->>AudioDecoder HAL: decodeBuffer()
+                VTS_L3_AudioDecoder(Decode_NonTunnel)->>VTS_L3_AudioDecoder(Decode_NonTunnel): Wait for onFrameOutput()
+                AudioDecoder HAL-->>VTS_L3_AudioDecoder(Decode_NonTunnel): onFrameOutput()
+                VTS_L3_AudioDecoder(Decode_NonTunnel)->>VTS_L3_AudioDecoder(Decode_NonTunnel): Compare decoded frame<br>with reference frame
+                VTS_L3_AudioDecoder(Decode_NonTunnel)->>VTS_L3_AudioDecoder(Decode_NonTunnel): Validate decoder metrics
+                VTS_L3_AudioDecoder(Decode_NonTunnel)->>VTS_L3_AudioDecoder(Decode_NonTunnel): Validate decode time
+                VTS_L3_AudioDecoder(Decode_NonTunnel)->>AV Buffer HAL: free()
+            end
+            VTS_L3_AudioDecoder(Decode_NonTunnel)->>AudioDecoder HAL: stop()
+            VTS_L3_AudioDecoder(Decode_NonTunnel)->>AudioDecoder HAL: close()
+        end
+        VTS_L3_AudioDecoder(Decode_NonTunnel)->>AV Buffer HAL: destroyPool()
+        VTS_L3_AudioDecoder(Decode_NonTunnel)->>VTS_L3_AudioDecoder(Decode_NonTunnel): Validate AV buffer pool metrics
+        VTS_L3_AudioDecoder(Decode_NonTunnel)->>VTS_L3_AudioDecoder(Decode_NonTunnel): TearDown()
+    end
 ```
 

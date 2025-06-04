@@ -24,6 +24,7 @@ IAudioDecoderManager:
             - 127999998 #Start in Nano seconds
             - 149333331 #End
           rms_diff_threshold: 0.5
+          decode_time_threshold: 10000000 #Time in nano seconds
     Decode_NonTunnel_Secure:
       Streams:
         - Name: tones_48k_2_256_aac
