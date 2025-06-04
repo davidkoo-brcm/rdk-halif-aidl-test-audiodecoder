@@ -15,9 +15,12 @@
 
 - `HAL` \- Hardware Abstraction Layer, may include some common components
 - `UT`  \- Unit Test(s)
-- `OEM`  \- Original Equipment Manufacture
-- `SoC`  \- System on a Chip
 - `rms`  \- Root Mean Square
+- `YAML` \- Yet Another Markup Language
+- `PTS` \- Presentation Time Stamp
+- `Hz` \- Hertz
+- `AAC` \- Advanced Audio Coding
+- `PCM` \- Pulse Code Modulation
 
 ## Overview
 
@@ -32,7 +35,7 @@ This document outlines the L3 test design for the Audio Decoder module.
 
 ## Test Configuration
 
-The test setup is defined in [vts_l3_test_config.yaml](../../test_configuration/vts_l3_test_config.yaml), , which specifies the streams, PTS values, frame sizes, and other key parameters required for L3 validation. This configuration includes references to supporting YAML files such as [vts_audio_aac_streams.yaml](../../test_configuration/vts_audio_aac_streams.yaml) files required by the test.
+The test setup is defined in [vts_l3_test_config.yaml](../../test_configuration/vts_l3_test_config.yaml), , which specifies the streams, `PTS` values, frame sizes, and other key parameters required for L3 validation. This configuration includes references to supporting `YAML` files such as [vts_audio_aac_streams.yaml](../../test_configuration/vts_audio_aac_streams.yaml) files required by the test.
 
 ### Example Test Configuration File
 
@@ -107,7 +110,7 @@ AudioStreams:
 - input: Stream name
 - reference: Reference stream name
 - codec: audio codec information, Refer `Codec` enum
-- sample_rate: Sample rate in Hz
+- sample_rate: Sample rate in `Hz`
 - channels: Number of audio channels
 - format: `pcm` format of the reference stream. Refer `PCMFormat` enum
 - num_of_frames: Total number of frames in the stream
@@ -136,14 +139,14 @@ The VTS_L3_AudioDecoder class overrides the `SetUp()` and `TearDown()` methods f
 
 |#|Override Function|Description|API|
 |-|-----------------|-----------|---|
-|1|Setup|Initializes the test by acquiring service handles, supported decoder IDs, decoder capabilities, and registering event listeners|getAudioDecoderIds(), getAudioDecoder(), registerEventListener(), getCapabilities()|
-|2|TearDown|Cleans up by unregistering event listeners|unregisterEventListener()|
+|1|Setup|Initializes the test by acquiring service handles, supported decoder IDs, decoder capabilities, and registering event listeners|`getAudioDecoderIds()`, `getAudioDecoder()`, `registerEventListener()`, `getCapabilities()`|
+|2|TearDown|Cleans up by unregistering event listeners|`unregisterEventListener()`|
 
 ## Common Validation Functions
 
 ### Validate Decoded Buffer
 
-The decoded PCM output is validated by comparing its Root Mean Square (RMS) value against the reference stream. The comparison uses the `rms_diff_threshold` defined in the [vts_l3_test_config.yaml](../../test_configuration/vts_l3_test_config.yaml) configuration file.
+The decoded `PCM` output is validated by comparing its `rms` value against the reference stream. The comparison uses the `rms_diff_threshold` defined in the [vts_l3_test_config.yaml](../../test_configuration/vts_l3_test_config.yaml) configuration file.
 
 ### Validate Decoder Metrics
 
