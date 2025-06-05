@@ -683,14 +683,14 @@ struct AudioMetatData
     AVSource source;
 };
 
-struct AudioFrame
+typedef struct AudioFrame
 {
     std::vector<uint8_t> data;
     size_t numSamples;
     bool isMetaAvailable;
     struct AudioMetatData metadata;
     std::chrono::steady_clock::time_point receiveTime;
-};
+}AudioFrame_t;
 
 class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
 {
@@ -707,7 +707,7 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
 
             //TODO: Update the code with av buffer helper
             //TODO: metadata its not always valid
-            AudioFrame frame;
+            AudioFrame_t frame;
             frame.receiveTime = std::chrono::steady_clock::now();
             if(frameBufferHandle != -1)
             {
@@ -745,7 +745,7 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
             return ::android::binder::Status::ok();
         }
 
-        bool getNextFrame(AudioFrame &frameInfo)
+        bool getNextFrame(AudioFrame_t &frameInfo)
         {
             std::unique_lock<std::mutex> lock(mQueueMutex);
 
@@ -756,7 +756,7 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
             {
                 return false;
             }
-            AudioFrame frame = std::move(mFrameQueue.front());
+            AudioFrame_t frame = std::move(mFrameQueue.front());
             mFrameQueue.pop_front();
 
             frameInfo = frame;
@@ -769,7 +769,7 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
             mFrameAvailable.notify_all();
         }
     private:
-        std::deque<AudioFrame> mFrameQueue;
+        std::deque<AudioFrame_t> mFrameQueue;
         std::mutex mQueueMutex;
         std::condition_variable mFrameAvailable;
         std::atomic<bool> mShutdownFlag;

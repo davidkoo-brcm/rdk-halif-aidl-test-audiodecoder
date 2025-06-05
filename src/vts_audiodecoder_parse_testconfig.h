@@ -94,7 +94,7 @@ typedef struct testConfiguration
 }testConfiguration_t;
 
 void* vts_kvp_create_instance(char *fileName);
-UT_status_t vts_testconfig_getStream_details(void* pTestInstance, char *module, char *testGroup, char *testName, std::vector<testConfiguration_t>& streamDetails);
+UT_status_t vts_audiodeccoder_parse_testconfig(void* pTestInstance, char *module, char *testGroup, char *testName, std::vector<testConfiguration_t>& streamDetails);
 void vts_kvp_destroy_instance(void *instance);
 
 #endif //__VTS_AUDIODECODER_PARSE_TESTCONFIG_H__

@@ -489,7 +489,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel)
     std::vector<testConfiguration_t> streamDetails;
     bool secureMode = false;
 
-    vts_testconfig_getStream_details(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
 
     runSequentialDecode(streamDetails, secureMode);
 }
@@ -511,7 +511,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel_Secure)
     std::vector<testConfiguration_t> streamDetails;
     bool secureMode = true;
 
-    vts_testconfig_getStream_details(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
 
     runSequentialDecode(streamDetails, secureMode);
 }
@@ -533,7 +533,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Tunnel)
     std::vector<testConfiguration_t> streamDetails;
     bool secureMode = false;
 
-    vts_testconfig_getStream_details(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
 
     runSequentialDecode(streamDetails, secureMode);
 }
@@ -555,7 +555,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Tunnel_Secure)
     std::vector<testConfiguration_t> streamDetails;
     bool secureMode = true;
 
-    vts_testconfig_getStream_details(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
 
     runSequentialDecode(streamDetails, secureMode);
 }
@@ -576,7 +576,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Inavlid_Frames)
     char *testName = "Decode_Inavlid_Frames";
     std::vector<testConfiguration_t> streamDetails;
 
-    vts_testconfig_getStream_details(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
 
     for (bool secureDecode : {false, true})
     {
@@ -600,7 +600,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Trim)
     char *testName = "Decode_Trim";
     std::vector<testConfiguration_t> streamDetails;
 
-    vts_testconfig_getStream_details(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
 
     for (bool secureDecode : {false, true})
     {
@@ -625,7 +625,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Cuncurrent_NonTunnel)
     std::vector<testConfiguration_t> streamDetails;
     bool secureMode = false;
 
-    vts_testconfig_getStream_details(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
 
     for (bool secureDecode : {false, true})
     {
