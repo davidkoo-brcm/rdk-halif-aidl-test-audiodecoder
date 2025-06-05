@@ -173,10 +173,11 @@ classDiagram
 
 The `VTS_L3_AudioDecoder` class overrides the `SetUp()` and `TearDown()` methods from the `GTEST_API_` base class to handle test initialization and clean-up tasks common across test cases.
 
-|#|Override Function|Description|API|
-|-|-----------------|-----------|---|
-|1|Setup|Initializes the test by acquiring service handles, supported decoder IDs, decoder capabilities, and registering event listeners|`getAudioDecoderIds()`, `getAudioDecoder()`, `registerEventListener()`, `getCapabilities()`|
-|2|TearDown|Cleans up by unregistering event listeners|`unregisterEventListener()`|
+|#|VTS_L3_AudioDecoder Functions|Arguments|Description|HAL API|
+|-|-----------------------------|----------|-----------|---|
+|1|Setup|None|Initializes the test by acquiring service handles, supported decoder IDs, decoder capabilities, and registering event listeners|`getAudioDecoderIds()`<br>`getAudioDecoder()`<br>`registerEventListener()`<br>`getCapabilities()`|
+|2|TearDown|None|Cleans up by unregistering event listeners|`unregisterEventListener()`|
+|3|decodeAudioStreams|IAudioDecoder::Id decoderId<br>sp<IAudioDecoder> decoderHandle<br>sp<AudioDecoderControllerListener> controlListener<br>sp<AudioDecoderEventListener> eventListener<br>bool secureDecode<br>std::vector<testConfiguration_t> streamDetails|decodes the audio streams frame by frame|`createAudioPool()`<br>`alloc()`<br>`free()`<br>`destroyPool()`<br>`open()`<br>`start()`<br>`decodeBuffer()`<br>`stop()`<br>`close()`|
 
 ## Common Validation Functions
 

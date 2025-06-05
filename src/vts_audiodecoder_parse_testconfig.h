@@ -77,7 +77,7 @@
 #define STREAM_INPUT_PATH "IAudioDecoderManager.input_streams_path"
 #define STREAM_REF_PATH "IAudioDecoderManager.reference_streams_path"
 
-typedef struct testStreamConfig
+typedef struct testConfiguration
 {
     std::string input;
     std::string reference;
@@ -91,10 +91,10 @@ typedef struct testStreamConfig
     int64_t trimEndNs;
     /* Frame size, PTS, error frame */
     std::vector<std::tuple<int32_t, int64_t, bool>> frameDetails;
-}testStreamConfig_t;
+}testConfiguration_t;
 
 void* vts_kvp_create_instance(char *fileName);
-UT_status_t vts_testconfig_getStream_details(void* pTestInstance, char *module, char *testGroup, char *testName, std::vector<testStreamConfig_t>& streamDetails);
+UT_status_t vts_testconfig_getStream_details(void* pTestInstance, char *module, char *testGroup, char *testName, std::vector<testConfiguration_t>& streamDetails);
 void vts_kvp_destroy_instance(void *instance);
 
 #endif //__VTS_AUDIODECODER_PARSE_TESTCONFIG_H__

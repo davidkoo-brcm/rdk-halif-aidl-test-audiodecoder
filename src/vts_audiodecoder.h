@@ -666,6 +666,32 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         } \
     } while (0)
 
+struct AudioMetatData
+{
+    Codec sourceCodec;
+    bool isDolbyAtmos;
+    int32_t numChannels;
+    int32_t sampleRate;
+    PCMFormat format;
+    bool planarFormat;
+    int32_t trimStartNs;
+    int32_t trimEndNs;
+    bool lowLatency;
+    bool endOfStream;
+    bool discontinuity;
+    ::std::vector<audiodecoder::ChannelType> channelTypes;
+    AVSource source;
+};
+
+struct AudioFrame
+{
+    std::vector<uint8_t> data;
+    size_t numSamples;
+    bool isMetaAvailable;
+    struct AudioMetatData metadata;
+    std::chrono::steady_clock::time_point receiveTime;
+};
+
 class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
 {
     public:
@@ -683,13 +709,31 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
             //TODO: metadata its not always valid
             AudioFrame frame;
             frame.receiveTime = std::chrono::steady_clock::now();
-            if(frameBufferHandle == -1)
+            if(frameBufferHandle != -1)
             {
                 frame.numSamples = numSamples;
                 frame.data.resize(numSamples * bps);
                 //std::memcpy(frame.data.data(), decodedData, frame.data.size());
             }
-            frame.format = metadata->format;
+
+            frame.isMetaAvailable = false;
+            if (metadata.has_value())
+            {
+                frame.isMetaAvailable = true;
+                frame.metadata.sourceCodec = metadata->sourceCodec;
+                frame.metadata.isDolbyAtmos = metadata->isDolbyAtmos;
+                frame.metadata.numChannels = metadata->numChannels;
+                frame.metadata.channelTypes = metadata->channelTypes;
+                frame.metadata.sampleRate = metadata->sampleRate;
+                frame.metadata.format = metadata->format;
+                frame.metadata.planarFormat = metadata->planarFormat;
+                frame.metadata.trimStartNs = metadata->trimStartNs;
+                frame.metadata.trimEndNs = metadata->trimEndNs;
+                frame.metadata.lowLatency = metadata->lowLatency;
+                frame.metadata.endOfStream = metadata->endOfStream;
+                frame.metadata.discontinuity = metadata->discontinuity;
+                frame.metadata.source = metadata->source;
+            }
 
             {
                 std::lock_guard<std::mutex> lock(mQueueMutex);
@@ -700,7 +744,8 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
 
             return ::android::binder::Status::ok();
         }
-        bool getNextFrame(std::vector<uint8_t>& outBuffer, size_t& outNumSamples, PCMFormat& format, std::chrono::steady_clock::time_point &receiveTime)
+
+        bool getNextFrame(AudioFrame &frameInfo)
         {
             std::unique_lock<std::mutex> lock(mQueueMutex);
 
@@ -714,13 +759,8 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
             AudioFrame frame = std::move(mFrameQueue.front());
             mFrameQueue.pop_front();
 
-            outNumSamples = frame.numSamples;
-            if(!frame.data.empty())
-            {
-                outBuffer = std::move(frame.data);
-            }
-            format = frame.format;
-            receiveTime = frame.receiveTime;
+            frameInfo = frame;
+
             return true;
         }
         void shutdown()
@@ -729,14 +769,6 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
             mFrameAvailable.notify_all();
         }
     private:
-        struct AudioFrame
-        {
-            std::vector<uint8_t> data;
-            size_t numSamples;
-            PCMFormat format;
-            std::chrono::steady_clock::time_point receiveTime;
-        };
-
         std::deque<AudioFrame> mFrameQueue;
         std::mutex mQueueMutex;
         std::condition_variable mFrameAvailable;
@@ -757,7 +789,7 @@ class AudioDecoderEventListener : public BnAudioDecoderEventListener
         }
         Status onStateChanged(State oldState,State newState) override
         {
-            UT_LOG_INFO("State Change received: %s -> %s", com::rdk::hal::toString(oldState).c_str(), com::rdk::hal::toString(newState).c_str());
+            UT_LOG_INFO("[%p]State Change received: %s -> %s", this, com::rdk::hal::toString(oldState).c_str(), com::rdk::hal::toString(newState).c_str());
             {
                 std::lock_guard<std::mutex> lock(mMutex);
                 mStateChanges.emplace_back(oldState, newState);

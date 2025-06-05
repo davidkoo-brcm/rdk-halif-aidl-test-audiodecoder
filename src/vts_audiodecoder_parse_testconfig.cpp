@@ -120,7 +120,7 @@ UT_status_t vts_testconfig_getStream_details(void* pTestInstance, char *module, 
     {
         char resultKVP[UT_KVP_MAX_ELEMENT_SIZE] = {0};
         uint32_t streamId;
-        testStreamConfig_t streamDetails;
+        testConfiguration_t streamDetails;
         std::vector<int32_t> errorFrameNum;
 
         std::string streamName = testList + "." + std::to_string(i) + "Name";
