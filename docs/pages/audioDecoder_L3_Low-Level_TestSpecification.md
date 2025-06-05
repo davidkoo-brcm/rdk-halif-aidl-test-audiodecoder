@@ -154,6 +154,16 @@ AudioStreams:
 
 ## Class Design
 
+This test suite is designed using an object-oriented approach, leveraging the C++ variant of the `ut-core` testing framework. The following class structure and interaction model supports robust test orchestration, concurrent execution, and decoder validation.
+
+### Primary Classes
+
+|#|Class|Description|
+|-|-----|-----------|
+|1|VTS_L3_AudioDecoder|Test class which contains the test cases implementation|
+|2|AudioDecoderControllerListener|AudioDecoder Controller listener class|
+|3|AudioDecoderEventListener|AudioDecoder Event listener class|
+
 ### VTS_L3_AudioDecoder Class
 
 The L3 audio decoder tests are implemented using the C++ variant of `ut-core`. For more information on the framework, refer to [ut-core](https://github.com/rdkcentral/ut-core/blob/4.7.0/README.md)
@@ -166,23 +176,28 @@ title: Audio Decoder Class Flow
 ---
 classDiagram
     GTEST_API_ <|-- ut_core : inherits
-    class ut_core{
-    }
     ut_core <|-- VTS_L3_AudioDecoder : inherits
+    class VTS_L3_AudioDecoder{
+      SetUp()
+      TearDown()
+      decodeAudioStreams()
+      runSequentialDecode()
+      runConcurrentDecode()
+    }
     VTS_L3_AudioDecoder <|-- L3_Testcases
     note for L3_Testcases "uses vts_l3_test_config.yaml"
 ```
 #### VTS_L3_AudioDecoder Class Functions
 
-The `VTS_L3_AudioDecoder` class overrides the `SetUp()` and `TearDown()` methods from the `GTEST_API_` base class to handle test initialization and clean-up tasks common across test cases.
+The class overrides `SetUp()` and `TearDown()` from `ut_core` to handle initialization and clean-up common to all test cases
 
 |#|Function|Arguments|Description|HAL API|
 |-|--------|---------|-----------|-------|
 |1|Setup|None|Initializes the test by acquiring service handles, supported decoder IDs, decoder capabilities, and registering event listeners|`getAudioDecoderIds()`<br>`getAudioDecoder()`<br>`registerEventListener()`<br>`getCapabilities()`|
 |2|TearDown|None|Cleans up by unregistering event listeners|`unregisterEventListener()`|
-|3|decodeAudioStreams|IAudioDecoder::Id decoderId<br>IAudioDecoder decoderHandle<br>AudioDecoderControllerListener controlListener<br>AudioDecoderEventListener eventListener<br>bool secureDecode<br>std::vector\<testConfiguration_t\> streamDetails|decodes the audio streams frame by frame|`createAudioPool()`<br>`alloc()`<br>`free()`<br>`destroyPool()`<br>`open()`<br>`start()`<br>`decodeBuffer()`<br>`stop()`<br>`close()`|
-|3|runSequentialDecode|std::vector\<testConfiguration_t\>& streamDetails<br>bool secureDecode|Runs all decoders in sequentially. Uses `decodeAudioStreams()` to decode the streams using each decoder|`getHeapMetrics()`|
-|4|runConcurrentDecode|std::vector\<testConfiguration_t\>& streamDetails<br>bool secureDecode|Runs all decoders in concurrently. Uses `decodeAudioStreams()` to decode the streams using each decoder|`getHeapMetrics()`|
+|3|decodeAudioStreams|IAudioDecoder::Id decoderId<br>IAudioDecoder decoderHandle<br>AudioDecoderControllerListener controlListener<br>AudioDecoderEventListener eventListener<br>bool secureDecode<br>std::vector\<testConfiguration_t\> streamDetails|Decodes input streams frame by frame using a specific decoder instance|`createAudioPool()`<br>`alloc()`<br>`free()`<br>`destroyPool()`<br>`open()`<br>`start()`<br>`decodeBuffer()`<br>`stop()`<br>`close()`|
+|3|runSequentialDecode|std::vector\<testConfiguration_t\>& streamDetails<br>bool secureDecode|Decodes streams using all decoders sequentially using `decodeAudioStreams()`|`getHeapMetrics()`|
+|4|runConcurrentDecode|std::vector\<testConfiguration_t\>& streamDetails<br>bool secureDecode|Launches multiple threads to decode streams concurrently using `decodeAudioStreams()`|`getHeapMetrics()`|
 
 #### Setup
 
@@ -197,10 +212,10 @@ sequenceDiagram
   AudioDecoder HAL-->>VTS_L3_AudioDecoder(Setup): list of decoder IDs
   loop For each decoder ID
     VTS_L3_AudioDecoder(Setup)->>AudioDecoder HAL: getAudioDecoder()
-    AudioDecoder HAL-->>VTS_L3_AudioDecoder(Setup): Decoder handles
+    AudioDecoder HAL-->>VTS_L3_AudioDecoder(Setup): decoder handle
     VTS_L3_AudioDecoder(Setup)->>AudioDecoder HAL: registerEventListener()
     VTS_L3_AudioDecoder(Setup)->>AudioDecoder HAL: getCapabilities()
-    AudioDecoder HAL-->>VTS_L3_AudioDecoder(Setup): Get decoder Capabilities
+    AudioDecoder HAL-->>VTS_L3_AudioDecoder(Setup): decoder capabilities
   end
 ```
 #### TearDown
@@ -221,33 +236,32 @@ The following sequence diagram illustrates the flow of the `decodeAudioStreams` 
 
 ```mermaid
 sequenceDiagram
-  participant VTS_L3_AudioDecoder(decodeAudioStreams)
+  participant rundecoder as VTS_L3_AudioDecoder(decodeAudioStreams)
   participant AudioDecoder HAL
   participant AV Buffer HAL
 
-  VTS_L3_AudioDecoder(decodeAudioStreams)->>AV Buffer HAL: createAudioPool()
-  AV Buffer HAL-->>VTS_L3_AudioDecoder(decodeAudioStreams): Return pool handle
+  rundecoder->>AV Buffer HAL: createAudioPool()
+  AV Buffer HAL-->>rundecoder: pool handle
   loop For each stream
-      VTS_L3_AudioDecoder(decodeAudioStreams)->>AudioDecoder HAL: open()
-      AudioDecoder HAL-->>VTS_L3_AudioDecoder(decodeAudioStreams): Return controller handle
-      VTS_L3_AudioDecoder(decodeAudioStreams)->>AudioDecoder HAL: start()
-      loop For each frame
-          VTS_L3_AudioDecoder(decodeAudioStreams)->>AV Buffer HAL: alloc()
-          AV Buffer HAL-->>VTS_L3_AudioDecoder(decodeAudioStreams): Return buffer handle
-          VTS_L3_AudioDecoder(decodeAudioStreams)->>VTS_L3_AudioDecoder(decodeAudioStreams): Read frame from file<br>Copy to buffer using buffer helper
-          VTS_L3_AudioDecoder(decodeAudioStreams)->>AudioDecoder HAL: decodeBuffer()
-          VTS_L3_AudioDecoder(decodeAudioStreams)->>VTS_L3_AudioDecoder(decodeAudioStreams): Wait for onFrameOutput()
-          AudioDecoder HAL-->>VTS_L3_AudioDecoder(decodeAudioStreams): onFrameOutput()
-          VTS_L3_AudioDecoder(decodeAudioStreams)->>VTS_L3_AudioDecoder(decodeAudioStreams): Validate decode time
-          VTS_L3_AudioDecoder(decodeAudioStreams)->>VTS_L3_AudioDecoder(decodeAudioStreams): Compare decoded frame<br>with reference frame
-          VTS_L3_AudioDecoder(decodeAudioStreams)->>VTS_L3_AudioDecoder(decodeAudioStreams): Validate the frame metatdata<br>received from onFrameOutput()
-          VTS_L3_AudioDecoder(decodeAudioStreams)->>VTS_L3_AudioDecoder(decodeAudioStreams): Validate decoder metrics
-          VTS_L3_AudioDecoder(decodeAudioStreams)->>AV Buffer HAL: free()
-      end
-      VTS_L3_AudioDecoder(decodeAudioStreams)->>AudioDecoder HAL: stop()
-      VTS_L3_AudioDecoder(decodeAudioStreams)->>AudioDecoder HAL: close()
+    rundecoder->>AudioDecoder HAL: open()
+    AudioDecoder HAL-->>rundecoder: controller handle
+    rundecoder->>AudioDecoder HAL: start()
+    loop For each frame
+      rundecoder->>AV Buffer HAL: alloc()
+      AV Buffer HAL-->>rundecoder: buffer handle
+      rundecoder->>rundecoder: read frame & copy to buffer
+      rundecoder->>AudioDecoder HAL: decodeBuffer()
+      rundecoder->>rundecoder: wait for onFrameOutput()
+      AudioDecoder HAL-->>rundecoder: onFrameOutput()
+      rundecoder->>rundecoder: validate decode time
+      rundecoder->>rundecoder: compare with reference frame
+      rundecoder->>rundecoder: validate metadata and metrics
+      rundecoder->>AV Buffer HAL: free()
+    end
+    rundecoder->>AudioDecoder HAL: stop()
+    rundecoder->>AudioDecoder HAL: close()
   end
-  VTS_L3_AudioDecoder(decodeAudioStreams)->>AV Buffer HAL: destroyPool()
+  rundecoder->>AV Buffer HAL: destroyPool()
 ```
 #### runSequentialDecode
 
@@ -255,17 +269,17 @@ The following sequence diagram illustrates the flow of the `runSequentialDecode`
 
 ```mermaid
 sequenceDiagram
-  participant VTS_L3_AudioDecoder(runSequentialDecode)
+  participant rundecoder as VTS_L3_AudioDecoder(runSequentialDecode)
   participant AudioDecoder HAL
   participant AV Buffer HAL
 
   loop For each decoder
-    VTS_L3_AudioDecoder(runSequentialDecode)->>AV Buffer HAL : getHeapMetrics()
-    AV Buffer HAL -->> VTS_L3_AudioDecoder(runSequentialDecode): AV Buffer metrics
-    VTS_L3_AudioDecoder(runSequentialDecode)->>VTS_L3_AudioDecoder(runSequentialDecode): decodeAudioStreams()
-    VTS_L3_AudioDecoder(runSequentialDecode)->>AV Buffer HAL : getHeapMetrics()
-    AV Buffer HAL -->> VTS_L3_AudioDecoder(runSequentialDecode): AV Buffer metrics
-    VTS_L3_AudioDecoder(runSequentialDecode)->>VTS_L3_AudioDecoder(runSequentialDecode): Validate AV buffer pool metrics
+    rundecoder->>AV Buffer HAL : getHeapMetrics()
+    AV Buffer HAL -->> rundecoder: AV Buffer metrics
+    rundecoder->>rundecoder: decodeAudioStreams()
+    rundecoder->>AV Buffer HAL : getHeapMetrics()
+    AV Buffer HAL -->> rundecoder: AV Buffer metrics
+    rundecoder->>rundecoder: Validate AV buffer metrics
   end
 ```
 
@@ -275,32 +289,32 @@ The following sequence diagram illustrates the flow of the `runConcurrentDecode`
 
 ```mermaid
 sequenceDiagram
-  participant VTS_L3_AudioDecoder(runConcurrentDecode)
-  participant decoderThread_1
-  participant decoderThread_2..N
-  participant AudioDecoder HAL
-  participant AV Buffer HAL
+  participant rundecoder as VTS_L3_AudioDecoder(runConcurrentDecode)
+  participant thread_1 as decoderThread_1
+  participant thread_N as decoderThread_2..N
+  participant HAL as AudioDecoder HAL
+  participant buffer as AV Buffer HAL
 
   loop For each decoder
-    VTS_L3_AudioDecoder(runConcurrentDecode)->>AV Buffer HAL : getHeapMetrics()
-    AV Buffer HAL -->> VTS_L3_AudioDecoder(runConcurrentDecode): AV Buffer metrics
-    VTS_L3_AudioDecoder(runConcurrentDecode)->>decoderThread_1: Create
-    VTS_L3_AudioDecoder(runConcurrentDecode)->>decoderThread_2..N: Create
-    par decoderThread_1 running
-      decoderThread_1->>decoderThread_1: decodeAudioStreams()
-    and decoderThread_2..N running
-      decoderThread_2..N->>decoderThread_2..N: decodeAudioStreams()
+    rundecoder->>buffer : getHeapMetrics()
+    buffer -->> rundecoder: AV Buffer metrics
+    rundecoder->>thread_1: launch thread
+    rundecoder->>thread_N: launch threads
+    par thread_1
+      thread_1->>thread_1: decodeAudioStreams()
+    and thread_N
+      thread_N->>thread_N: decodeAudioStreams()
     end
-    VTS_L3_AudioDecoder(runConcurrentDecode)->>VTS_L3_AudioDecoder(runConcurrentDecode): wait for threads to join
-    VTS_L3_AudioDecoder(runConcurrentDecode)->>AV Buffer HAL : getHeapMetrics()
-    AV Buffer HAL -->> VTS_L3_AudioDecoder(runConcurrentDecode): AV Buffer metrics
-    VTS_L3_AudioDecoder(runConcurrentDecode)->>VTS_L3_AudioDecoder(runConcurrentDecode): Validate AV buffer pool metrics
+    rundecoder->>rundecoder: join threads
+    rundecoder->>buffer : getHeapMetrics()
+    buffer -->> rundecoder: AV Buffer metrics
+    rundecoder->>rundecoder: Validate AV buffer metrics
   end
 ```
 
 ### AudioDecoderControllerListener Class
 
-This is Listener class for audio decoder controller. This class overrides `onFrameOutput()` to get the decoded audio buffer
+This class is responsible for handling decoded frame output callbacks from the AudioDecoder `HAL`. The class collects decoded audio buffers along with their metadata and timestamps for later validation by the test framework
 
 ```mermaid
 ---
@@ -309,6 +323,8 @@ title: AudioDecoderControllerListener Class
 classDiagram
     BnAudioDecoderControllerListener <|-- AudioDecoderControllerListener : inherits
     class AudioDecoderControllerListener{
+        onFrameOutput()
+        getNextFrame()
     }
 ```
 
@@ -316,7 +332,7 @@ classDiagram
 
 ##### testConfiguration_t
 
-This structure holds the decoded audio data
+AudioFrame_t encapsulates information about each decoded audio frame, including the raw PCM data, number of samples, associated metadata, and the timestamp at which the test received the buffer. This is useful for time-based validation and synchronization with the reference stream.
 
 ```cpp
 typedef struct AudioFrame
@@ -333,12 +349,12 @@ typedef struct AudioFrame
 
 |#|Function|Arguments|Description|
 |-|--------|---------|-----------|
-|1|onFrameOutput|int64_t nsPresentationTime<br>int64_t frameBufferHandle<br>const ::std::optional<FrameMetadata>& metadata|Override function, receives the decoded buffer and frame metadata from the `HAL` and queue the frames for the validation|
-|2|getNextFrame|AudioFrame_t &frameInfo|Returns the decoded frame data from the queue|
+|1|onFrameOutput|int64_t nsPresentationTime<br>int64_t frameBufferHandle<br>const ::std::optional<FrameMetadata>& metadata|Override function from BnAudioDecoderControllerListener. Called by the `HAL` when a decoded frame is ready. It enqueues the decoded frame and metadata into an internal queue for test validation.|
+|2|getNextFrame|AudioFrame_t &frameInfo|Pops the next available frame from the internal queue. Used by test logic to retrieve and validate decoded output|
 
 ### AudioDecoderEventListener Class
 
-This is Listener class for events from the audiodecoder `HAL`. This class overrides `onDecodeError()` and `onStateChanged()`
+This class implements the BnAudioDecoderEventListener interface and is responsible for receiving and queuing events emitted by the AudioDecoder `HAL`. These events include decoding errors and state transitions, which are later validated by the test cases to ensure correct decoder behaviour.
 
 ```mermaid
 ---
@@ -347,6 +363,10 @@ title: AudioDecoderEventListener Class
 classDiagram
     BnAudioDecoderEventListener <|-- AudioDecoderEventListener : inherits
     class AudioDecoderEventListener{
+        onDecodeError()
+        onStateChanged()
+        waitForState()
+        checkStateTransistion()
     }
 ```
 
@@ -354,47 +374,47 @@ classDiagram
 
 |#|Function|Arguments|Description|
 |-|--------|---------|-----------|
-|1|onDecodeError|ErrorCode vendorErrorCode<br>int32_t errorCode|Override function, Callback when the decoder has raised an error. Queues the error codes for validation|
-|2|onStateChanged|State oldState<br>State newState|Override function, Callback when the decoder has transitioned to a new state. Queues the state transitions for validation|
-|3|waitForState|State desiredState<br>std::chrono::milliseconds timeout|Wait for the decoder to reach desiredState within a given timeout|
-|4|checkStateTransistion|State expOldState<br>State expNewState|Checks whether decoder raised expOldState to expNewState transition|
+|1|onDecodeError|ErrorCode vendorErrorCode<br>int32_t errorCode|Callback invoked when the decoder reports an error. Captures the error information into an internal queue for further validation by the test case|
+|2|onStateChanged|State oldState<br>State newState|Callback invoked when the decoder transitions between states. Logs the transition in a queue to allow the test case to verify correct state sequencing|
+|3|waitForState|State desiredState<br>std::chrono::milliseconds timeout|Blocks execution until the decoder reaches the desired state or the timeout expires. Used to synchronize test flow with HAL state transitions|
+|4|checkStateTransistion|State expOldState<br>State expNewState|Validates whether the expected transition from expOldState to expNewState has occurred by scanning the recorded state transition queue|
 
 ## Helper Functions
 
-These are common functions used across all the test cases
+These utility functions are shared across all VTS test cases
 
 ### Structures
 
 #### testConfiguration_t
 
-This structure holds the data parsed from the `vts_l3_test_config.yaml`
+This structure holds per-test configuration details parsed from the `YAML` file (`vts_l3_test_config.yaml`). It defines all the input stream characteristics, reference comparison parameters, and frame-level metadata needed for test execution. This structure drives test behaviour and validation logic.
 
 ```cpp
-typedef struct testConfiguration
-{
-    std::string input;          /* Input stream path */
-    std::string reference;      /* reference stream path */
-    Codec codec;                /* Stream Codec type */
-    int32_t sampleRate;         /* Stream Samplrate */
-    int32_t numChannels;        /* Number of channels */
-    PCMFormat format;           /* Reference Stream PCM format */
-    int32_t numOfFrames;        /* Number of frames in the stream */
-    double rms_diff_threashold; /* Allowd rms diff */
-    int64_t trimStartNs;        /* start of trim value in nano seconds */
-    int64_t trimEndNs;          /* end of trim value in nano seconds */
-    /* Frame size, PTS, error frame */
-    std::vector<std::tuple<int32_t, int64_t, bool>> frameDetails;
-}testConfiguration_t;
+typedef struct testConfiguration {
+    std::string input;          /* Path to input encoded stream file */
+    std::string reference;      /* Path to reference PCM stream file */
+    Codec codec;                /* Codec type (e.g., AAC, OPUS) */
+    int32_t sampleRate;         /* Sample rate of the stream */
+    int32_t numChannels;        /* Number of audio channels */
+    PCMFormat format;           /* PCM format of the reference stream */
+    int32_t numOfFrames;        /* Total number of frames expected in the stream */
+    double rms_diff_threashold; /* Acceptable RMS difference threshold */
+    int64_t trimStartNs;        /* Start trim position in nanoseconds */
+    int64_t trimEndNs;          /* End trim position in nanoseconds */
+    std::vector<std::tuple<int32_t, int64_t, bool>> frameDetails; /* Tuple of frameSize, PTS, isCorrupted */
+} testConfiguration_t;
 ```
 ### Functions
 
 |#|Helper Functions|Arguments|Description|
 |-|----------------|---------|-----------|
-|1|vts_audiodeccoder_parse_testconfig|void* pTestInstance: ut kvp instance<br>char *module: Module name<br>char *testGroup: Test group L1, L2, L3<br>char *testNameL: Test name<br>std::vector\<testConfiguration_t\>& configuration|Parse the test configuration file and returns the data|
-|2|vts_audiodecoder_parseAudioDecoderHFP||Parses the module profile file passed to the vts test|
-|3|vts_computeRMSDiff|const void* ref_buf<br>const void* act_buf<br>size_t num_samples<br>PCMFormat format|Computes the rms difference between two pcm buffers|
+|1|vts_audiodeccoder_parse_testconfig|void* pTestInstance: ut kvp instance<br>char *module: Module name<br>char *testGroup: Test group L1, L2, L3<br>char *testNameL: Test name<br>std::vector\<testConfiguration_t\>& configuration|Parses the `vts_l3_test_config.yaml` for the given module, test group, and test name. Populates a list of testConfiguration_t structures for use in the test|
+|2|vts_audiodecoder_parseAudioDecoderHFP|None|Parses the HAL feature profile (HFP) file to determine supported capabilities of the AudioDecoder HAL under test|
+|3|vts_computeRMSDiff|const void* ref_buf<br>const void* act_buf<br>size_t num_samples<br>PCMFormat format|Computes the Root Mean Square (RMS) difference between two PCM buffers (reference and actual). Used for validating decoded output accuracy.|
 
 ## Common Validation Functions
+
+These functions provide standard mechanisms for validating the output and behaviour of the audio decoder under test
 
 ### Validate Decoded Buffer
 
@@ -420,18 +440,20 @@ This check ensures that both the test suite and the decoder HAL properly release
 
 ## L3 Tests
 
+The L3 tests validate the functional correctness and performance of the AudioDecoder HAL by simulating real-world decoding workflows
+
 ### Decode_Sequential_NonTunnel
 
 The following sequence diagram illustrates the flow of the `Decode_Sequential_NonTunnel` test scenario, executed by the `VTS_L3_AudioDecoder` class:
 
 ```mermaid
 sequenceDiagram
-    participant VTS_L3_AudioDecoder(Decode_Sequential_NonTunnel)
+    participant Test as VTS_L3_AudioDecoder(Decode_Sequential_NonTunnel)
 
-    VTS_L3_AudioDecoder(Decode_Sequential_NonTunnel)->>VTS_L3_AudioDecoder(Decode_Sequential_NonTunnel): vts_audiodeccoder_parse_testconfig()
-    VTS_L3_AudioDecoder(Decode_Sequential_NonTunnel)->>VTS_L3_AudioDecoder(Decode_Sequential_NonTunnel): SetUp()
-    VTS_L3_AudioDecoder(Decode_Sequential_NonTunnel)->>VTS_L3_AudioDecoder(Decode_Sequential_NonTunnel): runSequentialDecode()
-    VTS_L3_AudioDecoder(Decode_Sequential_NonTunnel)->>VTS_L3_AudioDecoder(Decode_Sequential_NonTunnel): TearDown()
+    Test->>Test: vts_audiodeccoder_parse_testconfig()
+    Test->>Test: SetUp()
+    Test->>Test: runSequentialDecode()
+    Test->>Test: TearDown()
 ```
 
 ### Decode_Concurrent_NonTunnel
@@ -440,10 +462,10 @@ The following sequence diagram illustrates the flow of the `Decode_Concurrent_No
 
 ```mermaid
 sequenceDiagram
-    participant VTS_L3_AudioDecoder(Decode_Concurrent_NonTunnel)
+    participant Test as VTS_L3_AudioDecoder(Decode_Concurrent_NonTunnel)
 
-    VTS_L3_AudioDecoder(Decode_Concurrent_NonTunnel)->>VTS_L3_AudioDecoder(Decode_Concurrent_NonTunnel): vts_audiodeccoder_parse_testconfig()
-    VTS_L3_AudioDecoder(Decode_Concurrent_NonTunnel)->>VTS_L3_AudioDecoder(Decode_Concurrent_NonTunnel): SetUp()
-    VTS_L3_AudioDecoder(Decode_Concurrent_NonTunnel)->>VTS_L3_AudioDecoder(Decode_Concurrent_NonTunnel): runConcurrentDecode()
-    VTS_L3_AudioDecoder(Decode_Concurrent_NonTunnel)->>VTS_L3_AudioDecoder(Decode_Concurrent_NonTunnel): TearDown()
+    Test->>Test: vts_audiodeccoder_parse_testconfig()
+    Test->>Test: SetUp()
+    Test->>Test: runConcurrentDecode()
+    Test->>Test: TearDown()
 ```
