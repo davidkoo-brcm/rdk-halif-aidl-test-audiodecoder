@@ -7,6 +7,7 @@ IAudioDecoderManager:
   reference_streams_path: "assets/streams/reference/"
   L3:
     Decode_NonTunnel:
+      delay_between_decode_calls: 5 #Time in milli seconds
       Streams:
         - Name: tones_48k_2_256_aac
           PTS:

@@ -65,6 +65,8 @@
 #include <filesystem>
 #include "vts_audiodecoder_parse_testconfig.h"
 
+using namespace std;
+
 void* vts_kvp_create_instance(char *fileName)
 {
     ut_kvp_instance_t* instance;
@@ -99,102 +101,106 @@ void vts_kvp_destroy_instance(void *instance)
     ut_kvp_destroyInstance((ut_kvp_instance_t*)instance);
 }
 
-UT_status_t vts_audiodeccoder_parse_testconfig(void* pTestInstance, char *module, char *testGroup, char *testName, std::vector<testConfiguration_t>& streamDetailsList)
+UT_status_t vts_audiodeccoder_parse_testconfig(void* pTestInstance, char *module, char *testGroup, char *testName, vector<testConfiguration_t>& testConfiguration)
 {
     ut_kvp_status_t status;
     ut_kvp_instance_t* kvpTestInstance = (ut_kvp_instance_t*)pTestInstance;
     char streamInputPath[UT_KVP_MAX_ELEMENT_SIZE] = {0};
     char streamRefPath[UT_KVP_MAX_ELEMENT_SIZE] = {0};
     int32_t streamCount = 0;
-    std::filesystem::path currentPath = std::filesystem::current_path();
-    std::filesystem::path fullPath;
-    std::string testList = std::string(module) + "." + std::string(testGroup) + "." + std::string(testName) + "." + std::string("Streams");
-    std::string streamsDetails = std::string("AudioStreams");
+    filesystem::path currentPath = filesystem::current_path();
+    filesystem::path fullPath;
+    string testList = string(module) + "." + string(testGroup) + "." + string(testName);
+    string streamList = testList + "." + string("Streams");
+    string streamsDetails = string("AudioStreams");
 
     status = ut_kvp_getStringField(kvpTestInstance, STREAM_INPUT_PATH, streamInputPath, UT_KVP_MAX_ELEMENT_SIZE);
     status = ut_kvp_getStringField(kvpTestInstance, STREAM_REF_PATH, streamRefPath, UT_KVP_MAX_ELEMENT_SIZE);
 
-    streamCount = ut_kvp_getListCount(kvpTestInstance, testList.c_str());
+    streamCount = ut_kvp_getListCount(kvpTestInstance, streamList.c_str());
 
     for(int32_t i = 0; i < streamCount; i++)
     {
         char resultKVP[UT_KVP_MAX_ELEMENT_SIZE] = {0};
         uint32_t streamId;
-        testConfiguration_t streamDetails;
-        std::vector<int32_t> errorFrameNum;
+        testConfiguration_t testDetails;
+        vector<int32_t> errorFrameNum;
 
-        std::string streamName = testList + "." + std::to_string(i) + "Name";
+        string streamName = streamList + "." + to_string(i) + "Name";
         ut_kvp_getStringField(kvpTestInstance, streamName.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
 
-        std::string input       = streamsDetails + "." + std::string(resultKVP) + "." +"input";
-        std::string reference   = streamsDetails + "." + std::string(resultKVP) + "." +"reference";
-        std::string codec       = streamsDetails + "." + std::string(resultKVP) + "." +"codec";
-        std::string sampleRate  = streamsDetails + "." + std::string(resultKVP) + "." +"sample_rate";
-        std::string channels    = streamsDetails + "." + std::string(resultKVP) + "." +"channels";
-        std::string format      = streamsDetails + "." + std::string(resultKVP) + "." +"format";
-        std::string numOfFrames = streamsDetails + "." + std::string(resultKVP) + "." +"num_of_frames";
-        std::string frameSize   = streamsDetails + "." + std::string(resultKVP) + "." +"frame_size";
-        std::string errorFrames = streamsDetails + "." + std::string(resultKVP) + "." +"error_frames";
-        std::string framePTS    = testList + "." + std::to_string(i) + "." +"PTS";
-        std::string rmsDiff     = testList + "." + std::to_string(i) + "." +"rms_diff_threshold";
-        std::string trimStart   = testList + "." + std::to_string(i) + "." +"trim.0";
-        std::string trimEnd     = testList + "." + std::to_string(i) + "." +"trim.1";
+        string input       = streamsDetails + "." + string(resultKVP) + "." +"input";
+        string reference   = streamsDetails + "." + string(resultKVP) + "." +"reference";
+        string codec       = streamsDetails + "." + string(resultKVP) + "." +"codec";
+        string sampleRate  = streamsDetails + "." + string(resultKVP) + "." +"sample_rate";
+        string channels    = streamsDetails + "." + string(resultKVP) + "." +"channels";
+        string format      = streamsDetails + "." + string(resultKVP) + "." +"format";
+        string numOfFrames = streamsDetails + "." + string(resultKVP) + "." +"num_of_frames";
+        string frameSize   = streamsDetails + "." + string(resultKVP) + "." +"frame_size";
+        string errorFrames = streamsDetails + "." + string(resultKVP) + "." +"error_frames";
+        string framePTS    = streamList + "." + to_string(i) + "." +"PTS";
+        string rmsDiff     = streamList + "." + to_string(i) + "." +"rms_diff_threshold";
+        string trimStart   = streamList + "." + to_string(i) + "." +"trim.0";
+        string trimEnd     = streamList + "." + to_string(i) + "." +"trim.1";
+        string decoderDelay = testList + "." +"delay_between_decode_calls";
 
         ut_kvp_getStringField(kvpTestInstance, input.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
         fullPath = currentPath;
         fullPath.append(streamInputPath);
         fullPath.append(resultKVP);
-        streamDetails.input = fullPath.string();
+        testDetails.input = fullPath.string();
 
         ut_kvp_getStringField(kvpTestInstance, reference.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
         fullPath = currentPath;
         fullPath.append(streamRefPath);
         fullPath.append(resultKVP);
-        streamDetails.reference = fullPath.string();
+        testDetails.reference = fullPath.string();
 
         ut_kvp_getStringField(kvpTestInstance, codec.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
-        streamDetails.codec = vts_audiodecoder_helper_StringTocodec(std::string(resultKVP));
+        testDetails.codec = vts_audiodecoder_helper_StringTocodec(string(resultKVP));
 
-        streamDetails.sampleRate = ut_kvp_getUInt32Field(kvpTestInstance, sampleRate.c_str());
-        streamDetails.numChannels = ut_kvp_getUInt32Field(kvpTestInstance, channels.c_str());
+        testDetails.sampleRate = ut_kvp_getUInt32Field(kvpTestInstance, sampleRate.c_str());
+        testDetails.numChannels = ut_kvp_getUInt32Field(kvpTestInstance, channels.c_str());
 
         ut_kvp_getStringField(kvpTestInstance, format.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
-        streamDetails.format = vts_audiodecoder_helper_StringToFormat(std::string(resultKVP));
+        testDetails.format = vts_audiodecoder_helper_StringToFormat(string(resultKVP));
 
-        streamDetails.numOfFrames = ut_kvp_getUInt32Field(kvpTestInstance, numOfFrames.c_str());
+        testDetails.numOfFrames = ut_kvp_getUInt32Field(kvpTestInstance, numOfFrames.c_str());
 
         if(ut_kvp_fieldPresent(kvpTestInstance, errorFrames.c_str()))
         {
             int32_t count = ut_kvp_getListCount(kvpTestInstance, errorFrames.c_str());
             for (int32_t j = 0; j < count; j++)
             {
-                std::string error = errorFrames + "." + std::to_string(j);
+                string error = errorFrames + "." + to_string(j);
                 int32_t frameNum = ut_kvp_getUInt32Field(kvpTestInstance, error.c_str());
                 errorFrameNum.push_back(frameNum);
             }
         }
 
-        for(int32_t j = 0; j < streamDetails.numOfFrames; j++)
+        for(int32_t j = 0; j < testDetails.numOfFrames; j++)
         {
             bool errorFrame = false;
 
-            std::string eachFrame = frameSize + "." + std::to_string(j);
-            std::string eachPTS = framePTS + "." + std::to_string(j);
+            string eachFrame = frameSize + "." + to_string(j);
+            string eachPTS = framePTS + "." + to_string(j);
             int32_t size = ut_kvp_getUInt32Field(kvpTestInstance, eachFrame.c_str());
             int64_t PTS = ut_kvp_getUInt64Field(kvpTestInstance, eachPTS.c_str());
-            if (std::find(errorFrameNum.begin(), errorFrameNum.end(), j+1) != errorFrameNum.end())
+            if (find(errorFrameNum.begin(), errorFrameNum.end(), j+1) != errorFrameNum.end())
             {
                 errorFrame = true;
             }
-            streamDetails.frameDetails.push_back({size, PTS, errorFrame});
+            testDetails.frameDetails.push_back({size, PTS, errorFrame});
         }
 
-        streamDetails.rms_diff_threashold = ut_kvp_getDoubleField(kvpTestInstance, rmsDiff.c_str());
+        testDetails.rms_diff_threashold = ut_kvp_getDoubleField(kvpTestInstance, rmsDiff.c_str());
 
-        streamDetails.trimStartNs = ut_kvp_getUInt64Field(kvpTestInstance, trimStart.c_str());
-        streamDetails.trimEndNs = ut_kvp_getUInt64Field(kvpTestInstance, trimEnd.c_str());
+        testDetails.trimStartNs = ut_kvp_getUInt64Field(kvpTestInstance, trimStart.c_str());
+        testDetails.trimEndNs = ut_kvp_getUInt64Field(kvpTestInstance, trimEnd.c_str());
 
-        streamDetailsList.push_back(streamDetails);
+        testDetails.decoderDelay = ut_kvp_getUInt32Field(kvpTestInstance, numOfFrames.c_str());
+
+        testConfiguration.push_back(testDetails);
     }
 
     return UT_STATUS_OK;

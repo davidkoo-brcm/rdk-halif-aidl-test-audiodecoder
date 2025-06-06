@@ -68,6 +68,7 @@
 #include <thread>
 #include <chrono>
 #include <deque>
+#include <queue>
 #include <condition_variable>
 
 #include "com/rdk/hal/audiodecoder/IAudioDecoderManager.h"
@@ -81,6 +82,7 @@ using android::sp;
 using android::String16;
 using android::defaultServiceManager;
 using android::binder::Status;
+using namespace std;
 using namespace std::chrono;
 
 using namespace com::rdk::hal;
@@ -224,7 +226,7 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         int32_t sleep_time = 0; \
         do \
         { \
-            std::this_thread::sleep_for(std::chrono::milliseconds(MAX_TRANSITORY_STATE_WAIT_MS)); \
+            this_thread::sleep_for(chrono::milliseconds(MAX_TRANSITORY_STATE_WAIT_MS)); \
             sleep_time += MAX_TRANSITORY_STATE_WAIT_MS; \
             /* Check the state of the decoder */ \
             AUDIODECODER_GET_STATE((audioDecoder), lastState); \
@@ -471,7 +473,7 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
         if (stateCheck) \
         { \
-            std::this_thread::sleep_for(std::chrono::milliseconds(MAX_FINAL_STATE_WAIT_MS)); \
+            this_thread::sleep_for(chrono::milliseconds(MAX_FINAL_STATE_WAIT_MS)); \
             if (reset) \
             { \
                 ::com::rdk::hal::State lastState; \
@@ -679,18 +681,28 @@ struct AudioMetatData
     bool lowLatency;
     bool endOfStream;
     bool discontinuity;
-    ::std::vector<audiodecoder::ChannelType> channelTypes;
+    vector<audiodecoder::ChannelType> channelTypes;
     AVSource source;
 };
 
-typedef struct AudioFrame
+typedef struct DecodedAudioFrame
 {
-    std::vector<uint8_t> data;
+    vector<uint8_t> data;
+    int64_t framePTS;
     size_t numSamples;
     bool isMetaAvailable;
     struct AudioMetatData metadata;
-    std::chrono::steady_clock::time_point receiveTime;
-}AudioFrame_t;
+    chrono::steady_clock::time_point receiveTime;
+}DecodedAudioFrame_t;
+
+typedef struct InputAudioFrame
+{
+    int64_t framePTS;
+    std::string reference;
+    double rms_threshold;
+    bool isErrorFrame;
+    chrono::steady_clock::time_point sendTime;
+}InputAudioFrame_t;
 
 class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
 {
@@ -698,23 +710,25 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
         AudioDecoderControllerListener() : BnAudioDecoderControllerListener(), mShutdownFlag(false){}
         virtual ~AudioDecoderControllerListener() = default;
 
-        Status onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::std::optional<FrameMetadata>& metadata) override
+        Status onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::optional<FrameMetadata>& metadata) override
         {
-            UT_LOG_INFO("Received frameoutput: %lld", nsPresentationTime);
+            UT_LOG_INFO("[BHANU] onFrameOutput: Received frameoutput: %lld", nsPresentationTime);
             //TODO: update these variables
             uint32_t numSamples = 0;
             uint32_t bps = 0;
 
             //TODO: Update the code with av buffer helper
             //TODO: metadata its not always valid
-            AudioFrame_t frame;
-            frame.receiveTime = std::chrono::steady_clock::now();
-            if(frameBufferHandle != -1)
+            DecodedAudioFrame_t frame;
+            frame.receiveTime = chrono::steady_clock::now();
+            UT_LOG_INFO("[BHANU] [%p] onFrameOutput: got time", this);
+            frame.framePTS = nsPresentationTime;
+            /*if(frameBufferHandle != -1)
             {
                 frame.numSamples = numSamples;
                 frame.data.resize(numSamples * bps);
-                //std::memcpy(frame.data.data(), decodedData, frame.data.size());
-            }
+                //memcpy(frame.data.data(), decodedData, frame.data.size());
+            }*/
 
             frame.isMetaAvailable = false;
             if (metadata.has_value())
@@ -734,10 +748,9 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
                 frame.metadata.discontinuity = metadata->discontinuity;
                 frame.metadata.source = metadata->source;
             }
-
             {
-                std::lock_guard<std::mutex> lock(mQueueMutex);
-                mFrameQueue.push_back(std::move(frame));
+                lock_guard<mutex> lock(mQueueMutex);
+                mFrameQueue.push(frame);
             }
 
             mFrameAvailable.notify_one();
@@ -745,22 +758,22 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
             return ::android::binder::Status::ok();
         }
 
-        bool getNextFrame(AudioFrame_t &frameInfo)
+        bool getNextFrame(DecodedAudioFrame_t &frameInfo)
         {
-            std::unique_lock<std::mutex> lock(mQueueMutex);
-
-            /*mFrameAvailable.wait(lock, [this]{
-                return !mFrameQueue.empty() || mShutdownFlag;
-            });*/
-            if (mShutdownFlag && mFrameQueue.empty())
+            DecodedAudioFrame_t frame;
+            //TODO: change waiting mechanism
+            while (mFrameQueue.empty())
             {
-                return false;
+                //mFrameAvailable.wait(lock);
+                this_thread::sleep_for(chrono::milliseconds(1));
             }
-            AudioFrame_t frame = std::move(mFrameQueue.front());
-            mFrameQueue.pop_front();
+            {
+                unique_lock<std::mutex> lock(mQueueMutex);
+                frame = mFrameQueue.front();
+                mFrameQueue.pop();
+            }
 
             frameInfo = frame;
-
             return true;
         }
         void shutdown()
@@ -769,10 +782,10 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
             mFrameAvailable.notify_all();
         }
     private:
-        std::deque<AudioFrame_t> mFrameQueue;
-        std::mutex mQueueMutex;
-        std::condition_variable mFrameAvailable;
-        std::atomic<bool> mShutdownFlag;
+        queue<DecodedAudioFrame_t> mFrameQueue;
+        mutex mQueueMutex;
+        condition_variable mFrameAvailable;
+        atomic<bool> mShutdownFlag;
 };
 
 class AudioDecoderEventListener : public BnAudioDecoderEventListener
@@ -783,7 +796,7 @@ class AudioDecoderEventListener : public BnAudioDecoderEventListener
 
         Status onDecodeError(ErrorCode vendorErrorCode, int32_t errorCode) override
         {
-            std::lock_guard<std::mutex> lock(mMutex);
+            lock_guard<mutex> lock(mMutex);
             mErrors.push_back(errorCode);
             return Status::ok();
         }
@@ -791,7 +804,7 @@ class AudioDecoderEventListener : public BnAudioDecoderEventListener
         {
             UT_LOG_INFO("[%p]State Change received: %s -> %s", this, com::rdk::hal::toString(oldState).c_str(), com::rdk::hal::toString(newState).c_str());
             {
-                std::lock_guard<std::mutex> lock(mMutex);
+                lock_guard<mutex> lock(mMutex);
                 mStateChanges.emplace_back(oldState, newState);
                 mCurrentState = newState;
             }
@@ -802,27 +815,27 @@ class AudioDecoderEventListener : public BnAudioDecoderEventListener
          * Wait for the decoder to reach a particular State within a given timeout.
          *
          * @param desiredState The state we want to observe.
-         * @param timeout      How long to wait, e.g. std::chrono::milliseconds(500).
+         * @param timeout      How long to wait, e.g. chrono::milliseconds(500).
          * @return true if the state was reached; false if we timed out waiting.
          */
-        bool waitForState(State desiredState, std::chrono::milliseconds timeout)
+        bool waitForState(State desiredState, chrono::milliseconds timeout)
         {
-            std::unique_lock<std::mutex> lock(mMutex);
+            unique_lock<mutex> lock(mMutex);
             // Wait until mCurrentState == desiredState or until timeout
             return mCV.wait_for(lock, timeout, [this, desiredState]() {
                 return (mCurrentState == desiredState);
             });
         }
         // Accessors for test verifications if desired
-        std::vector<std::pair<State, State>> getStateChanges() const
+        vector<pair<State, State>> getStateChanges() const
         {
-            std::lock_guard<std::mutex> lock(mMutex);
+            lock_guard<mutex> lock(mMutex);
             return mStateChanges;
         }
 
         void resetStateChanges()
         {
-            std::lock_guard<std::mutex> lock(mMutex);
+            lock_guard<mutex> lock(mMutex);
             mStateChanges.clear();
         }
 
@@ -840,18 +853,18 @@ class AudioDecoderEventListener : public BnAudioDecoderEventListener
             return foundClosedToOpening;
         }
 
-        std::vector<int32_t> getErrors() const
+        vector<int32_t> getErrors() const
         {
-            std::lock_guard<std::mutex> lock(mMutex);
+            lock_guard<mutex> lock(mMutex);
             return mErrors;
         }
     private:
-        mutable std::mutex mMutex;
-        std::condition_variable mCV;
+        mutable mutex mMutex;
+        condition_variable mCV;
 
         State mCurrentState;
-        std::vector<std::pair<State, State>> mStateChanges;
-        std::vector<int32_t> mErrors;
+        vector<pair<State, State>> mStateChanges;
+        vector<int32_t> mErrors;
 };
 
 #endif //__VTS_AUDIODECODER_H__

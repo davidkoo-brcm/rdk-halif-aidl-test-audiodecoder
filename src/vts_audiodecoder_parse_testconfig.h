@@ -81,6 +81,7 @@ typedef struct testConfiguration
 {
     std::string input;
     std::string reference;
+    int32_t decoderDelay;
     Codec codec;
     int32_t sampleRate;
     int32_t numChannels;
