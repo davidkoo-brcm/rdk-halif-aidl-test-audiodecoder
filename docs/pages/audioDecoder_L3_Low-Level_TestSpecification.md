@@ -161,8 +161,9 @@ This test suite is designed using an object-oriented approach, leveraging the C+
 |#|Class|Description|
 |-|-----|-----------|
 |1|VTS_L3_AudioDecoder|Test class which contains the test cases implementation|
-|2|AudioDecoderControllerListener|AudioDecoder Controller listener class|
-|3|AudioDecoderEventListener|AudioDecoder Event listener class|
+|2|DecoderTest|Decoder test helper class|
+|3|AudioDecoderControllerListener|AudioDecoder Controller listener class|
+|4|AudioDecoderEventListener|AudioDecoder Event listener class|
 
 ### VTS_L3_AudioDecoder Class
 
@@ -180,7 +181,6 @@ classDiagram
     class VTS_L3_AudioDecoder{
       SetUp()
       TearDown()
-      decodeAudioStreams()
       runSequentialDecode()
       runConcurrentDecode()
     }
@@ -195,9 +195,8 @@ The class overrides `SetUp()` and `TearDown()` from `ut_core` to handle initiali
 |-|--------|---------|-----------|-------|
 |1|Setup|None|Initializes the test by acquiring service handles, supported decoder IDs, decoder capabilities, and registering event listeners|`getAudioDecoderIds()`<br>`getAudioDecoder()`<br>`registerEventListener()`<br>`getCapabilities()`|
 |2|TearDown|None|Cleans up by unregistering event listeners|`unregisterEventListener()`|
-|3|decodeAudioStreams|IAudioDecoder::Id decoderId<br>IAudioDecoder decoderHandle<br>AudioDecoderControllerListener controlListener<br>AudioDecoderEventListener eventListener<br>bool secureDecode<br>std::vector\<testConfiguration_t\> streamDetails|Decodes input streams frame by frame using a specific decoder instance|`createAudioPool()`<br>`alloc()`<br>`free()`<br>`destroyPool()`<br>`open()`<br>`start()`<br>`decodeBuffer()`<br>`stop()`<br>`close()`|
-|3|runSequentialDecode|std::vector\<testConfiguration_t\>& streamDetails<br>bool secureDecode|Decodes streams using all decoders sequentially using `decodeAudioStreams()`|`getHeapMetrics()`|
-|4|runConcurrentDecode|std::vector\<testConfiguration_t\>& streamDetails<br>bool secureDecode|Launches multiple threads to decode streams concurrently using `decodeAudioStreams()`|`getHeapMetrics()`|
+|3|runSequentialDecode|std::vector\<testConfiguration_t\>& streamDetails<br>bool secureDecode|Decodes streams using all decoders sequentially using `DecoderTest` Class|`getHeapMetrics()`|
+|4|runConcurrentDecode|std::vector\<testConfiguration_t\>& streamDetails<br>bool secureDecode|Launches multiple threads to decode streams concurrently using `DecoderTest` Class|`getHeapMetrics()`|
 
 #### Setup
 
@@ -230,13 +229,121 @@ sequenceDiagram
   end
 ```
 
-#### decodeAudioStreams
+#### runSequentialDecode
 
-The following sequence diagram illustrates the flow of the `decodeAudioStreams` function:
+The following sequence diagram illustrates the flow of the `runSequentialDecode` function:
 
 ```mermaid
 sequenceDiagram
-  participant rundecoder as VTS_L3_AudioDecoder(decodeAudioStreams)
+  participant rundecoder as VTS_L3_AudioDecoder(runSequentialDecode)
+  participant DecoderTest as DecoderTest
+  participant buffer as AV Buffer HAL
+
+  loop For each decoder
+    rundecoder->>buffer : getHeapMetrics()
+    buffer -->> rundecoder: AV Buffer metrics
+    rundecoder->>DecoderTest: run()
+    rundecoder->>DecoderTest: wait()
+    rundecoder->>buffer : getHeapMetrics()
+    buffer -->> rundecoder: AV Buffer metrics
+    rundecoder->>rundecoder: Validate AV buffer metrics
+  end
+```
+
+#### runConcurrentDecode
+
+The following sequence diagram illustrates the flow of the `runConcurrentDecode` function:
+
+```mermaid
+sequenceDiagram
+  participant rundecoder as VTS_L3_AudioDecoder(runConcurrentDecode)
+  participant thread_1 as decoderThread_1
+  participant thread_N as decoderThread_2..N
+  participant DecoderTest
+  participant buffer as AV Buffer HAL
+
+  loop For each decoder
+    rundecoder->>buffer : getHeapMetrics()
+    buffer -->> rundecoder: AV Buffer metrics
+    rundecoder->>thread_1: launch thread
+    rundecoder->>thread_N: launch threads
+    par thread_1
+      thread_1->>DecoderTest: run()
+      thread_1->>DecoderTest: wait()
+    and thread_N
+      thread_N->>DecoderTest: run()
+      thread_N->>DecoderTest: wait()
+    end
+    rundecoder->>rundecoder: join threads
+    rundecoder->>buffer : getHeapMetrics()
+    buffer -->> rundecoder: AV Buffer metrics
+    rundecoder->>rundecoder: Validate AV buffer metrics
+  end
+```
+
+### DecoderTest Class
+
+This class includes methods for testing individual streams and frames.
+
+|#|Function|Arguments|Description|HAL API|
+|-|--------|---------|-----------|-------|
+|1|decoderThreadFunc||Decodes input streams frame by frame using a specific decoder instance|`createAudioPool()`<br>`alloc()`<br>`free()`<br>`destroyPool()`<br>`open()`<br>`start()`<br>`decodeBuffer()`<br>`stop()`<br>`close()`|
+|2|consumerThreadFunc||Validates the decoded `pcm` buffer received from `onFrameOutput()` callback|`onFrameOutput()`|
+|3|decodeAndConsumeAudioStreams|None|Decodes and consumes the audio frames sequentially|`createAudioPool()`<br>`alloc()`<br>`free()`<br>`destroyPool()`<br>`open()`<br>`start()`<br>`decodeBuffer()`<br>`stop()`<br>`close()`|
+|4|run|bool concurrentDecodeConsume|Starts `decoderThreadFunc` and `consumerThreadFunc` threads or `decodeAndConsumeAudioStreams`|None|
+
+#### decoderThreadFunc
+
+The following sequence diagram illustrates the flow of the `decoderThreadFunc` function:
+
+```mermaid
+sequenceDiagram
+  participant rundecoder as DecoderTest(decoderThreadFunc)
+  participant AudioDecoder HAL
+  participant AV Buffer HAL
+
+  rundecoder->>AV Buffer HAL: createAudioPool()
+  AV Buffer HAL-->>rundecoder: pool handle
+  loop For each stream
+    rundecoder->>AudioDecoder HAL: open()
+    AudioDecoder HAL-->>rundecoder: controller handle
+    rundecoder->>AudioDecoder HAL: start()
+    loop For each frame
+      rundecoder->>AV Buffer HAL: alloc()
+      AV Buffer HAL-->>rundecoder: buffer handle
+      rundecoder->>rundecoder: read frame & copy to buffer
+      rundecoder->>AudioDecoder HAL: decodeBuffer()
+      rundecoder->>AV Buffer HAL: free()
+    end
+    rundecoder->>AudioDecoder HAL: stop()
+    rundecoder->>AudioDecoder HAL: close()
+  end
+  rundecoder->>AV Buffer HAL: destroyPool()
+```
+
+#### consumerThreadFunc
+
+The following sequence diagram illustrates the flow of the `consumerThreadFunc` function:
+
+```mermaid
+sequenceDiagram
+  participant consumer as DecoderTest(consumerThreadFunc)
+  participant AudioDecoder HAL
+  loop For each decoded frame
+      consumer->>consumer: wait for onFrameOutput()
+      AudioDecoder HAL-->>consumer: onFrameOutput()
+      consumer->>consumer: validate decode time
+      consumer->>consumer: compare with reference frame
+      consumer->>consumer: validate metadata and metrics
+  end
+```
+#### decodeAndConsumeAudioStreams
+
+The following sequence diagram illustrates the flow of the `decodeAndConsumeAudioStreams` function:
+
+```mermaid
+sequenceDiagram
+  participant rundecoder as DecoderTest(decodeAndConsumeAudioStreams)
   participant AudioDecoder HAL
   participant AV Buffer HAL
 
@@ -262,54 +369,6 @@ sequenceDiagram
     rundecoder->>AudioDecoder HAL: close()
   end
   rundecoder->>AV Buffer HAL: destroyPool()
-```
-#### runSequentialDecode
-
-The following sequence diagram illustrates the flow of the `runSequentialDecode` function:
-
-```mermaid
-sequenceDiagram
-  participant rundecoder as VTS_L3_AudioDecoder(runSequentialDecode)
-  participant AudioDecoder HAL
-  participant AV Buffer HAL
-
-  loop For each decoder
-    rundecoder->>AV Buffer HAL : getHeapMetrics()
-    AV Buffer HAL -->> rundecoder: AV Buffer metrics
-    rundecoder->>rundecoder: decodeAudioStreams()
-    rundecoder->>AV Buffer HAL : getHeapMetrics()
-    AV Buffer HAL -->> rundecoder: AV Buffer metrics
-    rundecoder->>rundecoder: Validate AV buffer metrics
-  end
-```
-
-#### runConcurrentDecode
-
-The following sequence diagram illustrates the flow of the `runConcurrentDecode` function:
-
-```mermaid
-sequenceDiagram
-  participant rundecoder as VTS_L3_AudioDecoder(runConcurrentDecode)
-  participant thread_1 as decoderThread_1
-  participant thread_N as decoderThread_2..N
-  participant HAL as AudioDecoder HAL
-  participant buffer as AV Buffer HAL
-
-  loop For each decoder
-    rundecoder->>buffer : getHeapMetrics()
-    buffer -->> rundecoder: AV Buffer metrics
-    rundecoder->>thread_1: launch thread
-    rundecoder->>thread_N: launch threads
-    par thread_1
-      thread_1->>thread_1: decodeAudioStreams()
-    and thread_N
-      thread_N->>thread_N: decodeAudioStreams()
-    end
-    rundecoder->>rundecoder: join threads
-    rundecoder->>buffer : getHeapMetrics()
-    buffer -->> rundecoder: AV Buffer metrics
-    rundecoder->>rundecoder: Validate AV buffer metrics
-  end
 ```
 
 ### AudioDecoderControllerListener Class
