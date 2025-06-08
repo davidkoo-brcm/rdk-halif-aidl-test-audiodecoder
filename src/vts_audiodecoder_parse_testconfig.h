@@ -81,7 +81,6 @@ typedef struct testConfiguration
 {
     std::string input;
     std::string reference;
-    int32_t decoderDelay;
     Codec codec;
     int32_t sampleRate;
     int32_t numChannels;
@@ -90,6 +89,12 @@ typedef struct testConfiguration
     double rms_diff_threashold;
     int64_t trimStartNs;
     int64_t trimEndNs;
+    int32_t decoderDelay;
+    int64_t stopPts;
+    int64_t discontinuityPts;
+    int64_t flushPts;
+    int64_t flushRestPts;
+    int64_t eosPts;
     /* Frame size, PTS, error frame */
     std::vector<std::tuple<int32_t, int64_t, bool>> frameDetails;
 }testConfiguration_t;

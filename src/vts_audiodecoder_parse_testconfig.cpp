@@ -143,6 +143,11 @@ UT_status_t vts_audiodeccoder_parse_testconfig(void* pTestInstance, char *module
         string trimStart   = streamList + "." + to_string(i) + "." +"trim.0";
         string trimEnd     = streamList + "." + to_string(i) + "." +"trim.1";
         string decoderDelay = testList + "." +"delay_between_decode_calls";
+        string stopPts      = testList + "." + "stop_start_pts";
+        string discontinuityPts = testList + "." + "signal_discontinuity_pts";
+        string flushPts     = testList + "." + "flush_pts";
+        string flushRestPts = testList + "." + "flush_reset_pts";
+        string eosPts       = testList + "." + "eos_pts";
 
         ut_kvp_getStringField(kvpTestInstance, input.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
         fullPath = currentPath;
@@ -195,10 +200,14 @@ UT_status_t vts_audiodeccoder_parse_testconfig(void* pTestInstance, char *module
 
         testDetails.rms_diff_threashold = ut_kvp_getDoubleField(kvpTestInstance, rmsDiff.c_str());
 
-        testDetails.trimStartNs = ut_kvp_getUInt64Field(kvpTestInstance, trimStart.c_str());
-        testDetails.trimEndNs = ut_kvp_getUInt64Field(kvpTestInstance, trimEnd.c_str());
-
+        testDetails.trimStartNs  = ut_kvp_getUInt64Field(kvpTestInstance, trimStart.c_str());
+        testDetails.trimEndNs    = ut_kvp_getUInt64Field(kvpTestInstance, trimEnd.c_str());
         testDetails.decoderDelay = ut_kvp_getUInt32Field(kvpTestInstance, numOfFrames.c_str());
+        testDetails.stopPts      = ut_kvp_getUInt64Field(kvpTestInstance, stopPts.c_str());
+        testDetails.discontinuityPts = ut_kvp_getUInt64Field(kvpTestInstance, discontinuityPts.c_str());
+        testDetails.flushPts     = ut_kvp_getUInt64Field(kvpTestInstance, flushPts.c_str());
+        testDetails.flushRestPts = ut_kvp_getUInt64Field(kvpTestInstance, flushRestPts.c_str());
+        testDetails.eosPts       = ut_kvp_getUInt64Field(kvpTestInstance, eosPts.c_str());
 
         testConfiguration.push_back(testDetails);
     }

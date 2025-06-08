@@ -21,6 +21,7 @@
 - `Hz` \- Hertz
 - `AAC` \- Advanced Audio Coding
 - `PCM` \- Pulse Code Modulation
+- `EOS` \- End of Stream
 
 ## Overview
 
@@ -49,6 +50,12 @@ IAudioDecoderManager:
   reference_streams_path: "assets/streams/reference/"
   L3:
     Decode_NonTunnel:
+      delay_between_decode_calls: 5 #Time in milli seconds
+      stop_start_pts: 106666665
+      signal_discontinuity_pts: 149333331
+      flush_pts: 170666664
+      flush_reset_pts: 191999997
+      eos_pts: 191999997
       Streams:
         - Name: tones_48k_2_256_aac
           PTS:
@@ -91,6 +98,12 @@ IAudioDecoderManager:
 - stream_download_path: URL path to download the audio test streams
 - input_streams_path: Local path where input streams are stored
 - reference_streams_path: Local path for reference PCM streams
+- delay_between_decode_calls: insert delay in msec between each `decodeBuffer()` call
+- stop_start_pts: `pts` value at which the decoder should be stopped and restarted during the test. -1 indicates that decoder should not be restarted
+- signal_discontinuity_pts: `pts` value at which the test should signal discontinuity to the decoder. -1 indicates that no discontinuity signal should be sent
+- flush_pts - `pts` value that determine when the test should flush the decoder. -1 indicates that test should not flush
+- flush_reset_pts - `pts` value that determine when the test should flush with reset the decoder. -1 indicates that test should not flush
+- eos_pts - `pts` value that determine when the test should sent `eos` signal to decoder. . -1 indicates that test should signal `eos`
 - Name: Identifier for the stream, as defined in the stream configuration file
 - PTS: Presentation Time Stamps (per frame) in nanoseconds
 - trim: Start and end trim points in Nano seconds
@@ -139,6 +152,9 @@ AudioStreams:
       - 207
       - 185
       - 201
+    #error_frames:
+    #  - 0
+    #  - 1
 ```
 
 #### Key Parameters
@@ -151,7 +167,7 @@ AudioStreams:
 - format: `pcm` format of the reference stream. Refer `PCMFormat` enum
 - num_of_frames: Total number of frames in the stream
 - frame_size: Byte size for each frame, listed in order
-
+- error_frames: List of invalid frame indices (starting from 0)
 ## Class Design
 
 This test suite is designed using an object-oriented approach, leveraging the C++ variant of the `ut-core` testing framework. The following class structure and interaction model supports robust test orchestration, concurrent execution, and decoder validation.
@@ -304,17 +320,15 @@ sequenceDiagram
 
   rundecoder->>AV Buffer HAL: createAudioPool()
   AV Buffer HAL-->>rundecoder: pool handle
-  loop For each stream
-    rundecoder->>AudioDecoder HAL: open()
-    AudioDecoder HAL-->>rundecoder: controller handle
-    rundecoder->>AudioDecoder HAL: start()
-    loop For each frame
-      rundecoder->>AV Buffer HAL: alloc()
-      AV Buffer HAL-->>rundecoder: buffer handle
-      rundecoder->>rundecoder: read frame & copy to buffer
-      rundecoder->>AudioDecoder HAL: decodeBuffer()
-      rundecoder->>AV Buffer HAL: free()
-    end
+  rundecoder->>AudioDecoder HAL: open()
+  AudioDecoder HAL-->>rundecoder: controller handle
+  rundecoder->>AudioDecoder HAL: start()
+  loop For each frame
+    rundecoder->>AV Buffer HAL: alloc()
+    AV Buffer HAL-->>rundecoder: buffer handle
+    rundecoder->>rundecoder: read frame & copy to buffer
+    rundecoder->>AudioDecoder HAL: decodeBuffer()
+    rundecoder->>AV Buffer HAL: free()
     rundecoder->>AudioDecoder HAL: stop()
     rundecoder->>AudioDecoder HAL: close()
   end
@@ -510,8 +524,10 @@ sequenceDiagram
     participant Test as VTS_L3_AudioDecoder(Decode_Sequential_NonTunnel)
 
     Test->>Test: vts_audiodeccoder_parse_testconfig()
-    Test->>Test: SetUp()
-    Test->>Test: runSequentialDecode()
+    loop for each stream
+      Test->>Test: SetUp()
+      Test->>Test: runSequentialDecode()
+    end
     Test->>Test: TearDown()
 ```
 
@@ -524,8 +540,10 @@ sequenceDiagram
     participant Test as VTS_L3_AudioDecoder(Decode_Concurrent_NonTunnel)
 
     Test->>Test: vts_audiodeccoder_parse_testconfig()
-    Test->>Test: SetUp()
-    Test->>Test: runConcurrentDecode()
+    loop for each stream
+      Test->>Test: SetUp()
+      Test->>Test: runConcurrentDecode()
+    end
     Test->>Test: TearDown()
 ```
 

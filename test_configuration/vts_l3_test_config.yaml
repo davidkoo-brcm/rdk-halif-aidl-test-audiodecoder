@@ -8,6 +8,11 @@ IAudioDecoderManager:
   L3:
     Decode_NonTunnel:
       delay_between_decode_calls: 5 #Time in milli seconds
+      stop_start_pts: -1
+      signal_discontinuity_pts: -1
+      flush_pts: -1
+      flush_reset_pts: -1
+      eos_pts: -1
       Streams:
         - Name: tones_48k_2_256_aac
           PTS:
@@ -22,98 +27,7 @@ IAudioDecoderManager:
             - 170666664
             - 191999997
           trim:
-            - 127999998 #Start in Nano seconds
-            - 149333331 #End
-          rms_diff_threshold: 0.5
-          decode_time_threshold: 10000000 #Time in nano seconds
-    Decode_NonTunnel_Secure:
-      Streams:
-        - Name: tones_48k_2_256_aac
-          PTS:
-            - 0
-            - 21333333
-            - 42666666
-            - 63999999
-            - 85333332
-            - 106666665
-            - 127999998
-            - 149333331
-            - 170666664
-            - 191999997
-          trim:
-            - 127999998 #Start in Nano seconds
-            - 149333331 #End
-          rms_diff_threshold: 0.5
-    Decode_Tunnel:
-      Streams:
-        - Name: tones_48k_2_256_aac
-          PTS:
-            - 0
-            - 21333333
-            - 42666666
-            - 63999999
-            - 85333332
-            - 106666665
-            - 127999998
-            - 149333331
-            - 170666664
-            - 191999997
-          trim:
-            - 127999998 #Start in Nano seconds
-            - 149333331 #End
-          rms_diff_threshold: 0.5
-    Decode_Tunnel_Secure:
-      Streams:
-        - Name: tones_48k_2_256_aac
-          PTS:
-            - 0
-            - 21333333
-            - 42666666
-            - 63999999
-            - 85333332
-            - 106666665
-            - 127999998
-            - 149333331
-            - 170666664
-            - 191999997
-          trim:
-            - 127999998 #Start in Nano seconds
-            - 149333331 #End
-          rms_diff_threshold: 0.5
-    Decode_Inavlid_Frames:
-      Streams:
-        - Name: tones_48k_2_256_aac
-          PTS:
-            - 0
-            - 21333333
-            - 42666666
-            - 63999999
-            - 85333332
-            - 106666665
-            - 127999998
-            - 149333331
-            - 170666664
-            - 191999997
-          trim:
-            - 127999998 #Start in Nano seconds
-            - 149333331 #End
-          rms_diff_threshold: 0.5
-    Decode_Cuncurrent_NonTunnel:
-      Streams:
-        - Name: tones_48k_2_256_aac
-          PTS:
-            - 0
-            - 21333333
-            - 42666666
-            - 63999999
-            - 85333332
-            - 106666665
-            - 127999998
-            - 149333331
-            - 170666664
-            - 191999997
-          trim:
-            - 127999998 #Start in Nano seconds
-            - 149333331 #End
+            - 0 #Start in Nano seconds
+            - 0 #End
           rms_diff_threshold: 0.5
           decode_time_threshold: 10000000 #Time in nano seconds

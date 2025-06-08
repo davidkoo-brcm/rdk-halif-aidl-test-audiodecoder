@@ -194,7 +194,7 @@ public:
                 sp<AudioDecoderControllerListener> controlListener,
                 sp<AudioDecoderEventListener> eventListener,
                 sp<IAVBuffer> AVBufferManager,
-                bool secureDecode, vector<testConfiguration_t>& config)
+                bool secureDecode, testConfiguration_t& config)
     {
         mDecoderId = decoderId;
         mDecoderHandle = decoderHandle;
@@ -215,20 +215,16 @@ public:
             mDecoderThread = thread(&DecoderTest::decoderThreadFunc, this);
             this_thread::sleep_for(chrono::milliseconds(100));
             mConsumerThread = thread(&DecoderTest::consumerThreadFunc, this);
+
+            mDecoderThread.join();
+            mConsumerThread.join();
         }
         else
         {
             decodeAndConsumeAudioStreams();
         }
     }
-    void wait()
-    {
-        if(mConcurrentDecodeConsume)
-        {
-            mDecoderThread.join();
-            mConsumerThread.join();
-        }
-    }
+
     bool getDecoderMetrics(int32_t &framesDecoded, int32_t &decodeErrors, int32_t framesDropped)
     {
         optional<PropertyValue> propertyValue;
@@ -267,7 +263,7 @@ private:
     sp<AudioDecoderEventListener> mEventListener;
     sp<IAVBuffer> mAVBufferManager;
     bool mSecureDecode;
-    vector<testConfiguration_t> mTestConfiguration;
+    testConfiguration_t mTestConfiguration;
     deque<InputAudioFrame_t> mInputFrame;
     mutex mDecodeMutex;
     atomic<bool> mDecodingStream;
@@ -283,25 +279,25 @@ private:
         /* Create Audio Pool */
         AVBUFFER_CREATE_AUDIOPOOL_SUCCESS(mAVBufferManager, mSecureDecode, mDecoderId, bufferListener, audioPool);
 
-        for(const auto& test: mTestConfiguration)
+        //for(const auto& test: mTestConfiguration)
         {
             int64_t audioBufferHandle;
             sp<IAudioDecoderController> audioDecoderController;
 
-            ifstream inputFile(test.input, ios::binary);
+            ifstream inputFile(mTestConfiguration.input, ios::binary);
             if (!inputFile)
             {
-                UT_LOG_ERROR("Failed to open file: %s", test.input.c_str());
-                break;
+                UT_LOG_ERROR("Failed to open file: %s", mTestConfiguration.input.c_str());
+                return;
             }
 
             /* Open the Decoder */
-            AUDIODECODER_OPEN_SUCCESS(mDecoderHandle, test.codec, mSecureDecode, mControlListener, audioDecoderController, true);
+            AUDIODECODER_OPEN_SUCCESS(mDecoderHandle, mTestConfiguration.codec, mSecureDecode, mControlListener, audioDecoderController, true);
 
             /* Start the decoder */
             AUDIODECODER_START_SUCCESS(mDecoderHandle, audioDecoderController, true);
 
-            for(const auto& [frameSize, framePTS, errorFrame]: test.frameDetails)
+            for(const auto& [frameSize, framePTS, errorFrame]: mTestConfiguration.frameDetails)
             {
                 vector<uint8_t> inputBuffer; //TODO: replace with mapped buffer
                 int32_t trimEndNs = 0;
@@ -317,17 +313,51 @@ private:
                 //TODO: Fill the buffer and call decoder. Add different machanism for secure decode
                 inputFrame.sendTime = chrono::steady_clock::now();
                 inputFrame.framePTS = framePTS;
-                inputFrame.reference = test.reference;
-                inputFrame.rms_threshold = test.rms_diff_threashold;
+                inputFrame.reference = mTestConfiguration.reference;
+                inputFrame.rms_threshold = mTestConfiguration.rms_diff_threashold;
                 inputFrame.isErrorFrame = errorFrame;
                 {
                     lock_guard<mutex> lock(mDecodeMutex);
                     mInputFrame.push_back(inputFrame);
                 }
+
+                /* ReStart the decoder */
+                if(mTestConfiguration.stopPts == framePTS)
+                {
+                    AUDIODECODER_STOP_SUCCESS(mDecoderHandle, audioDecoderController, true);
+                    AUDIODECODER_START_SUCCESS(mDecoderHandle, audioDecoderController, true);
+                }
+
+                if(mTestConfiguration.discontinuityPts == framePTS)
+                {
+                    AUDIODECODER_SIGNAL_DISCONTINUITY_SUCCESS(mDecoderHandle, audioDecoderController, true);
+                }
+
+                if(mTestConfiguration.flushPts == framePTS)
+                {
+                    AUDIODECODER_FLUSH_SUCCESS(mDecoderHandle, audioDecoderController, false, true);
+                }
+
+                if(mTestConfiguration.flushRestPts == framePTS)
+                {
+                    AUDIODECODER_FLUSH_SUCCESS(mDecoderHandle, audioDecoderController, true, true);
+                    AUDIODECODER_START_SUCCESS(mDecoderHandle, audioDecoderController, true);
+                }
+
+                if(mTestConfiguration.eosPts == framePTS)
+                {
+                    /* After EOS signal decode should fail */
+                    AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, framePTS, audioBufferHandle, trimStartNs, trimEndNs, Status::EX_NONE);
+
+                    /* decoder should be restarted after eos */
+                    AUDIODECODER_STOP_SUCCESS(mDecoderHandle, audioDecoderController, true);
+                    AUDIODECODER_START_SUCCESS(mDecoderHandle, audioDecoderController, true);
+                }
+
                 //AUDIODECODER_DECODEBUFFER_SUCCESS(audioDecoderController, framePTS, audioBufferHandle, trimStartNs, trimEndNs);
 
                 //TODO: add some delay for the next frame to push
-                this_thread::sleep_for(chrono::milliseconds(test.decoderDelay));
+                this_thread::sleep_for(chrono::milliseconds(mTestConfiguration.decoderDelay));
                 /* Free the audio buffer */
                 AVBUFFER_FREE_SUCCESS(mAVBufferManager, audioBufferHandle);
             }
@@ -347,7 +377,6 @@ private:
     void consumerThreadFunc()
     {
         ifstream reference_file;
-        string previous;
 
         while (mDecodingStream || !mInputFrame.empty())
         {
@@ -364,14 +393,9 @@ private:
             inputFrame = move(mInputFrame.front());
             mInputFrame.pop_front();
 
-            if(inputFrame.reference != previous)
+            if(!reference_file.is_open())
             {
-                if(reference_file.is_open())
-                {
-                    reference_file.close();
-                }
                 reference_file.open(inputFrame.reference);
-                previous = inputFrame.reference;
             }
 
             if(decodedFrame.framePTS != inputFrame.framePTS)
@@ -414,32 +438,32 @@ private:
         /* Create Audio Pool */
         AVBUFFER_CREATE_AUDIOPOOL_SUCCESS(mAVBufferManager, mSecureDecode, mDecoderId, bufferListener, audioPool);
 
-        for(const auto& testConfig: mTestConfiguration)
+        //for(const auto& testConfig: mTestConfiguration)
         {
             int64_t audioBufferHandle;
             sp<IAudioDecoderController> audioDecoderController;
 
-            ifstream inputFile(testConfig.input, ios::binary);
+            ifstream inputFile(mTestConfiguration.input, ios::binary);
             if (!inputFile)
             {
-                UT_LOG_ERROR("Failed to open file: %s", testConfig.input.c_str());
-                break;
+                UT_LOG_ERROR("Failed to open file: %s", mTestConfiguration.input.c_str());
+                return;
             }
 
-            ifstream referenceFile(testConfig.reference, ios::binary);
+            ifstream referenceFile(mTestConfiguration.reference, ios::binary);
             if (!referenceFile)
             {
-                UT_LOG_ERROR("Failed to open reference file: %s", testConfig.reference.c_str());
-                break;
+                UT_LOG_ERROR("Failed to open reference file: %s", mTestConfiguration.reference.c_str());
+                return;
             }
 
             /* Open the Decoder */
-            AUDIODECODER_OPEN_SUCCESS(mDecoderHandle, testConfig.codec, mSecureDecode, mControlListener, audioDecoderController, true);
+            AUDIODECODER_OPEN_SUCCESS(mDecoderHandle, mTestConfiguration.codec, mSecureDecode, mControlListener, audioDecoderController, true);
 
             /* Start the decoder */
             AUDIODECODER_START_SUCCESS(mDecoderHandle, audioDecoderController, true);
 
-            for(const auto& [frameSize, framePTS, errorFrame]: testConfig.frameDetails)
+            for(const auto& [frameSize, framePTS, errorFrame]: mTestConfiguration.frameDetails)
             {
                 vector<uint8_t> inputBuffer; //TODO: replace with mapped buffer
                 vector<uint8_t> referenceBuffer;
@@ -476,7 +500,7 @@ private:
 
                     //TODO: validate the decoded output
                     rms_diff = vts_computeRMSDiff(referenceBuffer.data(), decodedFrame.data.data(), numSamples, decodedFrame.metadata.format);
-                    UT_ASSERT_TRUE(rms_diff <= testConfig.rms_diff_threashold);
+                    UT_ASSERT_TRUE(rms_diff <= mTestConfiguration.rms_diff_threashold);
                 }
 
                 auto duration = chrono::duration_cast<chrono::microseconds>(endTime - startTime);
@@ -583,7 +607,7 @@ public:
         }
 
     }*/
-    void runSequentialDecode(vector<testConfiguration_t>& testConfig, bool secureDecode, bool concurrentDecodeConsume)
+    void runSequentialDecode(testConfiguration_t& testConfig, bool secureDecode, bool concurrentDecodeConsume)
     {
         for (const auto& [_decoderId, decoderHandle, controlListener, eventListener, capabilities] : mAudioDecoderList)
         {
@@ -594,9 +618,15 @@ public:
             //Skip if the plafrom doesn't support secure decode
             if (secureDecode && !capabilities->supportsSecure)
             {
+                UT_LOG_INFO("Decoder [%d] doesn't support secure decoding", _decoderId);
                 continue;
             }
-
+            auto result = find(capabilities->supportedCodecs.begin(),capabilities->supportedCodecs.end(),testConfig.codec);
+            if(result == capabilities->supportedCodecs.end())
+            {
+                UT_LOG_INFO("Decoder [%d] doesn't support Codec [%s]", _decoderId, audiodecoder::toString(testConfig.codec).c_str());
+                continue;
+            }
             /* Get heap metrics */
             AVBUFFER_GETMETRICS(mAVBufferManager, secureDecode, beforeHeapMetrics);
 
@@ -618,7 +648,7 @@ public:
                     t.join();
                 }
             }*/
-            decodeTest.wait();
+            //decodeTest.wait();
 
             /* Get decoder metrics after decoding */
             //UT_ASSERT_TRUE(getDecoderMetrics(decoderHandle, endFramesDecoded, endFrameErrors, endFramesDropped));
@@ -636,9 +666,10 @@ public:
         }
     }
 
-    void runConcurrentDecode(vector<testConfiguration_t>& testConfig, bool secureDecode, bool concurrentDecodeConsume)
+    void runConcurrentDecode(testConfiguration_t& testConfig, bool secureDecode, bool concurrentDecodeConsume)
     {
         vector<thread> threads;
+        vector<DecoderTest> decoderTestList;
         HeapMetrics beforeHeapMetrics, afterHeapMetrics;
 
         //TODO: add check of decoder metrics
@@ -650,6 +681,13 @@ public:
             //Skip if the plafrom doesn't support secure decode
             if (secureDecode && !capabilities->supportsSecure)
             {
+                UT_LOG_INFO("Decoder [%d] doesn't support secure decoding", _decoderId);
+                continue;
+            }
+            auto result = find(capabilities->supportedCodecs.begin(),capabilities->supportedCodecs.end(),testConfig.codec);
+            if(result == capabilities->supportedCodecs.end())
+            {
+                UT_LOG_INFO("Decoder [%d] doesn't support Codec [%s]", _decoderId, audiodecoder::toString(testConfig.codec).c_str());
                 continue;
             }
 
@@ -697,12 +735,15 @@ public:
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel)
 {
     char *testName = "Decode_NonTunnel";
-    vector<testConfiguration_t> streamDetails;
+    vector<testConfiguration_t> testConfiguration;
     bool secureMode = false;
 
-    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, testConfiguration);
 
-    runSequentialDecode(streamDetails, secureMode, true);
+    for(auto& test: testConfiguration)
+    {
+        runSequentialDecode(test, secureMode, true);
+    }
 }
 
 /**
@@ -719,12 +760,14 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel)
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel_Secure)
 {
     char *testName = "Decode_NonTunnel_Secure";
-    vector<testConfiguration_t> streamDetails;
+    vector<testConfiguration_t> testConfiguration;
     bool secureMode = true;
 
-    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
-
-    runSequentialDecode(streamDetails, secureMode, true);
+    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, testConfiguration);
+    for(auto& test: testConfiguration)
+    {
+        runSequentialDecode(test, secureMode, true);
+    }
 }
 
 /**
@@ -741,12 +784,15 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel_Secure)
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Tunnel)
 {
     char *testName = "Decode_Tunnel";
-    vector<testConfiguration_t> streamDetails;
+    vector<testConfiguration_t> testConfiguration;
     bool secureMode = false;
 
-    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, testConfiguration);
 
-    runSequentialDecode(streamDetails, secureMode, true);
+    for(auto& test: testConfiguration)
+    {
+        runSequentialDecode(test, secureMode, true);
+    }
 }
 
 /**
@@ -763,12 +809,15 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Tunnel)
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Tunnel_Secure)
 {
     char *testName = "Decode_Tunnel_Secure";
-    vector<testConfiguration_t> streamDetails;
-    bool secureMode = true;
+    vector<testConfiguration_t> testConfiguration;
+    bool secureMode = false;
 
-    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, testConfiguration);
 
-    runSequentialDecode(streamDetails, secureMode, true);
+    for(auto& test: testConfiguration)
+    {
+        runSequentialDecode(test, secureMode, true);
+    }
 }
 
 /**
@@ -785,13 +834,17 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Tunnel_Secure)
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Inavlid_Frames)
 {
     char *testName = "Decode_Inavlid_Frames";
-    vector<testConfiguration_t> streamDetails;
+    vector<testConfiguration_t> testConfiguration;
+    bool secureMode = false;
 
-    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, testConfiguration);
 
     for (bool secureDecode : {false, true})
     {
-        runSequentialDecode(streamDetails, secureDecode, true);
+        for(auto& test: testConfiguration)
+        {
+            runSequentialDecode(test, secureMode, secureDecode);
+        }
     }
 }
 
@@ -809,13 +862,17 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Inavlid_Frames)
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Trim)
 {
     char *testName = "Decode_Trim";
-    vector<testConfiguration_t> streamDetails;
+    vector<testConfiguration_t> testConfiguration;
+    bool secureMode = false;
 
-    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, testConfiguration);
 
     for (bool secureDecode : {false, true})
     {
-        runSequentialDecode(streamDetails, secureDecode, true);
+        for(auto& test: testConfiguration)
+        {
+            runSequentialDecode(test, secureMode, secureDecode);
+        }
     }
 }
 
@@ -833,14 +890,17 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Trim)
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Cuncurrent_NonTunnel)
 {
     char *testName = "Decode_Cuncurrent_NonTunnel";
-    vector<testConfiguration_t> streamDetails;
+    vector<testConfiguration_t> testConfiguration;
     bool secureMode = false;
 
-    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, streamDetails);
+    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, testConfiguration);
 
     for (bool secureDecode : {false, true})
     {
-        runConcurrentDecode(streamDetails, secureMode, true);
+        for(auto& test: testConfiguration)
+        {
+            runConcurrentDecode(test, secureMode, true);
+        }
     }
 }
 
