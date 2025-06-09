@@ -259,7 +259,7 @@ sequenceDiagram
     rundecoder->>buffer : getHeapMetrics()
     buffer -->> rundecoder: AV Buffer metrics
     rundecoder->>DecoderTest: run()
-    rundecoder->>DecoderTest: wait()
+    rundecoder->>rundecoder: wait for decode <br>to complete
     rundecoder->>buffer : getHeapMetrics()
     buffer -->> rundecoder: AV Buffer metrics
     rundecoder->>rundecoder: Validate AV buffer metrics
@@ -285,10 +285,10 @@ sequenceDiagram
     rundecoder->>thread_N: launch threads
     par thread_1
       thread_1->>DecoderTest: run()
-      thread_1->>DecoderTest: wait()
+      thread_1->>thread_1: wait for decode <br>to complete
     and thread_N
       thread_N->>DecoderTest: run()
-      thread_N->>DecoderTest: wait()
+      thread_N->>thread_N: wait for decode <br>to complete
     end
     rundecoder->>rundecoder: join threads
     rundecoder->>buffer : getHeapMetrics()
