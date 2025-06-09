@@ -22,6 +22,7 @@
 - `AAC` \- Advanced Audio Coding
 - `PCM` \- Pulse Code Modulation
 - `EOS` \- End of Stream
+- `URL` \- Uniform Resource Locator
 
 ## Overview
 
@@ -36,7 +37,7 @@ This document outlines the L3 test design for the Audio Decoder module.
 
 ## Test Configuration
 
-The test configuration is defined in [vts_l3_test_config.yaml](../../test_configuration/vts_l3_test_config.yaml), , which specifies the streams, `PTS` values, frame sizes, and other key parameters required for L3 validation. This configuration includes references to supporting `YAML` files such as [vts_audio_aac_streams.yaml](../../test_configuration/vts_audio_aac_streams.yaml) files required by the test.
+The test configuration is defined in [vts_l3_test_config.yaml](../../test_configuration/vts_l3_test_config.yaml), which specifies the streams, `PTS` values, frame sizes, and other key parameters required for L3 validation. This configuration includes references to supporting `YAML` files such as [vts_audio_aac_streams.yaml](../../test_configuration/vts_audio_aac_streams.yaml) files required by the test.
 
 ### Example Test Configuration File
 
@@ -95,7 +96,7 @@ IAudioDecoderManager:
 
 #### Key Parameters
 
-- stream_download_path: URL path to download the audio test streams
+- stream_download_path: `URL` path to download the audio test streams
 - input_streams_path: Local path where input streams are stored
 - reference_streams_path: Local path for reference PCM streams
 - delay_between_decode_calls: insert delay in msec between each `decodeBuffer()` call
@@ -103,7 +104,7 @@ IAudioDecoderManager:
 - signal_discontinuity_pts: `pts` value at which the test should signal discontinuity to the decoder. -1 indicates that no discontinuity signal should be sent
 - flush_pts - `pts` value that determine when the test should flush the decoder. -1 indicates that test should not flush
 - flush_reset_pts - `pts` value that determine when the test should flush with reset the decoder. -1 indicates that test should not flush
-- eos_pts - `pts` value that determine when the test should sent `eos` signal to decoder. . -1 indicates that test should signal `eos`
+- eos_pts - `pts` value that determine when the test should sent `eos` signal to decoder. -1 indicates that test should not signal `eos`
 - Name: Identifier for the stream, as defined in the stream configuration file
 - PTS: Presentation Time Stamps (per frame) in nanoseconds
 - trim: Start and end trim points in Nano seconds
@@ -211,8 +212,8 @@ The class overrides `SetUp()` and `TearDown()` from `ut_core` to handle initiali
 |-|--------|---------|-----------|-------|
 |1|Setup|None|Initializes the test by acquiring service handles, supported decoder IDs, decoder capabilities, and registering event listeners|`getAudioDecoderIds()`<br>`getAudioDecoder()`<br>`registerEventListener()`<br>`getCapabilities()`|
 |2|TearDown|None|Cleans up by unregistering event listeners|`unregisterEventListener()`|
-|3|runSequentialDecode|std::vector\<testConfiguration_t\>& streamDetails<br>bool secureDecode|Decodes streams using all decoders sequentially using `DecoderTest` Class|`getHeapMetrics()`|
-|4|runConcurrentDecode|std::vector\<testConfiguration_t\>& streamDetails<br>bool secureDecode|Launches multiple threads to decode streams concurrently using `DecoderTest` Class|`getHeapMetrics()`|
+|3|runSequentialDecode|vector\<testConfiguration_t\>& configuration<br>bool secureDecode|Decodes streams using all decoders sequentially using `DecoderTest` Class|`getHeapMetrics()`|
+|4|runConcurrentDecode|vector\<testConfiguration_t\>& configuration<br>bool secureDecode|Launches multiple threads to decode streams concurrently using `DecoderTest` Class|`getHeapMetrics()`|
 
 #### Setup
 
@@ -403,27 +404,28 @@ classDiagram
 
 #### Structures
 
-##### testConfiguration_t
+##### DecodedAudioFrame_t
 
-AudioFrame_t encapsulates information about each decoded audio frame, including the raw PCM data, number of samples, associated metadata, and the timestamp at which the test received the buffer. This is useful for time-based validation and synchronization with the reference stream.
+DecodedAudioFrame_t encapsulates information about each decoded audio frame, including the raw PCM data, number of samples, associated metadata, and the timestamp at which the test received the buffer. This is useful for time-based validation and synchronization with the reference stream.
 
 ```cpp
-typedef struct AudioFrame
+typedef struct DecodedAudioFrame
 {
-    std::vector<uint8_t> data;  /* Decoded pcm data */
-    size_t numSamples;          /* Number of samples in the buffer */
-    bool isMetaAvailable;       /* is metadata received from callback */
+    vector<uint8_t> data;  /* Decoded pcm data */
+    int64_t framePTS;      /* PTS of decoded frame */
+    size_t numSamples;     /* Number of samples in the buffer */
+    bool isMetaAvailable;  /* is metadata received from callback */
     struct AudioMetatData metadata; /* metadata */
-    std::chrono::steady_clock::time_point receiveTime; /* Time at which test received the buffer */
-}AudioFrame_t;
+    chrono::steady_clock::time_point receiveTime; /* Time at which test received the buffer */
+}DecodedAudioFrame_t;
 ```
 
 #### AudioDecoderControllerListener Class Functions
 
 |#|Function|Arguments|Description|
 |-|--------|---------|-----------|
-|1|onFrameOutput|int64_t nsPresentationTime<br>int64_t frameBufferHandle<br>const ::std::optional<FrameMetadata>& metadata|Override function from BnAudioDecoderControllerListener. Called by the `HAL` when a decoded frame is ready. It enqueues the decoded frame and metadata into an internal queue for test validation.|
-|2|getNextFrame|AudioFrame_t &frameInfo|Pops the next available frame from the internal queue. Used by test logic to retrieve and validate decoded output|
+|1|onFrameOutput|int64_t nsPresentationTime<br>int64_t frameBufferHandle<br>const optional<FrameMetadata>& metadata|Override function from BnAudioDecoderControllerListener. Called by the `HAL` when a decoded frame is ready. It enqueues the decoded frame and metadata into an internal queue for test validation.|
+|2|getNextFrame|DecodedAudioFrame_t &frameInfo|Pops the next available frame from the internal queue. Used by test logic to retrieve and validate decoded output|
 
 ### AudioDecoderEventListener Class
 
@@ -449,7 +451,7 @@ classDiagram
 |-|--------|---------|-----------|
 |1|onDecodeError|ErrorCode vendorErrorCode<br>int32_t errorCode|Callback invoked when the decoder reports an error. Captures the error information into an internal queue for further validation by the test case|
 |2|onStateChanged|State oldState<br>State newState|Callback invoked when the decoder transitions between states. Logs the transition in a queue to allow the test case to verify correct state sequencing|
-|3|waitForState|State desiredState<br>std::chrono::milliseconds timeout|Blocks execution until the decoder reaches the desired state or the timeout expires. Used to synchronize test flow with HAL state transitions|
+|3|waitForState|State desiredState<br>chrono::milliseconds timeout|Blocks execution until the decoder reaches the desired state or the timeout expires. Used to synchronize test flow with HAL state transitions|
 |4|checkStateTransistion|State expOldState<br>State expNewState|Validates whether the expected transition from expOldState to expNewState has occurred by scanning the recorded state transition queue|
 
 ## Helper Functions
@@ -463,25 +465,33 @@ These utility functions are shared across all VTS test cases
 This structure holds per-test configuration details parsed from the `YAML` file (`vts_l3_test_config.yaml`). It defines all the input stream characteristics, reference comparison parameters, and frame-level metadata needed for test execution. This structure drives test behaviour and validation logic.
 
 ```cpp
-typedef struct testConfiguration {
-    std::string input;          /* Path to input encoded stream file */
-    std::string reference;      /* Path to reference PCM stream file */
-    Codec codec;                /* Codec type (e.g., AAC, OPUS) */
-    int32_t sampleRate;         /* Sample rate of the stream */
-    int32_t numChannels;        /* Number of audio channels */
-    PCMFormat format;           /* PCM format of the reference stream */
-    int32_t numOfFrames;        /* Total number of frames expected in the stream */
-    double rms_diff_threashold; /* Acceptable RMS difference threshold */
-    int64_t trimStartNs;        /* Start trim position in nanoseconds */
-    int64_t trimEndNs;          /* End trim position in nanoseconds */
+typedef struct testConfiguration
+{
+    std::string input;           /* Path to input encoded stream file */
+    std::string reference;       /* Path to reference PCM stream file */
+    Codec codec;                 /* Codec type (e.g., AAC, OPUS) */
+    int32_t sampleRate;          /* Sample rate of the stream */
+    int32_t numChannels;         /* Number of audio channels */
+    PCMFormat format;            /* PCM format of the reference stream */
+    int32_t numOfFrames;         /* Total number of frames expected in the stream */
+    double rms_diff_threashold;  /* Acceptable RMS difference threshold */
+    int64_t trimStartNs;         /* Start trim position in nanoseconds */
+    int64_t trimEndNs;           /* End trim position in nanoseconds */
+    int32_t decoderDelay;        /* delay in msec between each decodeBuffer() call */
+    int64_t stopPts;             /*  pts value at which the decoder should be stopped and restarted */
+    int64_t discontinuityPts;    /* pts value at which the test should signal discontinuity to the decoder. -1 indicates that no discontinuity signal should be sent */
+    int64_t flushPts;            /* pts value that determine when the test should flush the decoder. -1 indicates that test should not flush */
+    int64_t flushRestPts;        /* pts value that determine when the test should flush with reset the decoder. -1 indicates that test should not flush */
+    int64_t eosPts;              /* pts value that determine when the test should sent eos signal to decoder. -1 indicates that test should not signal eos */
     std::vector<std::tuple<int32_t, int64_t, bool>> frameDetails; /* Tuple of frameSize, PTS, isCorrupted */
-} testConfiguration_t;
+}testConfiguration_t;
+
 ```
 ### Functions
 
 |#|Helper Functions|Arguments|Description|
 |-|----------------|---------|-----------|
-|1|vts_audiodeccoder_parse_testconfig|void* pTestInstance: ut kvp instance<br>char *module: Module name<br>char *testGroup: Test group L1, L2, L3<br>char *testNameL: Test name<br>std::vector\<testConfiguration_t\>& configuration|Parses the `vts_l3_test_config.yaml` for the given module, test group, and test name. Populates a list of testConfiguration_t structures for use in the test|
+|1|vts_audiodeccoder_parse_testconfig|void* pTestInstance: ut kvp instance<br>char *module: Module name<br>char *testGroup: Test group L1, L2, L3<br>char *testNameL: Test name<br>vector\<testConfiguration_t\>& configuration|Parses the `vts_l3_test_config.yaml` for the given module, test group, and test name. Populates a list of testConfiguration_t structures for use in the test|
 |2|vts_audiodecoder_parseAudioDecoderHFP|None|Parses the HAL feature profile (HFP) file to determine supported capabilities of the AudioDecoder HAL under test|
 |3|vts_computeRMSDiff|const void* ref_buf<br>const void* act_buf<br>size_t num_samples<br>PCMFormat format|Computes the Root Mean Square (RMS) difference between two PCM buffers (reference and actual). Used for validating decoded output accuracy.|
 
