@@ -515,32 +515,32 @@ This check ensures that both the test suite and the decoder HAL properly release
 
 The L3 tests validate the functional correctness and performance of the AudioDecoder HAL by simulating real-world decoding workflows
 
-### Decode_Sequential_NonTunnel
+### Decode_Sequential_NonTunnel_NonSecure
 
-The following sequence diagram illustrates the flow of the `Decode_Sequential_NonTunnel` test scenario, executed by the `VTS_L3_AudioDecoder` class:
+The following sequence diagram illustrates the flow of the `Decode_Sequential_NonTunnel_NonSecure` test scenario, executed by the `VTS_L3_AudioDecoder` class:
 
 ```mermaid
 sequenceDiagram
-    participant Test as VTS_L3_AudioDecoder(Decode_Sequential_NonTunnel)
+    participant Test as VTS_L3_AudioDecoder(Decode_Sequential_NonTunnel_NonSecure)
 
     Test->>Test: vts_audiodeccoder_parse_testconfig()
-    loop for each stream
+    loop for each non-tunel stream
       Test->>Test: SetUp()
       Test->>Test: runSequentialDecode()
     end
     Test->>Test: TearDown()
 ```
 
-### Decode_Concurrent_NonTunnel
+### Decode_Sequential_NonTunnel_NonSecure_Error
 
-The following sequence diagram illustrates the flow of the `Decode_Concurrent_NonTunnel` test scenario, executed by the `VTS_L3_AudioDecoder` class:
+The following sequence diagram illustrates the flow of the `Decode_Sequential_NonTunnel_NonSecure_Error` test scenario, executed by the `VTS_L3_AudioDecoder` class:
 
 ```mermaid
 sequenceDiagram
-    participant Test as VTS_L3_AudioDecoder(Decode_Concurrent_NonTunnel)
+    participant Test as VTS_L3_AudioDecoder(Decode_Sequential_NonTunnel_NonSecure_Error)
 
     Test->>Test: vts_audiodeccoder_parse_testconfig()
-    loop for each stream
+    loop for each error non-tunel stream
       Test->>Test: SetUp()
       Test->>Test: runConcurrentDecode()
     end
