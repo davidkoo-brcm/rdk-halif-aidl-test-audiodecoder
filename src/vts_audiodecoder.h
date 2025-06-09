@@ -712,7 +712,7 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
 
         Status onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::optional<FrameMetadata>& metadata) override
         {
-            UT_LOG_INFO("[BHANU] onFrameOutput: Received frameoutput: %lld", nsPresentationTime);
+            UT_LOG_INFO("onFrameOutput: Received frameoutput: %lld", nsPresentationTime);
             //TODO: update these variables
             uint32_t numSamples = 0;
             uint32_t bps = 0;
@@ -721,7 +721,6 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
             //TODO: metadata its not always valid
             DecodedAudioFrame_t frame;
             frame.receiveTime = chrono::steady_clock::now();
-            UT_LOG_INFO("[BHANU] [%p] onFrameOutput: got time", this);
             frame.framePTS = nsPresentationTime;
             /*if(frameBufferHandle != -1)
             {

@@ -599,7 +599,7 @@ public:
         metadata->endOfStream = 0;
         metadata->discontinuity = 0;
         metadata->source = AVSource::IP;
-        UT_LOG_INFO("[BHANU]similateonframeoutput: start simulation, listener: %p\n", controlListener.get());
+        UT_LOG_INFO("similateonframeoutput: start simulation, listener: %p\n", controlListener.get());
         for(int32_t i=0;i<10;i++)
         {
             controlListener->onFrameOutput(PTS[i], -1, metadata);
@@ -640,7 +640,7 @@ public:
             /*{
                 this_thread::sleep_for(chrono::milliseconds(40));
                  vector<thread> threads;
-                 UT_LOG_INFO("[BHANU] runSequentialDecode_v2: start simulation thread listener:%p\n", controlListener.get());
+                 UT_LOG_INFO("runSequentialDecode_v2: start simulation thread listener:%p\n", controlListener.get());
                  threads.emplace_back(&VTS_L3_AudioDecoder::similateonframeoutput, this,
                                             controlListener);
                 for (auto& t : threads)
