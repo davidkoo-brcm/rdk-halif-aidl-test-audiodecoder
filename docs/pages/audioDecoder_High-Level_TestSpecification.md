@@ -67,13 +67,17 @@ The output of an audio decoder can take two routes:
 
 ### Prerequisites
 
-Supplying audio frames to the decoder tests requires AVBuffer handles; therefore, the AVBuffer modules must be tested for L1, L2 and L3 prior to executing the AudioDecoder L3 tests
+#### AV Buffer
+
+Audio frames are supplied to the Audio Decoder during testing, which necessitates a pre-validated AVBuffer module. Therefore, the AVBuffer must successfully pass VTS L1, L2, and L3 testing before being used in the Audio Decoder tests
 
 ### Feature List
 
-The test verifies all features in both sequential and concurrent decoding modes (if the platform supports multiple decoders)
+VTS L3 validates all the Audio Decoder features in both sequential and concurrent decoding modes (if the platform supports multiple decoders) as represented below.
 
 #### Sequential Decoding
+
+The Sequential Decoding test evaluates each audio decoder individually, one after another, to ensure functional correctness across all supported features. This approach helps isolate issues and verify that every decoder instance performs as expected in a standalone environment.
 
 ```mermaid
 block-beta
@@ -86,6 +90,8 @@ block-beta
 ```
 
 #### Concurrent Decoding
+
+The Concurrent Decoding test assesses the system's ability to handle multiple audio decoders operating simultaneously, each configured with different supported features. This test is designed to validate the robustness, resource management, and feature compatibility of the platform under concurrent load, and is applicable only if the platform supports multiple decoder instances.
 
 ```mermaid
 block-beta
