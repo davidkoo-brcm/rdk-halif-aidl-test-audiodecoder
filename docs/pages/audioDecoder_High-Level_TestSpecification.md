@@ -65,13 +65,58 @@ The output of an audio decoder can take two routes:
 
 ## L3 Test Specification
 
-The following table outlines the core features validated in the L3 test phase
+### Prerequisites
+
+Supplying audio frames to the decoder tests requires AVBuffer handles; therefore, the AVBuffer modules must be tested for L1, L2 and L3 prior to executing the AudioDecoder L3 tests
 
 ### Feature List
 
+The test verifies all features in both sequential and concurrent decoding modes (if the platform supports multiple decoders)
+
+#### Sequential Decoding
+
+```mermaid
+block-beta
+    block:1
+        AudioStream("Audio Stream") space AVBuffer("AVBuffer") space Decoder("Decoder_1") space Output("Output")
+        AudioStream --> AVBuffer
+        AVBuffer --> Decoder
+        Decoder --> Output
+    end
+```
+
+#### Concurrent Decoding
+
+```mermaid
+block-beta
+columns 1
+    block:1
+        AudioStream_1("Audio Stream") space AVBuffer_1("AVBuffer") space Decoder_1("Decoder_1") space Output_1("Output")
+        AudioStream_1 --> AVBuffer_1
+        AVBuffer_1 --> Decoder_1
+        Decoder_1 --> Output_1
+    end
+    space
+    block:2
+        AudioStream_2("Audio Stream") space AVBuffer_2("AVBuffer") space Decoder_2("Decoder_2") space Output_2("Output")
+        AudioStream_2 --> AVBuffer_2
+        AVBuffer_2 --> Decoder_2
+        Decoder_2 --> Output_2
+    end
+    space
+    block:N
+        AudioStream_N("Audio Stream") space AVBuffer_N("AVBuffer") space Decoder_N("Decoder_N") space Output_N("Output")
+        AudioStream_N --> AVBuffer_N
+        AVBuffer_N --> Decoder_N
+        Decoder_N --> Output_N
+    end
+```
+
+The following table outlines the core features validated in the L3 test phase
+
 |#|Testing Feature|Description|
 |-|---------------|-----------|
-|1|Tunnel|Executes the decoder in tunnel mode. Based on stream format, the decoder chooses between tunnel and non-tunnel operation. In tunnel mode, the test validates only metrics and metadata. In non-tunnel mode, it also validates decoded buffers by comparing their RMS difference against reference data.|
+|1|Tunnel/Non-Tunnel|Executes the decoder in tunnel mode. Based on stream format, the decoder chooses between tunnel and non-tunnel operation. In tunnel mode, the test validates only metrics and metadata. In non-tunnel mode, it also validates decoded buffers by comparing their RMS difference against reference data.|
 |2|Secure|Initializes the decoder in secure mode, ensuring all buffer operations occur in secure memory|
 |3|Error Streams|Verifies decoder behaviour with error streams. Ensures appropriate events are raised and frame metadata is updated accurately|
 |4|Trim|Sends trim parameters to the decoder and checks whether the output buffer is correctly trimmed|
@@ -79,7 +124,8 @@ The following table outlines the core features validated in the L3 test phase
 |6|EOS|Test the decoder's handling of an `eos` (end-of-stream) signal. The decoder should correctly decode all frames up to `eos` and update relevant metadata fields. It must ignore any buffers received after `eos` and resume normal decoding when restarted.|
 |7|Flush without reset|Test the decoder's flush functionality. The decoder should discard any buffers already queued and resume normal decoding of subsequent frames|
 |8|Flush with reset|Test the decoder’s flush functionality combined with reset. The decoder should discard all queued buffers and transition to the READY state. After restarting, the decoder should properly process incoming frames|
-|9|Concurrent decoding|Executes multiple decoders simultaneously, validating decoded outputs and their respective metrics.|
+|9|Concurrent decoding|If platform supports multiple decoders, test executes multiple decoders simultaneously, validating decoded outputs and their respective metrics.|
+
 
 ### Test Cases
 
