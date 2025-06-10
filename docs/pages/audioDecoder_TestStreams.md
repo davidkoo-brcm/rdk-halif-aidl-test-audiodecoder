@@ -39,17 +39,19 @@ The following test streams will be used for validation:
 |17|tones_48k_2_256_random.aac|10|Random bits in the frames are replaced with random values|
 |18|tones_48k_2_256_sync.aac|10|invalid sync-word|
 |19|tones_48k_2_256_header_fields.aac|10|Invalid sampling freq, invalid channel config, invalid layer|
+|20|tones_48k_2_256_incompleframes.aac|10|Removed random bytes from each frames|
 
 ## MP3 (MPEG 1/2 Layer 3)
 
 |#|Name|Frames|Description|
 |-|----|------|-----------|
-|1|tones_32k_2_64.mp3|10|250Hz tone|
-|2|tones_44.1k_2_128.mp3|10|250Hz tone|
-|3|tones_48k_1_256_10.mp3|10|250Hz tone|
-|4|tones_48k_2_256.mp3|10|250Hz tone|
-|5|tones_48k_2_256_zero.mp3|10|Random bits in the frames are reset to zero|
-|6|tones_48k_2_256_random_bitflip.mp3|10|Random bits in the frames are flipped|
-|7|tones_48k_2_256_random.mp3|10|Random bits in the frames are replaced with random values|
-|8|tones_48k_2_256_sync.mp3|10|invalid syncword|
-|9|tones_48k_2_256_header_fields.mp3|10|Invalid sampling freq, invalid channel config, invalid layer|
+|1|tones_32k_1_256.mp3|10|250Hz tone|
+|2|tones_32k_2_256.mp3|10|250Hz tone|
+|3|tones_44.1k_1_128.mp3|10|250Hz tone|
+|4|tones_44.1k_2_128.mp3|10|250Hz tone|
+|5|tones_48k_1_256.mp3|10|250Hz tone|
+|6|tones_48k_2_256.mp3|10|250Hz tone|
+|7|tones_48k_2_256_sync|10|invalid syncword|
+|8|tones_48k_2_256_zero.mp3|3|frame contains valid sync word with data replaced with zero|
+|9|tones_48k_2_256_randombits.mp3|3|frame contains valid sync word with data replaced with ff|
+

@@ -708,6 +708,28 @@ public:
         UT_ASSERT_TRUE(beforeHeapMetrics.bytesTotal == afterHeapMetrics.bytesTotal);
     }
 
+    void runTest(char *testName, bool secureMode, bool concurrentMode)
+    {
+        vector<testConfiguration_t> testConfiguration;
+
+        vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, testConfiguration);
+
+        if(concurrentMode)
+        {
+            for(auto& test: testConfiguration)
+            {
+                runConcurrentDecode(test, secureMode, true);
+            }
+        }
+        else
+        {
+            for(auto& test: testConfiguration)
+            {
+                runSequentialDecode(test, secureMode, true);
+            }
+        }
+    }
+
     void TearDown() override
     {
         for (const auto& [_decoderId, decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
@@ -722,9 +744,9 @@ public:
 };
 
 /**
- * @brief Test the ability to decode audio frames in non-tunnel mode
- *
- * This test verifies that decoder can decode the audio frames in non-tunnel mode.
+ * @brief Test the ability to decode audio frames
+ *        Decoding type: Sequential
+ *        Modes: Non-Tunnel, Non-Secure
  *
  * **Test Group ID:** 03@n
  * **Test Case ID:** 001@n
@@ -732,24 +754,18 @@ public:
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel)
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure)
 {
-    char *testName = "Decode_NonTunnel";
-    vector<testConfiguration_t> testConfiguration;
+    char *testName = "Decode_Sequential_NonTunnel_NonSecure";
     bool secureMode = false;
-
-    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, testConfiguration);
-
-    for(auto& test: testConfiguration)
-    {
-        runSequentialDecode(test, secureMode, true);
-    }
+    bool concurrentMode = false;
+    runTest(testName, secureMode, concurrentMode);
 }
 
 /**
- * @brief Test the ability to decode audio frames in secure mode and in non-tunnel mode
- *
- * This test verifies that decoder can decode the audio frames in secure mode and in non-tunnel mode.
+ * @brief Test the ability to raise appropriate error codes while decoding error audio frames
+ *        Decoding type: Sequential
+ *        Modes: Non-Tunnel, Non-Secure
  *
  * **Test Group ID:** 03@n
  * **Test Case ID:** 002@n
@@ -757,23 +773,18 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel_Secure)
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Error)
 {
-    char *testName = "Decode_NonTunnel_Secure";
-    vector<testConfiguration_t> testConfiguration;
-    bool secureMode = true;
-
-    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, testConfiguration);
-    for(auto& test: testConfiguration)
-    {
-        runSequentialDecode(test, secureMode, true);
-    }
+    char *testName = "Decode_Sequential_NonTunnel_NonSecure_Error";
+    bool secureMode = false;
+    bool concurrentMode = false;
+    runTest(testName, secureMode, concurrentMode);
 }
 
 /**
- * @brief Test the ability to decode audio frames in tunnel mode
- *
- * This test verifies that decoder can decode the audio frames in tunnel mode.
+ * @brief Test the ability to decode audio frames with trim option
+ *        Decoding type: Sequential
+ *        Modes: Non-Tunnel, Non-Secure
  *
  * **Test Group ID:** 03@n
  * **Test Case ID:** 003@n
@@ -781,24 +792,18 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_NonTunnel_Secure)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Tunnel)
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Trim)
 {
-    char *testName = "Decode_Tunnel";
-    vector<testConfiguration_t> testConfiguration;
+    char *testName = "Decode_Sequential_NonTunnel_NonSecure_Trim";
     bool secureMode = false;
-
-    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, testConfiguration);
-
-    for(auto& test: testConfiguration)
-    {
-        runSequentialDecode(test, secureMode, true);
-    }
+    bool concurrentMode = false;
+    runTest(testName, secureMode, concurrentMode);
 }
 
 /**
- * @brief Test the ability to decode audio frames in secure mode and in tunnel mode
- *
- * This test verifies that decoder can decode the audio frames in secure mode and in tunnel mode.
+ * @brief Test the ability to handle the dicontinuity signal while decoding
+ *        Decoding type: Sequential
+ *        Modes: Non-Tunnel, Non-Secure
  *
  * **Test Group ID:** 03@n
  * **Test Case ID:** 004@n
@@ -806,24 +811,18 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Tunnel)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Tunnel_Secure)
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Discontinuity)
 {
-    char *testName = "Decode_Tunnel_Secure";
-    vector<testConfiguration_t> testConfiguration;
+    char *testName = "Decode_Sequential_NonTunnel_NonSecure_Discontinuity";
     bool secureMode = false;
-
-    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, testConfiguration);
-
-    for(auto& test: testConfiguration)
-    {
-        runSequentialDecode(test, secureMode, true);
-    }
+    bool concurrentMode = false;
+    runTest(testName, secureMode, concurrentMode);
 }
 
 /**
- * @brief Test the ability to handle invalid audio frames in secure and non secure mode and in tunnel and non-tunnel mode
- *
- * This test verifies that decoder can handle invalid audio frames.
+ * @brief Test the ability to handle the eos signal while decoding
+ *        Decoding type: Sequential
+ *        Modes: Non-Tunnel, Non-Secure
  *
  * **Test Group ID:** 03@n
  * **Test Case ID:** 005@n
@@ -831,27 +830,18 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Tunnel_Secure)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Inavlid_Frames)
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_EOS)
 {
-    char *testName = "Decode_Inavlid_Frames";
-    vector<testConfiguration_t> testConfiguration;
+    char *testName = "Decode_Sequential_NonTunnel_NonSecure_EOS";
     bool secureMode = false;
-
-    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, testConfiguration);
-
-    for (bool secureDecode : {false, true})
-    {
-        for(auto& test: testConfiguration)
-        {
-            runSequentialDecode(test, secureMode, secureDecode);
-        }
-    }
+    bool concurrentMode = false;
+    runTest(testName, secureMode, concurrentMode);
 }
 
 /**
- * @brief Test the trim functionality of the decoder
- *
- * This test verifies trim functionality.
+ * @brief Test the ability to handle the flush while decoding
+ *        Decoding type: Sequential
+ *        Modes: Non-Tunnel, Non-Secure
  *
  * **Test Group ID:** 03@n
  * **Test Case ID:** 006@n
@@ -859,27 +849,18 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Inavlid_Frames)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Trim)
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Flush)
 {
-    char *testName = "Decode_Trim";
-    vector<testConfiguration_t> testConfiguration;
+    char *testName = "Decode_Sequential_NonTunnel_NonSecure_Flush";
     bool secureMode = false;
-
-    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, testConfiguration);
-
-    for (bool secureDecode : {false, true})
-    {
-        for(auto& test: testConfiguration)
-        {
-            runSequentialDecode(test, secureMode, secureDecode);
-        }
-    }
+    bool concurrentMode = false;
+    runTest(testName, secureMode, concurrentMode);
 }
 
 /**
- * @brief Test the ability to decode audio frames cuncurrently in non-tunnel mode
- *
- * This test verifies that decoder can decode the audio frames in non-tunnel mode.
+ * @brief Test the ability to handle the flush with Reset while decoding
+ *        Decoding type: Sequential
+ *        Modes: Non-Tunnel, Non-Secure
  *
  * **Test Group ID:** 03@n
  * **Test Case ID:** 007@n
@@ -887,22 +868,14 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Trim)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Cuncurrent_NonTunnel)
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_FlushReset)
 {
-    char *testName = "Decode_Cuncurrent_NonTunnel";
-    vector<testConfiguration_t> testConfiguration;
+    char *testName = "Decode_Sequential_NonTunnel_NonSecure_FlushReset";
     bool secureMode = false;
-
-    vts_audiodeccoder_parse_testconfig(gTestConfiguration, gModuleName, gTestGroup, testName, testConfiguration);
-
-    for (bool secureDecode : {false, true})
-    {
-        for(auto& test: testConfiguration)
-        {
-            runConcurrentDecode(test, secureMode, true);
-        }
-    }
+    bool concurrentMode = false;
+    runTest(testName, secureMode, concurrentMode);
 }
+
 
 /** @} */ // End of AUDIO_DECODER_HALTEST L3 File
 /** @} */ // End of AUDIO_DECODER_HALTEST

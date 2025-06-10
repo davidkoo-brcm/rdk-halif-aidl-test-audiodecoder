@@ -6,7 +6,7 @@ IAudioDecoderManager:
   input_streams_path: "assets/streams/input"
   reference_streams_path: "assets/streams/reference/"
   L3:
-    Decode_NonTunnel:
+    Decode_Sequential_NonTunnel_NonSecure:
       delay_between_decode_calls: 5 #Time in milli seconds
       stop_start_pts: -1
       signal_discontinuity_pts: -1
