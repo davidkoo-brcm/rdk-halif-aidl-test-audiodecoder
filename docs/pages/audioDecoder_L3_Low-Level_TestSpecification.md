@@ -50,61 +50,63 @@ IAudioDecoderManager:
   input_streams_path: "assets/streams/input"
   reference_streams_path: "assets/streams/reference/"
   L3:
-    Decode_NonTunnel:
-      delay_between_decode_calls: 5 #Time in milli seconds
-      stop_start_pts: 106666665
-      signal_discontinuity_pts: 149333331
-      flush_pts: 170666664
-      flush_reset_pts: 191999997
-      eos_pts: 191999997
-      Streams:
-        - Name: tones_48k_2_256_aac
-          PTS:
-            - 0
-            - 21333333
-            - 42666666
-            - 63999999
-            - 85333332
-            - 106666665
-            - 127999998
-            - 149333331
-            - 170666664
-            - 191999997
-          trim:
-            - 127999998 #Start in Nano seconds
-            - 149333331 #End
-          rms_diff_threshold: 0.5
-          decode_time_threshold: 10000000 #Time in nano seconds
-        - Name: tones_48k_1_256_aac
-          PTS:
-            - 0
-            - 21333333
-            - 42666666
-            - 63999999
-            - 85333332
-            - 106666665
-            - 127999998
-            - 149333331
-            - 170666664
-            - 191999997
-          trim:
-            - 127999998 #Start in Nano seconds
-            - 149333331 #End
-          rms_diff_threshold: 0.5
-          decode_time_threshold: 10000000 #Time in nano seconds
+    Decode_Sequential_NonTunnel_NonSecure:
+      Controls:
+        delay_between_decode_calls: 5 #Time in milli seconds
+        stop_start_pts: 106666665
+        signal_discontinuity_pts: 149333331
+        flush_pts: 170666664
+        flush_reset_pts: 191999997
+        eos_pts: 191999997
+      Inputs:
+        Streams:
+          - Name: tones_48k_2_256_aac
+            PTS:
+              - 0
+              - 21333333
+              - 42666666
+              - 63999999
+              - 85333332
+              - 106666665
+              - 127999998
+              - 149333331
+              - 170666664
+              - 191999997
+            trim:
+              - 127999998 #Start in Nano seconds
+              - 149333331 #End
+            rms_diff_threshold: 0.5
+            decode_time_threshold: 10000000 #Time in nano seconds
+          - Name: tones_48k_1_256_aac
+            PTS:
+              - 0
+              - 21333333
+              - 42666666
+              - 63999999
+              - 85333332
+              - 106666665
+              - 127999998
+              - 149333331
+              - 170666664
+              - 191999997
+            trim:
+              - 127999998 #Start in Nano seconds
+              - 149333331 #End
+            rms_diff_threshold: 0.5
+            decode_time_threshold: 10000000 #Time in nano seconds
 ```
 
 #### Key Parameters
 
 - stream_download_path: `URL` path to download the audio test streams
-- input_streams_path: Local path where input streams are stored
-- reference_streams_path: Local path for reference PCM streams
+- input_streams_path: Target path where input streams are stored
+- reference_streams_path: Target path for reference PCM streams
 - delay_between_decode_calls: insert delay in msec between each `decodeBuffer()` call
-- stop_start_pts: `pts` value at which the decoder should be stopped and restarted during the test. -1 indicates that decoder should not be restarted
-- signal_discontinuity_pts: `pts` value at which the test should signal discontinuity to the decoder. -1 indicates that no discontinuity signal should be sent
-- flush_pts - `pts` value that determine when the test should flush the decoder. -1 indicates that test should not flush
-- flush_reset_pts - `pts` value that determine when the test should flush with reset the decoder. -1 indicates that test should not flush
-- eos_pts - `pts` value that determine when the test should sent `eos` signal to decoder. -1 indicates that test should not signal `eos`
+- stop_start_pts: `pts` value in nano seconds at which the decoder should be stopped and restarted during the test. -1 indicates that decoder should not be restarted
+- signal_discontinuity_pts: `pts` value in nano seconds at which the test should signal discontinuity to the decoder. -1 indicates that no discontinuity signal should be sent
+- flush_pts - `pts` value in nano seconds that determine when the test should flush the decoder. -1 indicates that test should not flush
+- flush_reset_pts - `pts` value in nano seconds that determine when the test should flush with reset the decoder. -1 indicates that test should not flush
+- eos_pts - `pts` value in nano seconds that determine when the test should sent `eos` signal to decoder. -1 indicates that test should not signal `eos`
 - Name: Identifier for the stream, as defined in the stream configuration file
 - PTS: Presentation Time Stamps (per frame) in nanoseconds
 - trim: Start and end trim points in Nano seconds
@@ -214,6 +216,7 @@ The class overrides `SetUp()` and `TearDown()` from `ut_core` to handle initiali
 |2|TearDown|None|Cleans up by unregistering event listeners|`unregisterEventListener()`|
 |3|runSequentialDecode|vector\<testConfiguration_t\>& configuration<br>bool secureDecode|Decodes streams using all decoders sequentially using `DecoderTest` Class|`getHeapMetrics()`|
 |4|runConcurrentDecode|vector\<testConfiguration_t\>& configuration<br>bool secureDecode|Launches multiple threads to decode streams concurrently using `DecoderTest` Class|`getHeapMetrics()`|
+|5|runTest|char *testName<br>bool secureMode<br>bool concurrentMode|If `concurrentMode` is enabled, this function invokes `runConcurrentDecode`; otherwise, it calls `runSequentialDecode`||
 
 #### Setup
 
@@ -523,38 +526,63 @@ This check ensures that both the test suite and the decoder HAL properly release
 
 ## L3 Tests
 
-The L3 tests validate the functional correctness and performance of the AudioDecoder HAL by simulating real-world decoding workflows
+The L3 tests validate the functional correctness and performance of the AudioDecoder HAL by simulating real-world decoding workflows. Each test calls `runTest` with different parameters. `Test Configuration Controls` describes the control parameters used from test configuration file `vts_l3_test_config.yaml`
 
-### Decode_Sequential_NonTunnel_NonSecure
-
-The following sequence diagram illustrates the flow of the `Decode_Sequential_NonTunnel_NonSecure` test scenario, executed by the `VTS_L3_AudioDecoder` class:
-
-```mermaid
-sequenceDiagram
-    participant Test as VTS_L3_AudioDecoder(Decode_Sequential_NonTunnel_NonSecure)
-
-    Test->>Test: vts_audiodeccoder_parse_testconfig()
-    loop for each non-tunel stream
-      Test->>Test: SetUp()
-      Test->>Test: runSequentialDecode()
-    end
-    Test->>Test: TearDown()
-```
-
-### Decode_Sequential_NonTunnel_NonSecure_Error
-
-The following sequence diagram illustrates the flow of the `Decode_Sequential_NonTunnel_NonSecure_Error` test scenario, executed by the `VTS_L3_AudioDecoder` class:
-
-```mermaid
-sequenceDiagram
-    participant Test as VTS_L3_AudioDecoder(Decode_Sequential_NonTunnel_NonSecure_Error)
-
-    Test->>Test: vts_audiodeccoder_parse_testconfig()
-    loop for each error non-tunel stream
-      Test->>Test: SetUp()
-      Test->>Test: runConcurrentDecode()
-    end
-    Test->>Test: TearDown()
-```
-
-TBD: Add sections for all test cases
+|#|Test|function|Arguments|Test Configuration Controls|
+|-|----|--------|---------|---------------------------|
+|1|Decode_Sequential_NonTunnel_NonSecure|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams|
+|2|Decode_Sequential_NonTunnel_NonSecure_Error|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams|
+|3|Decode_Sequential_NonTunnel_NonSecure_Trim|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Inputs.Streams.trim|
+|4|Decode_Sequential_NonTunnel_NonSecure_Discontinuity|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Controls.signal_discontinuity_pts|
+|5|Decode_Sequential_NonTunnel_NonSecure_EOS|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Controls.eos_pts|
+|6|Decode_Sequential_NonTunnel_NonSecure_Flush|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Controls.flush_pts|
+|7|Decode_Sequential_NonTunnel_NonSecure_FlushReset|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Controls.flush_reset_pts|
+|8|Decode_Sequential_NonTunnel_Secure|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams|
+|9|Decode_Sequential_NonTunnel_Secure_Error|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams|
+|10|Decode_Sequential_NonTunnel_Secure_Trim|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Inputs.Streams.trim|
+|11|Decode_Sequential_NonTunnel_Secure_Discontinuity|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Controls.signal_discontinuity_pts|
+|12|Decode_Sequential_NonTunnel_Secure_EOS|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Controls.eos_pts|
+|13|Decode_Sequential_NonTunnel_Secure_Flush|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Controls.flush_pts|
+|14|Decode_Sequential_NonTunnel_Secure_FlushReset|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Controls.flush_reset_pts|
+|15|Decode_Sequential_Tunnel_NonSecure|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams|
+|16|Decode_Sequential_Tunnel_NonSecure_Error|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams|
+|17|Decode_Sequential_Tunnel_NonSecure_Trim|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Inputs.Streams.trim|
+|18|Decode_Sequential_Tunnel_NonSecure_Discontinuity|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Controls.signal_discontinuity_pts|
+|19|Decode_Sequential_Tunnel_NonSecure_EOS|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Controls.eos_pts|
+|20|Decode_Sequential_Tunnel_NonSecure_Flush|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Controls.flush_pts|
+|21|Decode_Sequential_Tunnel_NonSecure_FlushReset|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Controls.flush_reset_pts|
+|22|Decode_Sequential_Tunnel_Secure|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams|
+|23|Decode_Sequential_Tunnel_Secure_Error|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams|
+|24|Decode_Sequential_Tunnel_Secure_Trim|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Inputs.Streams.trim|
+|25|Decode_Sequential_Tunnel_Secure_Discontinuity|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Controls.signal_discontinuity_pts|
+|26|Decode_Sequential_Tunnel_Secure_EOS|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Controls.eos_pts|
+|27|Decode_Sequential_Tunnel_Secure_Flush|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Controls.flush_pts|
+|28|Decode_Sequential_Tunnel_Secure_FlushReset|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Controls.flush_reset_pts|
+|29|Decode_Concurrent_NonTunnel_NonSecure|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams|
+|30|Decode_Concurrent_NonTunnel_NonSecure_Error|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams|
+|31|Decode_Concurrent_NonTunnel_NonSecure_Trim|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Inputs.Streams.trim|
+|32|Decode_Concurrent_NonTunnel_NonSecure_Discontinuity|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Controls.signal_discontinuity_pts|
+|33|Decode_Concurrent_NonTunnel_NonSecure_EOS|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Controls.eos_pts|
+|34|Decode_Concurrent_NonTunnel_NonSecure_Flush|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Controls.flush_pts|
+|35|Decode_Concurrent_NonTunnel_NonSecure_FlushReset|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Controls.flush_reset_pts|
+|36|Decode_Concurrent_NonTunnel_Secure|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams|
+|37|Decode_Concurrent_NonTunnel_Secure_Error|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams|
+|38|Decode_Concurrent_NonTunnel_Secure_Trim|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams<br>Inputs.Streams.trim|
+|39|Decode_Concurrent_NonTunnel_Secure_Discontinuity|runTest()|secureMode = true<br>concurrentMode=ftruealse|Inputs.Streams<br>Controls.signal_discontinuity_pts|
+|40|Decode_Concurrent_NonTunnel_Secure_EOS|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams<br>Controls.eos_pts|
+|41|Decode_Concurrent_NonTunnel_Secure_Flush|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams<br>Controls.flush_pts|
+|42|Decode_Concurrent_NonTunnel_Secure_FlushReset|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams<br>Controls.flush_reset_pts|
+|43|Decode_Concurrent_Tunnel_NonSecure|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams|
+|44|Decode_Concurrent_Tunnel_NonSecure_Error|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams|
+|45|Decode_Concurrent_Tunnel_NonSecure_Trim|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Inputs.Streams.trim|
+|46|Decode_Concurrent_Tunnel_NonSecure_Discontinuity|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Controls.signal_discontinuity_pts|
+|47|Decode_Concurrent_Tunnel_NonSecure_EOS|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Controls.eos_pts|
+|48|Decode_Concurrent_Tunnel_NonSecure_Flush|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Controls.flush_pts|
+|49|Decode_Concurrent_Tunnel_NonSecure_FlushReset|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Controls.flush_reset_pts|
+|50|Decode_Concurrent_Tunnel_Secure|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams|
+|51|Decode_Concurrent_Tunnel_Secure_Error|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams|
+|52|Decode_Concurrent_Tunnel_Secure_Trim|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams<br>Inputs.Streams.trim|
+|53|Decode_Concurrent_Tunnel_Secure_Discontinuity|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams<br>Controls.signal_discontinuity_pts|
+|54|Decode_Concurrent_Tunnel_Secure_EOS|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams<br>Controls.eos_pts|
+|55|Decode_Concurrent_Tunnel_Secure_Flush|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams<br>Controls.flush_pts|
+|56|Decode_Concurrent_Tunnel_Secure_FlushReset|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams<br>Controls.flush_reset_pts|

@@ -127,6 +127,24 @@ generate_videodecoder_hal()
 
 }
 
+generate_avbufferhelper_skeleton()
+{
+    declare -r AVBUFFER_HELPER_DIR=${TOP}/vcomponent/avbufferhelper
+
+    mkdir -p $AVBUFFER_HELPER_DIR/build
+
+    cd $AVBUFFER_HELPER_DIR/build
+
+    cmake ..
+    make
+
+    cp libavbufferhelper.so ${BUILD_DIR}/usr/lib/
+
+    cd -
+
+    rm -rf $AVBUFFER_HELPER_DIR/build
+}
+
 build_vcomponent()
 {
     # Invoke Makefile to build the mock_service target
@@ -175,7 +193,11 @@ install_test()
     cp -rf ${TOP}/test_configuration ${INSTALL_PATH}
     mkdir -p ${INSTALL_PATH}/assets/streams/input
     mkdir -p ${INSTALL_PATH}/assets/streams/reference
+    rm -rf ${INSTALL_PATH}/libavbufferhelper.so
 }
+
+
+generate_avbufferhelper_skeleton
 
 install_linux_binder
 generate_avbuffer_hal

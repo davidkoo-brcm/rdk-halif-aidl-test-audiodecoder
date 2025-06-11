@@ -1,13 +1,13 @@
 AudioStreams:
   tones_48k_2_256_aac:
-    input: tones_48k_2_256.aac
-    reference: tones_48k_2_256_ref.pcm
-    codec: AAC_LC # refer enum Codec for more Codec details
-    sample_rate: 48000
-    channels: 2
-    format: S16LE # refer enum PCMFormat for more format details
-    num_of_frames: 10
-    frame_size:
+    input: tones_48k_2_256.aac # Stream name
+    reference: tones_48k_2_256_ref.pcm #Reference stream name
+    codec: AAC_LC # audio codec information, Refer `Codec` enum
+    sample_rate: 48000 #Sample rate in `Hz`
+    channels: 2 #Number of audio channels
+    format: S16LE # `pcm` format of the reference stream. Refer `PCMFormat` enum
+    num_of_frames: 10 #Total number of frames in the stream
+    frame_size: #Byte size for each frame, listed in order
       - 288
       - 312
       - 372

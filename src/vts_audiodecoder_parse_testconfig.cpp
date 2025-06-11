@@ -111,7 +111,8 @@ UT_status_t vts_audiodeccoder_parse_testconfig(void* pTestInstance, char *module
     filesystem::path currentPath = filesystem::current_path();
     filesystem::path fullPath;
     string testList = string(module) + "." + string(testGroup) + "." + string(testName);
-    string streamList = testList + "." + string("Streams");
+    string controlList = testList + "." + "Controls";
+    string streamList = testList + "." + "Inputs" + "." + string("Streams");
     string streamsDetails = string("AudioStreams");
 
     status = ut_kvp_getStringField(kvpTestInstance, STREAM_INPUT_PATH, streamInputPath, UT_KVP_MAX_ELEMENT_SIZE);
@@ -142,12 +143,12 @@ UT_status_t vts_audiodeccoder_parse_testconfig(void* pTestInstance, char *module
         string rmsDiff     = streamList + "." + to_string(i) + "." +"rms_diff_threshold";
         string trimStart   = streamList + "." + to_string(i) + "." +"trim.0";
         string trimEnd     = streamList + "." + to_string(i) + "." +"trim.1";
-        string decoderDelay = testList + "." +"delay_between_decode_calls";
-        string stopPts      = testList + "." + "stop_start_pts";
-        string discontinuityPts = testList + "." + "signal_discontinuity_pts";
-        string flushPts     = testList + "." + "flush_pts";
-        string flushRestPts = testList + "." + "flush_reset_pts";
-        string eosPts       = testList + "." + "eos_pts";
+        string decoderDelay = controlList + "." +"delay_between_decode_calls";
+        string stopPts      = controlList + "." + "stop_start_pts";
+        string discontinuityPts = controlList + "." + "signal_discontinuity_pts";
+        string flushPts     = controlList + "." + "flush_pts";
+        string flushRestPts = controlList + "." + "flush_reset_pts";
+        string eosPts       = controlList + "." + "eos_pts";
 
         ut_kvp_getStringField(kvpTestInstance, input.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
         fullPath = currentPath;
