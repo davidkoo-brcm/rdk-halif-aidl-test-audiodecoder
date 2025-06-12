@@ -795,8 +795,9 @@ class AudioDecoderEventListener : public BnAudioDecoderEventListener
 
         Status onDecodeError(ErrorCode vendorErrorCode, int32_t errorCode) override
         {
-            lock_guard<mutex> lock(mMutex);
-            mErrors.push_back(errorCode);
+            UT_LOG_INFO("[%p]Error Callback: Vendor Error Code: %s, errorCode: %d", this, audiodecoder::toString(vendorErrorCode).c_str(), errorCode);
+            lock_guard<mutex> lock(mErrorMutex);
+            mErrors.push_back({vendorErrorCode, errorCode});
             return Status::ok();
         }
         Status onStateChanged(State oldState,State newState) override
@@ -852,18 +853,25 @@ class AudioDecoderEventListener : public BnAudioDecoderEventListener
             return foundClosedToOpening;
         }
 
-        vector<int32_t> getErrors() const
+        vector<tuple<ErrorCode, int32_t>> getErrors()
         {
-            lock_guard<mutex> lock(mMutex);
+            lock_guard<mutex> lock(mErrorMutex);
             return mErrors;
+        }
+
+        void resetErrors()
+        {
+            lock_guard<mutex> lock(mErrorMutex);
+            mErrors.clear();
         }
     private:
         mutable mutex mMutex;
+        mutable mutex mErrorMutex;
         condition_variable mCV;
 
         State mCurrentState;
         vector<pair<State, State>> mStateChanges;
-        vector<int32_t> mErrors;
+        vector<tuple<ErrorCode, int32_t>> mErrors;
 };
 
 #endif //__VTS_AUDIODECODER_H__

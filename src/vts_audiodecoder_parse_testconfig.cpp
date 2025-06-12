@@ -101,7 +101,7 @@ void vts_kvp_destroy_instance(void *instance)
     ut_kvp_destroyInstance((ut_kvp_instance_t*)instance);
 }
 
-UT_status_t vts_audiodeccoder_parse_testconfig(void* pTestInstance, char *module, char *testGroup, char *testName, vector<testConfiguration_t>& testConfiguration)
+UT_status_t vts_audiodeccoder_parse_testconfig(void* pTestInstance, const char *module, const char *testGroup, const char *testName, vector<testConfiguration_t>& testConfiguration)
 {
     ut_kvp_status_t status;
     ut_kvp_instance_t* kvpTestInstance = (ut_kvp_instance_t*)pTestInstance;
@@ -192,9 +192,12 @@ UT_status_t vts_audiodeccoder_parse_testconfig(void* pTestInstance, char *module
             string eachPTS = framePTS + "." + to_string(j);
             int32_t size = ut_kvp_getUInt32Field(kvpTestInstance, eachFrame.c_str());
             int64_t PTS = ut_kvp_getUInt64Field(kvpTestInstance, eachPTS.c_str());
-            if (find(errorFrameNum.begin(), errorFrameNum.end(), j+1) != errorFrameNum.end())
+            if(errorFrameNum.size() > 0)
             {
-                errorFrame = true;
+                if (find(errorFrameNum.begin(), errorFrameNum.end(), j+1) != errorFrameNum.end())
+                {
+                    errorFrame = true;
+                }
             }
             testDetails.frameDetails.push_back({size, PTS, errorFrame});
         }
