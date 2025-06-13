@@ -1232,7 +1232,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, decodeBuffer_neg)
 
     int64_t invalid_nsPresentationTime = -1000000;
     int64_t valid_nsPresentationTime   =  1000000;
-    int64_t invalid_bufferHandle = 0;
+    int64_t invalid_bufferHandle = -1;
     int32_t valid_trimStartNs    = 1000;
     int32_t invalid_trimStartNs  = -1000;
     int32_t valid_trimEndNs      = 500;
