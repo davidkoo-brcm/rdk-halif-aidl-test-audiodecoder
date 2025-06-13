@@ -71,6 +71,11 @@ int main(int argc, char **argv)
 
     UT_init(argc, argv);
 
+    UT_LOG_INFO("==========================================================================");
+    UT_LOG_INFO("\t AIDL HALIF Version: \033[0;32m%s\033[0m",RDK_HALIF_AIDL_VERSION);
+    UT_LOG_INFO("\t Audio Decoder HALIF Test Version: \033[0;32m%s\033[0m",HALIF_TEST_TAG_VERSION);
+    UT_LOG_INFO("==========================================================================");
+
     result = VTS_AudioDecoder_init();
 
     result = UT_run_tests();

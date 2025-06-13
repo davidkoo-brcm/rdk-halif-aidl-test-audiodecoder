@@ -376,6 +376,12 @@ namespace com
                 android::binder::Status AudioDecoderController::decodeBuffer(  int64_t nsPresentationTime, int64_t bufferHandle, int32_t trimStartNs, int32_t trimEndNs, bool* _aidl_return  )
                 {
                     android::binder::Status status;
+
+                    if(bufferHandle < 0)
+                    {
+                        *_aidl_return = false;
+                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
+                    }
                     if(this->mParentDecoder->getState() != State::STARTED)
                     {
                         *_aidl_return = false;
@@ -467,7 +473,7 @@ namespace com
                 {
                     int32_t intvalue;
                     android::String16 strvalue;
-                    *_aidl_return = true;
+                    *_aidl_return = false;
                     switch (property)
                     {
                         case audiodecoder::Property::LOW_LATENCY_MODE:
@@ -573,6 +579,7 @@ namespace com
                             *_aidl_return = false;
                             return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                     }
+                    *_aidl_return = true;
                     return android::binder::Status::ok();
                 }
             }
