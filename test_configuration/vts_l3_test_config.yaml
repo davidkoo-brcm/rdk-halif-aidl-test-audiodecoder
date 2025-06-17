@@ -1,5 +1,9 @@
 include_0: test_configuration/vts_audio_aac_streams.yaml
-include_1: test_configuration/vts_audio_mp3_streams.yaml
+include_1: test_configuration/vts_audio_heaac_streams.yaml
+include_2: test_configuration/vts_audio_heaac2_streams.yaml
+include_3: test_configuration/vts_audio_ac3_streams.yaml
+include_4: test_configuration/vts_audio_mp3_streams.yaml
+include_5: test_configuration/vts_audio_mp2_streams.yaml
 
 IAudioDecoderManager:
   stream_download_path: "http://<>/streams" #`URL` path to download the audio test streams

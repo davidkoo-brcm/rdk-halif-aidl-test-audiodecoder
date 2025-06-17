@@ -1,30 +1,111 @@
 AudioStreams:
-  tones_48k_2_256_aac:
-    input: tones_48k_2_256.aac # Stream name
-    reference: tones_48k_2_256_ref.pcm #Reference stream name
+  tones_8k_2_64k.aac:
+    input: tones_8k_2_64k.aac # Stream name
+    reference: tones_8k_2_64k_ref.pcm #Reference stream name
     codec: AAC_LC # audio codec information, Refer `Codec` enum
-    sample_rate: 48000 #Sample rate in `Hz`
+    sample_rate: 8000 #Sample rate in `Hz`
     channels: 2 #Number of audio channels
     format: S16LE # `pcm` format of the reference stream. Refer `PCMFormat` enum
     num_of_frames: 10 #Total number of frames in the stream
     frame_size: #Byte size for each frame, listed in order
-      - 288
-      - 312
-      - 372
-      - 370
-      - 344
-      - 362
+      - 184
+      - 508
+      - 593
+      - 384
+      - 330
+      - 335
+      - 311
+      - 301
       - 360
-      - 356
-      - 355
-      - 334
-  tones_48k_1_256_aac:
+      - 288
+
+  tones_11.025k_2_64k.aac:
+    input: tones_11.025k_2_64k.aac
+    reference: tones_11.025k_2_64k_ref.pcm
+    codec: AAC_LC
+    sample_rate: 11025
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 508
+      - 593
+      - 544
+      - 638
+      - 659
+      - 687
+      - 681
+      - 622
+      - 540
+      - 498
+
+  tones_16k_2_64k.aac:
+    input: tones_16k_2_64k.aac
+    reference: tones_16k_2_64k_ref.pcm
+    codec: AAC_LC
+    sample_rate: 16000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 394
+      - 411
+      - 398
+      - 458
+      - 440
+      - 483
+      - 486
+      - 469
+      - 470
+      - 474
+
+  tones_32k_2_64k.aac:
+    input: tones_32k_2_64k.aac
+    reference: tones_32k_2_64k_ref.pcm
+    codec: AAC_LC
+    sample_rate: 32000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 185
+      - 212
+      - 198
+      - 213
+      - 248
+      - 244
+      - 233
+      - 250
+      - 253
+      - 236
+
+  tones_44.1k_2_128.aac:
+    input: tones_44.1k_2_128.aac
+    reference: tones_44.1k_2_128_ref.pcm
+    codec: AAC_LC
+    sample_rate: 44100
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 369
+      - 398
+      - 393
+      - 405
+      - 407
+      - 369
+      - 403
+      - 376
+      - 396
+      - 390
+
+  tones_48k_1_256.aac:
     input: tones_48k_1_256.aac
     reference: tones_48k_1_256_ref.pcm
-    codec: AAC_LC # refer enum Codec for more Codec details
+    codec: AAC_LC
     sample_rate: 48000
     channels: 1
-    format: S16LE # refer enum PCMFormat for more format details
+    format: S16LE
     num_of_frames: 10
     frame_size:
       - 203
@@ -37,13 +118,175 @@ AudioStreams:
       - 207
       - 185
       - 201
-  tones_48k_1_256_error_1_aac:
-    input: tones_48k_1_256_error_1.aac
-    reference: tones_48k_1_256_error_1_ref.pcm
-    codec: AAC_LC # refer enum Codec for more Codec details
+
+  tones_48k_2_256.aac:
+    input: tones_48k_2_256.aac
+    reference: tones_48k_2_256_ref.pcm
+    codec: AAC_LC
     sample_rate: 48000
-    channels: 1
-    format: S16LE # refer enum PCMFormat for more format details
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 288
+      - 312
+      - 372
+      - 370
+      - 344
+      - 362
+      - 360
+      - 356
+      - 355
+      - 334
+
+  tones_48k_5.1_384.aac:
+    input: tones_48k_5.1_384.aac
+    reference: tones_48k_5.1_384_ref.pcm
+    codec: AAC_LC
+    sample_rate: 48000
+    channels: 6
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 988
+      - 917
+      - 1044
+      - 1071
+      - 1078
+      - 1088
+      - 1093
+      - 1077
+      - 1100
+      - 1026
+
+  tones_48k_7.1_512.aac:
+    input: tones_48k_7.1_512.aac
+    reference: tones_48k_7.1_512_ref.pcm
+    codec: AAC_LC
+    sample_rate: 48000
+    channels: 8
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 1407
+      - 1244
+      - 1279
+      - 1456
+      - 1503
+      - 1427
+      - 1503
+      - 1413
+      - 1417
+      - 1421
+
+  tones_64k_2_256.aac:
+    input: tones_64k_2_256.aac
+    reference: tones_64k_2_256_ref.pcm
+    codec: AAC_LC
+    sample_rate: 64000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 487
+      - 509
+      - 479
+      - 522
+      - 494
+      - 548
+      - 513
+      - 527
+      - 498
+      - 572
+
+  tones_88.2k_2_256.aac:
+    input: tones_88.2k_2_256.aac
+    reference: tones_88.2k_2_256_ref.pcm
+    codec: AAC_LC
+    sample_rate: 88200
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 375
+      - 391
+      - 395
+      - 402
+      - 379
+      - 379
+      - 379
+      - 376
+      - 376
+      - 373
+
+  tones_96k_2_384.aac:
+    input: tones_96k_2_384.aac
+    reference: tones_96k_2_384_ref.pcm
+    codec: AAC_LC
+    sample_rate: 96000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 418
+      - 464
+      - 436
+      - 500
+      - 537
+      - 520
+      - 537
+      - 504
+      - 525
+      - 493
+
+  tones_96k_5.1_512.aac:
+    input: tones_96k_5.1_512.aac
+    reference: tones_96k_5.1_512_ref.pcm
+    codec: AAC_LC
+    sample_rate: 96000
+    channels: 6
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 578
+      - 698
+      - 701
+      - 737
+      - 681
+      - 737
+      - 712
+      - 754
+      - 736
+      - 779
+
+  tones_96k_7.1_1024.aac:
+    input: tones_96k_7.1_1024.aac
+    reference: tones_96k_7.1_1024_ref.pcm
+    codec: AAC_LC
+    sample_rate: 96000
+    channels: 8
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 723
+      - 2196
+      - 1633
+      - 1596
+      - 1536
+      - 1578
+      - 1480
+      - 1542
+      - 1540
+      - 1454
+
+  # Error Streams
+  tones_48k_2_256_random_bitflip_aac:
+    input: tones_48k_2_256_random_bitflip.aac
+    reference: tones_48k_2_256_random_bitflip_ref.pcm
+    codec: AAC_LC
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
     num_of_frames: 10
     frame_size:
       - 288
@@ -57,5 +300,172 @@ AudioStreams:
       - 355
       - 334
     error_frames:
-      - 1
+      - 2
+      - 3
+      - 4
       - 5
+      - 6
+      - 7
+      - 8
+      - 9
+    error_info: Random bits in the frames are flipped
+
+  tones_48k_2_256_random_aac:
+    input: tones_48k_2_256_random.aac
+    reference: tones_48k_2_256_random_ref.pcm
+    codec: AAC_LC
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 288
+      - 312
+      - 372
+      - 370
+      - 344
+      - 362
+      - 360
+      - 356
+      - 355
+      - 334
+    error_frames:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+    error_info: Random bits in the frames are replaced with random values
+
+  tones_48k_2_256_sync_aac:
+    input: tones_48k_2_256_sync.aac
+    reference: tones_48k_2_256_sync_ref.pcm
+    codec: AAC_LC
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 288
+      - 312
+      - 372
+      - 370
+      - 344
+      - 362
+      - 360
+      - 356
+      - 355
+      - 334
+    error_frames:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+    error_info: invalid syncword
+
+  tones_48k_2_256_zero_aac:
+    input: tones_48k_2_256_zero.aac
+    reference: tones_48k_2_256_zero_ref.pcm
+    codec: AAC_LC
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 288
+      - 312
+      - 372
+      - 370
+      - 344
+      - 362
+      - 360
+      - 356
+      - 355
+      - 334
+    error_frames:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+    error_info: Random bits in the frames are made zero
+
+  tones_48k_2_256_header_fields_aac:
+    input: tones_48k_2_256_header_fields.aac
+    reference: tones_48k_2_256_header_fields_ref.pcm
+    codec: AAC_LC
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 288
+      - 312
+      - 372
+      - 370
+      - 344
+      - 362
+      - 360
+      - 356
+      - 355
+      - 334
+    error_frames:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+    error_info: Invalid sampling freq, invalid channel confg, invalid layer (repeat)
+
+  tones_48k_2_256_incomple_aac:
+    input: tones_48k_2_256_incomple.aac
+    reference: tones_48k_2_256_incomple_ref.pcm
+    codec: AAC_LC
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 287
+      - 308
+      - 367
+      - 360
+      - 292
+      - 4
+      - 260
+      - 355
+      - 339
+      - 211
+    error_frames:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+    error_info: Removed random bytes from the frames

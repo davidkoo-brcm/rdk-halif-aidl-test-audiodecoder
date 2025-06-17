@@ -1,0 +1,264 @@
+AudioStreams:
+  tones_16k_2_32_heaac:
+    input: tones_16k_2_32.aac
+    reference: tones_16k_2_32_ref.pcm
+    codec: HEAAC
+    sample_rate: 16000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 512
+      - 603
+      - 497
+      - 437
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+
+  tones_22_05k_2_32_heaac:
+    input: tones_22.05k_2_32.aac
+    reference: tones_22.05k_2_32_ref.pcm
+    codec: HEAAC
+    sample_rate: 22050
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 371
+      - 583
+      - 453
+      - 266
+      - 254
+      - 303
+      - 371
+      - 372
+      - 371
+      - 372
+
+  tones_24k_2_32_heaac:
+    input: tones_24k_2_32.aac
+    reference: tones_24k_2_32_ref.pcm
+    codec: HEAAC
+    sample_rate: 24000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 341
+      - 406
+      - 441
+      - 262
+      - 268
+      - 331
+      - 341
+      - 341
+      - 342
+      - 341
+
+  tones_32k_2_32_heaac:
+    input: tones_32k_2_32.aac
+    reference: tones_32k_2_32_ref.pcm
+    codec: HEAAC
+    sample_rate: 32000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 256
+      - 326
+      - 370
+      - 310
+      - 301
+      - 291
+      - 274
+      - 280
+      - 259
+      - 234
+
+  tones_44_1k_2_64_heaac:
+    input: tones_44.1k_2_64.aac
+    reference: tones_44.1k_2_64_ref.pcm
+    codec: HEAAC
+    sample_rate: 44100
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 371
+      - 457
+      - 513
+      - 432
+      - 413
+      - 385
+      - 365
+      - 335
+      - 330
+      - 358
+
+  tones_48k_2_64_heaac:
+    input: tones_48k_2_64.aac
+    reference: tones_48k_2_64_ref.pcm
+    codec: HEAAC
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 341
+      - 416
+      - 464
+      - 375
+      - 413
+      - 384
+      - 364
+      - 330
+      - 345
+      - 321
+
+  tones_48k_5_1_128_heaac:
+    input: tones_48k_5.1_128.aac
+    reference: tones_48k_5.1_128_ref.pcm
+    codec: HEAAC
+    sample_rate: 48000
+    channels: 6
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 682
+      - 878
+      - 928
+      - 780
+      - 785
+      - 871
+      - 796
+      - 771
+      - 760
+      - 728
+
+  tones_64k_2_96_heaac:
+    input: tones_64k_2_96.aac
+    reference: tones_64k_2_96_ref.pcm
+    codec: HEAAC
+    sample_rate: 64000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 384
+      - 384
+      - 471
+      - 408
+      - 324
+      - 334
+      - 384
+      - 384
+      - 384
+      - 384
+
+  tones_88_2k_2_96_heaac:
+    input: tones_88.2k_2_96.aac
+    reference: tones_88.2k_2_96_ref.pcm
+    codec: HEAAC
+    sample_rate: 88200
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 278
+      - 348
+      - 372
+      - 326
+      - 308
+      - 301
+      - 295
+      - 280
+      - 280
+      - 266
+
+  tones_96k_2_128_heaac:
+    input: tones_96k_2_128.aac
+    reference: tones_96k_2_128_ref.pcm
+    codec: HEAAC
+    sample_rate: 96000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 341
+      - 452
+      - 451
+      - 385
+      - 367
+      - 364
+      - 352
+      - 330
+      - 291
+      - 316
+
+  tones_96k_5_1_256_heaac:
+    input: tones_96k_5.1_256.aac
+    reference: tones_96k_5.1_256_ref.pcm
+    codec: HEAAC
+    sample_rate: 96000
+    channels: 6
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 682
+      - 1014
+      - 942
+      - 838
+      - 749
+      - 759
+      - 756
+      - 730
+      - 749
+      - 777
+
+  # Error Streams
+  tones_48k_2_64_incomplete_heaac:
+    input: tones_48k_2_64_incomplete.aac
+    reference: tones_48k_2_64_incomplete_ref.pcm
+    codec: HEAAC
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 340
+      - 376
+      - 459
+      - 275
+      - 361
+      - 6
+      - 264
+      - 329
+      - 329
+      - 198
+    error_info: Removed random bytes from the frames
+
+  tones_48k_2_64_zero_heaac:
+    input: tones_48k_2_64_zero.aac
+    reference: tones_48k_2_64_zero_ref.pcm
+    codec: HEAAC
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 341
+      - 416
+      - 464
+      - 375
+      - 413
+      - 384
+      - 364
+      - 330
+      - 345
+      - 321
+    error_info: Random bits are made zero
+

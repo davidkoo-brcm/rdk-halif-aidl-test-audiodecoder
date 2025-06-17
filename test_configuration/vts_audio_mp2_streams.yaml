@@ -1,0 +1,189 @@
+AudioStreams:
+  tones_32k_1_256_mp2:
+    input: tones_32k_1_256.mp2
+    reference: tones_32k_1_256_ref.pcm
+    codec: MPEG2
+    sample_rate: 32000
+    channels: 1
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 1728
+      - 1728
+      - 1728
+      - 1728
+      - 1728
+      - 1728
+      - 1728
+      - 1728
+      - 1728
+      - 1728
+
+  tones_32k_2_256_mp2:
+    input: tones_32k_2_256.mp2
+    reference: tones_32k_2_256_ref.pcm
+    codec: MPEG2
+    sample_rate: 32000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 1728
+      - 1728
+      - 1728
+      - 1728
+      - 1728
+      - 1728
+      - 1728
+      - 1728
+      - 1728
+      - 1728
+
+  tones_44_1k_1_128_mp2:
+    input: tones_44.1k_1_128.mp2
+    reference: tones_44.1k_1_128_ref.pcm
+    codec: MPEG2
+    sample_rate: 44100
+    channels: 1
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 1253
+      - 1254
+      - 1254
+      - 1254
+      - 1254
+      - 1254
+      - 1254
+      - 1254
+      - 1253
+      - 1254
+
+  tones_44_1k_2_128_mp2:
+    input: tones_44.1k_2_128.mp2
+    reference: tones_44.1k_2_128_ref.pcm
+    codec: MPEG2
+    sample_rate: 44100
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 1253
+      - 1254
+      - 1254
+      - 1254
+      - 1254
+      - 1254
+      - 1254
+      - 1254
+      - 1253
+      - 1254
+
+  tones_48k_1_256_mp2:
+    input: tones_48k_1_256.mp2
+    reference: tones_48k_1_256_ref.pcm
+    codec: MPEG2
+    sample_rate: 48000
+    channels: 1
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+
+  tones_48k_2_256_mp2:
+    input: tones_48k_2_256.mp2
+    reference: tones_48k_2_256_ref.pcm
+    codec: MPEG2
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+
+  # Error Streams
+  tones_48k_2_256_incomplete_mp2:
+    input: tones_48k_2_256_incomplete.mp2
+    reference: tones_48k_2_256_incomplete_ref.pcm
+    codec: MPEG2
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 1151
+      - 1148
+      - 1147
+      - 1142
+      - 1100
+      - 7
+      - 1052
+      - 1151
+      - 1136
+      - 1029
+    error_frames:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+    error_info: Incomplete frames
+
+  tones_48k_2_256_zero_mp3:
+    input: tones_48k_2_256_zero.mp3
+    reference: tones_48k_2_256_zero_ref.pcm
+    codec: MPEG2
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 3
+    frame_size:
+      - 384
+      - 384
+      - 384
+    error_frames:
+      - 0
+      - 1
+      - 2
+    error_info: Frame contains valid sync word with data replaced with zero
+
+  tones_48k_2_256_randombits_mp3:
+    input: tones_48k_2_256_randombits.mp3
+    reference: tones_48k_2_256_randombits_ref.pcm
+    codec: MPEG2
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 3
+    frame_size:
+      - 384
+      - 384
+      - 384
+    error_frames:
+      - 0
+      - 1
+      - 2
+    error_info: Frame contains valid sync word with data replaced with FF
