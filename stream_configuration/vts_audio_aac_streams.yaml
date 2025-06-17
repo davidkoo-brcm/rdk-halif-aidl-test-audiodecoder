@@ -1,5 +1,5 @@
 AudioStreams:
-  tones_8k_2_64k.aac:
+  tones_8k_2_64_aac:
     input: tones_8k_2_64k.aac # Stream name
     reference: tones_8k_2_64k_ref.pcm #Reference stream name
     codec: AAC_LC # audio codec information, Refer `Codec` enum
@@ -19,7 +19,7 @@ AudioStreams:
       - 360
       - 288
 
-  tones_11.025k_2_64k.aac:
+  tones_11_025k_2_64_aac:
     input: tones_11.025k_2_64k.aac
     reference: tones_11.025k_2_64k_ref.pcm
     codec: AAC_LC
@@ -39,7 +39,7 @@ AudioStreams:
       - 540
       - 498
 
-  tones_16k_2_64k.aac:
+  tones_16k_2_64_aac:
     input: tones_16k_2_64k.aac
     reference: tones_16k_2_64k_ref.pcm
     codec: AAC_LC
@@ -59,7 +59,7 @@ AudioStreams:
       - 470
       - 474
 
-  tones_32k_2_64k.aac:
+  tones_32k_2_64_aac:
     input: tones_32k_2_64k.aac
     reference: tones_32k_2_64k_ref.pcm
     codec: AAC_LC
@@ -79,7 +79,7 @@ AudioStreams:
       - 253
       - 236
 
-  tones_44.1k_2_128.aac:
+  tones_44_1k_2_128_aac:
     input: tones_44.1k_2_128.aac
     reference: tones_44.1k_2_128_ref.pcm
     codec: AAC_LC
@@ -99,7 +99,7 @@ AudioStreams:
       - 396
       - 390
 
-  tones_48k_1_256.aac:
+  tones_48k_1_256_aac:
     input: tones_48k_1_256.aac
     reference: tones_48k_1_256_ref.pcm
     codec: AAC_LC
@@ -119,7 +119,7 @@ AudioStreams:
       - 185
       - 201
 
-  tones_48k_2_256.aac:
+  tones_48k_2_256_aac:
     input: tones_48k_2_256.aac
     reference: tones_48k_2_256_ref.pcm
     codec: AAC_LC
@@ -139,7 +139,7 @@ AudioStreams:
       - 355
       - 334
 
-  tones_48k_5.1_384.aac:
+  tones_48k_5_1_384_aac:
     input: tones_48k_5.1_384.aac
     reference: tones_48k_5.1_384_ref.pcm
     codec: AAC_LC
@@ -159,7 +159,7 @@ AudioStreams:
       - 1100
       - 1026
 
-  tones_48k_7.1_512.aac:
+  tones_48k_7_1_512_aac:
     input: tones_48k_7.1_512.aac
     reference: tones_48k_7.1_512_ref.pcm
     codec: AAC_LC
@@ -179,7 +179,7 @@ AudioStreams:
       - 1417
       - 1421
 
-  tones_64k_2_256.aac:
+  tones_64k_2_256_aac:
     input: tones_64k_2_256.aac
     reference: tones_64k_2_256_ref.pcm
     codec: AAC_LC
@@ -199,7 +199,7 @@ AudioStreams:
       - 498
       - 572
 
-  tones_88.2k_2_256.aac:
+  tones_88_2k_2_256_aac:
     input: tones_88.2k_2_256.aac
     reference: tones_88.2k_2_256_ref.pcm
     codec: AAC_LC
@@ -219,7 +219,7 @@ AudioStreams:
       - 376
       - 373
 
-  tones_96k_2_384.aac:
+  tones_96k_2_384_aac:
     input: tones_96k_2_384.aac
     reference: tones_96k_2_384_ref.pcm
     codec: AAC_LC
@@ -239,7 +239,7 @@ AudioStreams:
       - 525
       - 493
 
-  tones_96k_5.1_512.aac:
+  tones_96k_5_1_512_aac:
     input: tones_96k_5.1_512.aac
     reference: tones_96k_5.1_512_ref.pcm
     codec: AAC_LC
@@ -259,7 +259,7 @@ AudioStreams:
       - 736
       - 779
 
-  tones_96k_7.1_1024.aac:
+  tones_96k_7_1_1024_aac:
     input: tones_96k_7.1_1024.aac
     reference: tones_96k_7.1_1024_ref.pcm
     codec: AAC_LC
