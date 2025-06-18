@@ -800,7 +800,7 @@ public:
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure)
 {
-    const char *testName = "Decode_Sequential_NonTunnel_NonSecure";
+    const char *testName = "Decode";
     bool secureMode = false;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -818,7 +818,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Error)
 {
-    const char *testName = "Decode_Sequential_NonTunnel_NonSecure_Error";
+    const char *testName = "Decode_Error";
     bool secureMode = false;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -836,7 +836,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Error)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Trim)
 {
-    const char *testName = "Decode_Sequential_NonTunnel_NonSecure_Trim";
+    const char *testName = "Decode_Trim";
     bool secureMode = false;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -854,7 +854,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Trim)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Discontinuity)
 {
-    const char *testName = "Decode_Sequential_NonTunnel_NonSecure_Discontinuity";
+    const char *testName = "Decode_Discontinuity";
     bool secureMode = false;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -872,7 +872,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Discontin
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_EOS)
 {
-    const char *testName = "Decode_Sequential_NonTunnel_NonSecure_EOS";
+    const char *testName = "Decode_EOS";
     bool secureMode = false;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -890,7 +890,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_EOS)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Flush)
 {
-    const char *testName = "Decode_Sequential_NonTunnel_NonSecure_Flush";
+    const char *testName = "Decode_Flush";
     bool secureMode = false;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -908,7 +908,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Flush)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_FlushReset)
 {
-    const char *testName = "Decode_Sequential_NonTunnel_NonSecure_FlushReset";
+    const char *testName = "Decode_FlushReset";
     bool secureMode = false;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -927,7 +927,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_FlushRese
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure)
 {
-    const char *testName = "Decode_Sequential_NonTunnel_Secure";
+    const char *testName = "Decode";
     bool secureMode = true;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -945,7 +945,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Error)
 {
-    const char *testName = "Decode_Sequential_NonTunnel_Secure_Error";
+    const char *testName = "Decode_Error";
     bool secureMode = true;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -963,7 +963,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Error)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Trim)
 {
-    const char *testName = "Decode_Sequential_NonTunnel_Secure_Trim";
+    const char *testName = "Decode_Trim";
     bool secureMode = true;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -981,7 +981,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Trim)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Discontinuity)
 {
-    const char *testName = "Decode_Sequential_NonTunnel_Secure_Discontinuity";
+    const char *testName = "Decode_Discontinuity";
     bool secureMode = true;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -999,7 +999,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Discontinuit
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_EOS)
 {
-    const char *testName = "Decode_Sequential_NonTunnel_Secure_EOS";
+    const char *testName = "Decode_EOS";
     bool secureMode = true;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1017,7 +1017,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_EOS)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Flush)
 {
-    const char *testName = "Decode_Sequential_NonTunnel_Secure_Flush";
+    const char *testName = "Decode_Flush";
     bool secureMode = true;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1035,7 +1035,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Flush)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_FlushReset)
 {
-    const char *testName = "Decode_Sequential_NonTunnel_Secure_FlushReset";
+    const char *testName = "Decode_FlushReset";
     bool secureMode = true;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1053,7 +1053,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_FlushReset)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure)
 {
-    const char *testName = "Decode_Sequential_Tunnel_NonSecure";
+    const char *testName = "Decode";
     bool secureMode = false;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1071,7 +1071,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Error)
 {
-    const char *testName = "Decode_Sequential_Tunnel_NonSecure_Error";
+    const char *testName = "Decode_Error";
     bool secureMode = false;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1089,7 +1089,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Error)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Trim)
 {
-    const char *testName = "Decode_Sequential_Tunnel_NonSecure_Trim";
+    const char *testName = "Decode_Trim";
     bool secureMode = false;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1107,7 +1107,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Trim)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Discontinuity)
 {
-    const char *testName = "Decode_Sequential_Tunnel_NonSecure_Discontinuity";
+    const char *testName = "Decode_Discontinuity";
     bool secureMode = false;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1125,7 +1125,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Discontinuit
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_EOS)
 {
-    const char *testName = "Decode_Sequential_Tunnel_NonSecure_EOS";
+    const char *testName = "Decode_EOS";
     bool secureMode = false;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1143,7 +1143,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_EOS)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Flush)
 {
-    const char *testName = "Decode_Sequential_Tunnel_NonSecure_Flush";
+    const char *testName = "Decode_Flush";
     bool secureMode = false;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1161,7 +1161,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Flush)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_FlushReset)
 {
-    const char *testName = "Decode_Sequential_Tunnel_NonSecure_FlushReset";
+    const char *testName = "Decode_FlushReset";
     bool secureMode = false;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1179,7 +1179,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_FlushReset)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure)
 {
-    const char *testName = "Decode_Sequential_Tunnel_Secure";
+    const char *testName = "Decode";
     bool secureMode = true;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1197,7 +1197,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Error)
 {
-    const char *testName = "Decode_Sequential_Tunnel_Secure_Error";
+    const char *testName = "Decode_Error";
     bool secureMode = true;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1215,7 +1215,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Error)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Trim)
 {
-    const char *testName = "Decode_Sequential_Tunnel_Secure_Trim";
+    const char *testName = "Decode_Trim";
     bool secureMode = true;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1233,7 +1233,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Trim)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Discontinuity)
 {
-    const char *testName = "Decode_Sequential_Tunnel_Secure_Discontinuity";
+    const char *testName = "Decode_Discontinuity";
     bool secureMode = true;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1251,7 +1251,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Discontinuity)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_EOS)
 {
-    const char *testName = "Decode_Sequential_Tunnel_Secure_EOS";
+    const char *testName = "Decode_EOS";
     bool secureMode = true;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1269,7 +1269,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_EOS)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Flush)
 {
-    const char *testName = "Decode_Sequential_Tunnel_Secure_Flush";
+    const char *testName = "Decode_Flush";
     bool secureMode = true;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1287,7 +1287,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Flush)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_FlushReset)
 {
-    const char *testName = "Decode_Sequential_Tunnel_Secure_FlushReset";
+    const char *testName = "Decode_FlushReset";
     bool secureMode = true;
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1305,7 +1305,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_FlushReset)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure)
 {
-    const char *testName = "Decode_Concurrent_NonTunnel_NonSecure";
+    const char *testName = "Decode";
     bool secureMode = false;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1323,7 +1323,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Error)
 {
-    const char *testName = "Decode_Concurrent_NonTunnel_NonSecure_Error";
+    const char *testName = "Decode_Error";
     bool secureMode = false;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1341,7 +1341,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Error)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Trim)
 {
-    const char *testName = "Decode_Concurrent_NonTunnel_NonSecure_Trim";
+    const char *testName = "Decode_Trim";
     bool secureMode = false;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1359,7 +1359,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Trim)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Discontinuity)
 {
-    const char *testName = "Decode_Concurrent_NonTunnel_NonSecure_Discontinuity";
+    const char *testName = "Decode_Discontinuity";
     bool secureMode = false;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1377,7 +1377,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Discontin
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_EOS)
 {
-    const char *testName = "Decode_Concurrent_NonTunnel_NonSecure_EOS";
+    const char *testName = "Decode_EOS";
     bool secureMode = false;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1395,7 +1395,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_EOS)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Flush)
 {
-    const char *testName = "Decode_Concurrent_NonTunnel_NonSecure_Flush";
+    const char *testName = "Decode_Flush";
     bool secureMode = false;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1413,7 +1413,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Flush)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_FlushReset)
 {
-    const char *testName = "Decode_Concurrent_NonTunnel_NonSecure_FlushReset";
+    const char *testName = "Decode_FlushReset";
     bool secureMode = false;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1431,7 +1431,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_FlushRese
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure)
 {
-    const char *testName = "Decode_Concurrent_NonTunnel_Secure";
+    const char *testName = "Decode_Secure";
     bool secureMode = true;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1449,7 +1449,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Error)
 {
-    const char *testName = "Decode_Concurrent_NonTunnel_Secure_Error";
+    const char *testName = "Decode_Error";
     bool secureMode = true;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1467,7 +1467,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Error)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Trim)
 {
-    const char *testName = "Decode_Concurrent_NonTunnel_Secure_Trim";
+    const char *testName = "Decode_Trim";
     bool secureMode = true;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1485,7 +1485,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Trim)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Discontinuity)
 {
-    const char *testName = "Decode_Concurrent_NonTunnel_Secure_Discontinuity";
+    const char *testName = "Decode_Discontinuity";
     bool secureMode = true;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1503,7 +1503,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Discontinuit
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_EOS)
 {
-    const char *testName = "Decode_Concurrent_NonTunnel_Secure_EOS";
+    const char *testName = "Decode_EOS";
     bool secureMode = true;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1521,7 +1521,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_EOS)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Flush)
 {
-    const char *testName = "Decode_Concurrent_NonTunnel_Secure_Flush";
+    const char *testName = "Decode_Flush";
     bool secureMode = true;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1539,7 +1539,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Flush)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_FlushReset)
 {
-    const char *testName = "Decode_Concurrent_NonTunnel_Secure_FlushReset";
+    const char *testName = "Decode_FlushReset";
     bool secureMode = true;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1557,7 +1557,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_FlushReset)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure)
 {
-    const char *testName = "Decode_Concurrent_Tunnel_NonSecure";
+    const char *testName = "Decode";
     bool secureMode = false;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1575,7 +1575,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Error)
 {
-    const char *testName = "Decode_Concurrent_Tunnel_NonSecure_Error";
+    const char *testName = "Decode_Error";
     bool secureMode = false;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1593,7 +1593,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Error)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Trim)
 {
-    const char *testName = "Decode_Concurrent_Tunnel_NonSecure_Trim";
+    const char *testName = "Decode_Trim";
     bool secureMode = false;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1611,7 +1611,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Trim)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Discontinuity)
 {
-    const char *testName = "Decode_Concurrent_Tunnel_NonSecure_Discontinuity";
+    const char *testName = "Decode_Discontinuity";
     bool secureMode = false;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1629,7 +1629,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Discontinuit
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_EOS)
 {
-    const char *testName = "Decode_Concurrent_Tunnel_NonSecure_EOS";
+    const char *testName = "Decode_EOS";
     bool secureMode = false;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1647,7 +1647,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_EOS)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Flush)
 {
-    const char *testName = "Decode_Concurrent_Tunnel_NonSecure_Flush";
+    const char *testName = "Decode_Flush";
     bool secureMode = false;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1665,7 +1665,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Flush)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_FlushReset)
 {
-    const char *testName = "Decode_Concurrent_Tunnel_NonSecure_FlushReset";
+    const char *testName = "Decode_FlushReset";
     bool secureMode = false;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1683,7 +1683,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_FlushReset)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure)
 {
-    const char *testName = "Decode_Concurrent_Tunnel_Secure";
+    const char *testName = "Decode";
     bool secureMode = true;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1701,7 +1701,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Error)
 {
-    const char *testName = "Decode_Concurrent_Tunnel_Secure_Error";
+    const char *testName = "Decode_Error";
     bool secureMode = true;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1719,7 +1719,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Error)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Trim)
 {
-    const char *testName = "Decode_Concurrent_Tunnel_Secure_Trim";
+    const char *testName = "Decode_Trim";
     bool secureMode = true;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1737,7 +1737,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Trim)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Discontinuity)
 {
-    const char *testName = "Decode_Concurrent_Tunnel_Secure_Discontinuity";
+    const char *testName = "Decode_Discontinuity";
     bool secureMode = true;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1755,7 +1755,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Discontinuity)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_EOS)
 {
-    const char *testName = "Decode_Concurrent_Tunnel_Secure_EOS";
+    const char *testName = "Decode_EOS";
     bool secureMode = true;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1773,7 +1773,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_EOS)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Flush)
 {
-    const char *testName = "Decode_Concurrent_Tunnel_Secure_Flush";
+    const char *testName = "Decode_Flush";
     bool secureMode = true;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
@@ -1791,7 +1791,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Flush)
  */
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_FlushReset)
 {
-    const char *testName = "Decode_Concurrent_Tunnel_Secure_FlushReset";
+    const char *testName = "Decode_FlushReset";
     bool secureMode = true;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);

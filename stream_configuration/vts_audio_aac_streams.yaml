@@ -438,9 +438,9 @@ AudioStreams:
       - 9
     error_info: Invalid sampling freq, invalid channel confg, invalid layer (repeat)
 
-  tones_48k_2_256_incomple_aac:
-    input: tones_48k_2_256_incomple.aac
-    reference: tones_48k_2_256_incomple_ref.pcm
+  tones_48k_2_256_incomplete_aac:
+    input: tones_48k_2_256_incomplete.aac
+    reference: tones_48k_2_256_incomplete_ref.pcm
     codec: AAC_LC
     sample_rate: 48000
     channels: 2

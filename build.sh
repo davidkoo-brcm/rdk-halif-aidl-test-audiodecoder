@@ -24,6 +24,8 @@ declare -r TOP=`dirname $(realpath $0)`
 declare -r UT_CORE_DIR="${TOP}/ut/ut-core"
 declare -r BUILD_DIR="${TOP}/build"
 declare -r BUILD_INSTALL_PREFIX=${BUILD_DIR}/usr
+declare -r VCOMPONENT="${TOP}/vcomponent"
+declare -r RDK_HAL_DIR=${TOP}/rdk-halif-aidl
 
 DEF_LINUX_BINDER="`realpath ${TOP}/../`/linux_binder_idl"
 # AIDL_BIN: path of aidl compiler
@@ -65,7 +67,7 @@ generate_audiodecoder_hal()
     declare -r HAL_BUILD_DIR=${BUILD_DIR}/audiodecoder_aidl
     declare -r AUDIODECODER_VERSION=current
     declare -r AIDL_GEN_DIR="${BUILD_DIR}/audiodecoder_gen/$AUDIODECODER_VERSION"
-    declare -r RDK_HAL_DIR=${TOP}/rdk-halif-aidl
+
 
     # Clone the repository if not already present
     if [ ! -d "$RDK_HAL_DIR" ]; then
@@ -87,7 +89,6 @@ generate_avbuffer_hal()
     declare -r HAL_BUILD_DIR=${BUILD_DIR}/avbuffer_hal
     declare -r VERSION=current
     declare -r AIDL_GEN_DIR="${BUILD_DIR}/avbuffer_gen/$VERSION"
-    declare -r RDK_HAL_DIR=${TOP}/rdk-halif-aidl
 
     # Clone the repository if not already present
     if [ ! -d "$RDK_HAL_DIR" ]; then
@@ -110,7 +111,6 @@ generate_videodecoder_hal()
     declare -r HAL_BUILD_DIR=${BUILD_DIR}/videodecoder_aidl
     declare -r VIDEODECODER_VERSION=current
     declare -r AIDL_GEN_DIR="${BUILD_DIR}/videodecoder_gen/$VIDEODECODER_VERSION"
-    declare -r RDK_HAL_DIR=${TOP}/rdk-halif-aidl
 
     # Clone the repository if not already present
     if [ ! -d "$RDK_HAL_DIR" ]; then
@@ -129,7 +129,7 @@ generate_videodecoder_hal()
 
 generate_avbufferhelper_skeleton()
 {
-    declare -r AVBUFFER_HELPER_DIR=${TOP}/vcomponent/avbufferhelper
+    declare -r AVBUFFER_HELPER_DIR=${VCOMPONENT}/avbufferhelper
 
     mkdir -p $AVBUFFER_HELPER_DIR/build
 
@@ -149,7 +149,7 @@ build_vcomponent()
 {
     # Invoke Makefile to build the mock_service target
     make -j`nproc` \
-        -C ${TOP}/vcomponent
+        -C ${VCOMPONENT}
 }
 
 build_ut_core()
@@ -197,14 +197,35 @@ install_test()
     rm -rf ${INSTALL_PATH}/libavbufferhelper.so
 }
 
-generate_avbufferhelper_skeleton
+clean_test()
+{
+    rm -rf $BUILD_DIR
+    rm -rf src/*.o
+    rm -rf ${VCOMPONENT}/src/*.o
+    rm -rf $RDK_HAL_DIR
+}
 
-install_linux_binder
-generate_avbuffer_hal
-generate_audiodecoder_hal
-generate_videodecoder_hal
-build_vcomponent
-build_ut_core
-# Building test module using ut-core framework
-make -j`nproc` -C ${TOP}
-install_test
+help()
+{
+    echo "Usage:"
+    echo "$0 - builds the test"
+    echo "$0 clean - cleans the build folder"
+    echo "$0 help - prints this message"
+}
+
+if [ "$1" == "clean" ]; then
+    clean_test
+elif [ "$1" == "help" ]; then
+    help
+else
+    generate_avbufferhelper_skeleton
+    install_linux_binder
+    generate_avbuffer_hal
+    generate_audiodecoder_hal
+    generate_videodecoder_hal
+    build_vcomponent
+    build_ut_core
+    # Building test module using ut-core framework
+    make -j`nproc` -C ${TOP}
+    install_test
+fi
