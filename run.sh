@@ -61,19 +61,19 @@ else
 	sleep 2
 fi
 
-# Check if either EmulateAudioDecoderService or AudioDecoderService is running
-if check_process "EmulateAudioDecoderService" || check_process "AudioDecoderService"; then
+# Check if either MockAudioDecoderService or AudioDecoderService is running
+if check_process "MockAudioDecoderService" || check_process "AudioDecoderService"; then
     echo "Audio decoder service is already running"
-    if check_process "EmulateAudioDecoderService"; then
-        AudioDecoderService_pid=$(pgrep -f "EmulateAudioDecoderService")
+    if check_process "MockAudioDecoderService"; then
+        AudioDecoderService_pid=$(pgrep -f "MockAudioDecoderService")
     else
         AudioDecoderService_pid=$(pgrep -f "AudioDecoderService")
     fi
 else
-    # Prompt user to start EmulateAudioDecoderService
-    if prompt_yes_no "Do you want to start EmulateAudioDecoderService?"; then
-        echo "Execute [EmulateAudioDecoderService]"
-        ${RUN_DIR}/EmulateAudioDecoderService &
+    # Prompt user to start MockAudioDecoderService
+    if prompt_yes_no "Do you want to start MockAudioDecoderService?"; then
+        echo "Execute [MockAudioDecoderService]"
+        ${RUN_DIR}/MockAudioDecoderService &
         AudioDecoderService_pid=$!
         # Wait for service to be ready
         sleep 2
