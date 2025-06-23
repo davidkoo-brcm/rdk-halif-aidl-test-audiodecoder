@@ -31,7 +31,8 @@ AUDIODECODER_AIDL_LIB := lib$(AUDIODECODER_AIDL_LIB_NAME).so
 AVBUFFERHELPER_LIB := lib$(AVBUFFER_HELPER_LIB_NAME).so
 
 BUILD_DIR ?= $(CURDIR)/../build
-AIDL_GEN_DIR ?= $(BUILD_DIR)/audiodecoder_gen/current
+
+AUDIO_DECODER_AIDL_GEN_DIR ?= $(BUILD_DIR)/audiodecoder_gen/current
 AV_BUFFER_AIDL_GEN_DIR ?= $(BUILD_DIR)/avbuffer_gen/current
 VIDEO_DECODER_AIDL_GEN_DIR ?= $(BUILD_DIR)/videodecoder_gen/current
 
@@ -41,23 +42,23 @@ AVBUFFER_AIDL_SRC += ${AV_BUFFER_AIDL_GEN_DIR}/cpp/com/rdk/hal/avbuffer/IAVBuffe
 AVBUFFER_AIDL_SRC += ${AV_BUFFER_AIDL_GEN_DIR}/cpp/com/rdk/hal/avbuffer/Pool.cpp
 AVBUFFER_AIDL_SRC += ${AV_BUFFER_AIDL_GEN_DIR}/cpp/com/rdk/hal/avbuffer/PoolMetrics.cpp
 
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/AVSource.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/HALError.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/PropertyValue.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/State.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/Capabilities.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/ChannelType.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/Codec.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/CSDAudioFormat.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/ErrorCode.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/FrameMetadata.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/IAudioDecoderController.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/IAudioDecoderControllerListener.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/IAudioDecoder.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/IAudioDecoderEventListener.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/IAudioDecoderManager.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/PCMFormat.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/Property.cpp
+AUDIODECODER_AIDL_SRC += ${AUDIO_DECODER_AIDL_GEN_DIR}/cpp/com/rdk/hal/AVSource.cpp
+AUDIODECODER_AIDL_SRC += ${AUDIO_DECODER_AIDL_GEN_DIR}/cpp/com/rdk/hal/HALError.cpp
+AUDIODECODER_AIDL_SRC += ${AUDIO_DECODER_AIDL_GEN_DIR}/cpp/com/rdk/hal/PropertyValue.cpp
+AUDIODECODER_AIDL_SRC += ${AUDIO_DECODER_AIDL_GEN_DIR}/cpp/com/rdk/hal/State.cpp
+AUDIODECODER_AIDL_SRC += ${AUDIO_DECODER_AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/Capabilities.cpp
+AUDIODECODER_AIDL_SRC += ${AUDIO_DECODER_AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/ChannelType.cpp
+AUDIODECODER_AIDL_SRC += ${AUDIO_DECODER_AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/Codec.cpp
+AUDIODECODER_AIDL_SRC += ${AUDIO_DECODER_AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/CSDAudioFormat.cpp
+AUDIODECODER_AIDL_SRC += ${AUDIO_DECODER_AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/ErrorCode.cpp
+AUDIODECODER_AIDL_SRC += ${AUDIO_DECODER_AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/FrameMetadata.cpp
+AUDIODECODER_AIDL_SRC += ${AUDIO_DECODER_AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/IAudioDecoderController.cpp
+AUDIODECODER_AIDL_SRC += ${AUDIO_DECODER_AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/IAudioDecoderControllerListener.cpp
+AUDIODECODER_AIDL_SRC += ${AUDIO_DECODER_AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/IAudioDecoder.cpp
+AUDIODECODER_AIDL_SRC += ${AUDIO_DECODER_AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/IAudioDecoderEventListener.cpp
+AUDIODECODER_AIDL_SRC += ${AUDIO_DECODER_AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/IAudioDecoderManager.cpp
+AUDIODECODER_AIDL_SRC += ${AUDIO_DECODER_AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/PCMFormat.cpp
+AUDIODECODER_AIDL_SRC += ${AUDIO_DECODER_AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/Property.cpp
 
 VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/AVSource.cpp
 VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/PropertyValue.cpp
@@ -80,7 +81,7 @@ VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodeco
 VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodecoder/PropertyKVPair.cpp
 VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodecoder/ScanType.cpp
 
-AIDL_LIB_INC_FLAGS := -I$(AIDL_GEN_DIR)/h
+AIDL_LIB_INC_FLAGS := -I$(AUDIO_DECODER_AIDL_GEN_DIR)/h
 AIDL_LIB_INC_FLAGS += -I$(AV_BUFFER_AIDL_GEN_DIR)/h
 AIDL_LIB_INC_FLAGS += -I$(VIDEO_DECODER_AIDL_GEN_DIR)/h
 AIDL_LIB_INC_FLAGS += -I$(BUILD_DIR)/usr/include

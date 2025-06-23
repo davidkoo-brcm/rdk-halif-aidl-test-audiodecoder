@@ -59,7 +59,7 @@ XLDFLAGS += -laudiodecoderaidl -lavbufferaidl -lvideodecoderaidl
 # required for std::optional
 CXXFLAGS += -std=c++17
 
-UT_CORE_DIR := $(CURDIR)/ut/ut-core
+UT_CORE_DIR := $(CURDIR)/ut-core
 
 export BIN_DIR
 export LIB_DIR
