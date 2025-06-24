@@ -86,6 +86,8 @@
 #include "vts_audiodecoder_parse_testconfig.h"
 #include "vts_audiodecoder.h"
 
+#include "IAVBufferHelper.h"
+
 using namespace std::chrono;
 using namespace std;
 
@@ -205,6 +207,7 @@ public:
         mTestConfiguration = config;
         mAVBufferManager = AVBufferManager;
         mDecodingStream = false;
+        mAVbufferHelper = getAVBufferHelperInstance();
     }
 
     void run(bool concurrentDecodeConsume)
@@ -269,6 +272,7 @@ private:
     mutex mDecodeMutex;
     atomic<bool> mDecodingStream;
     bool mConcurrentDecodeConsume;
+    IAVBufferHelper* mAVbufferHelper;
 
     void decoderThreadFunc()
     {
@@ -298,10 +302,12 @@ private:
 
         for(const auto& [frameSize, framePTS, errorFrame]: mTestConfiguration.frameDetails)
         {
-            vector<uint8_t> inputBuffer; //TODO: replace with mapped buffer
-            int32_t trimEndNs = 0;
-            int32_t trimStartNs = 0;
+            vector<uint8_t> inputBuffer;
+            int32_t trimEndNs = mTestConfiguration.trimEndNs;
+            int32_t trimStartNs = mTestConfiguration.trimStartNs;
             InputAudioFrame_t inputFrame;
+            void *mapBuffer = nullptr;
+            uint32_t mapSize = 0;
 
             /* Allocate the audio buffer */
             AVBUFFER_ALLOC_SUCCESS(mAVBufferManager, audioPool, frameSize, audioBufferHandle);
@@ -309,15 +315,20 @@ private:
             inputBuffer.resize(frameSize);
             inputFile.read(reinterpret_cast<char*>(inputBuffer.data()), frameSize);
 
-            //TODO: Fill the buffer and call decoder. Add different machanism for secure decode
-            inputFrame.sendTime = chrono::steady_clock::now();
-            inputFrame.framePTS = framePTS;
-            inputFrame.reference = mTestConfiguration.reference;
-            inputFrame.rms_threshold = mTestConfiguration.rms_diff_threashold;
-            inputFrame.isErrorFrame = errorFrame;
+            if(mSecureDecode)
             {
-                lock_guard<mutex> lock(mDecodeMutex);
-                mInputFrame.push_back(inputFrame);
+                bool status;
+                if(!mAVbufferHelper->writeSecureHandle(audioBufferHandle, inputBuffer.data(), frameSize))
+                {
+                    UT_LOG_ERROR("Failed to copy the data to secure buffer");
+                    AVBUFFER_FREE_SUCCESS(mAVBufferManager, audioBufferHandle);
+                    continue;
+                }
+            }
+            else
+            {
+                mapBuffer = mAVbufferHelper->mapHandle(audioBufferHandle, &mapSize);
+                memcpy(mapBuffer, inputBuffer.data(), mapSize);
             }
 
             /* ReStart the decoder */
@@ -353,10 +364,20 @@ private:
                 AUDIODECODER_START_SUCCESS(mDecoderHandle, audioDecoderController, true);
             }
 
-            //AUDIODECODER_DECODEBUFFER_SUCCESS(audioDecoderController, framePTS, audioBufferHandle, trimStartNs, trimEndNs);
+            inputFrame.sendTime = chrono::steady_clock::now();
+            inputFrame.framePTS = framePTS;
+            inputFrame.reference = mTestConfiguration.reference;
+            inputFrame.rms_threshold = mTestConfiguration.rms_diff_threashold;
+            inputFrame.isErrorFrame = errorFrame;
+            {
+                lock_guard<mutex> lock(mDecodeMutex);
+                mInputFrame.push_back(inputFrame);
+            }
 
-            //TODO: add some delay for the next frame to push
+            AUDIODECODER_DECODEBUFFER_SUCCESS(audioDecoderController, framePTS, audioBufferHandle, trimStartNs, trimEndNs);
+
             this_thread::sleep_for(chrono::milliseconds(mTestConfiguration.decoderDelay));
+
             /* Free the audio buffer */
             AVBUFFER_FREE_SUCCESS(mAVBufferManager, audioBufferHandle);
         }
@@ -383,6 +404,8 @@ private:
         {
             DecodedAudioFrame_t decodedFrame;
             InputAudioFrame_t inputFrame;
+            chrono::steady_clock::time_point receiveTime;
+            int64_t PTS;
 
             if(mInputFrame.empty())
             {
@@ -393,53 +416,67 @@ private:
             inputFrame = move(mInputFrame.front());
             mInputFrame.pop_front();
 
+            receiveTime = inputFrame.sendTime;
+            PTS = inputFrame.framePTS;
+
             if(inputFrame.isErrorFrame)
             {
-                errorCount++;
-                continue;
+                ErrorDetails_t errorDetails;
+
+                if(!mEventListener->getNextError(errorDetails))
+                {
+                    UT_ASSERT_TRUE(false);
+                }
+                else
+                {
+                    receiveTime = errorDetails.receiveTime;
+                }
             }
-
-            this_thread::sleep_for(chrono::milliseconds(10));
-            continue;
-
-            mControlListener->getNextFrame(decodedFrame);
-            if(!reference_file.is_open())
+            else
             {
-                reference_file.open(inputFrame.reference);
+                mControlListener->getNextFrame(decodedFrame);
+
+                if(decodedFrame.framePTS != inputFrame.framePTS)
+                {
+                    UT_LOG_ERROR("Input frame and decoded frame PTS is not matching..");
+                    UT_ASSERT_TRUE(false);
+                    continue;
+                }
+
+                /* Verify the decoder buffer in non-tunnel mode */
+                /* TODO: Check for trim start and end */
+                if(!decodedFrame.data.empty())
+                {
+                    vector<uint8_t> referenceBuffer;
+                    double rms_diff;
+                    int32_t output_buffer_size = decodedFrame.data.size();
+
+                    if(!reference_file.is_open())
+                    {
+                        reference_file.open(inputFrame.reference);
+                    }
+                    referenceBuffer.resize(output_buffer_size);
+                    reference_file.read(reinterpret_cast<char*>(referenceBuffer.data()), output_buffer_size);
+
+                    rms_diff = vts_computeRMSDiff(referenceBuffer.data(), decodedFrame.data.data(), decodedFrame.data.size(), decodedFrame.metadata.format);
+                    UT_ASSERT_TRUE(rms_diff <= inputFrame.rms_threshold);
+
+                    receiveTime = decodedFrame.receiveTime;
+                    PTS = decodedFrame.framePTS;
+                }
             }
 
-            if(decodedFrame.framePTS != inputFrame.framePTS)
-            {
-                UT_LOG_ERROR("input frame and decoded frame PTS is not matching..");
-                UT_ASSERT_TRUE(false);
-                continue;
-            }
-
-            /* Verify the decodec buffer in non-tunnel mode */
-            /* TODO: Check for trim start and end */
-            if(!decodedFrame.data.empty())
-            {
-                vector<uint8_t> referenceBuffer;
-                double rms_diff;
-                int32_t output_buffer_size = decodedFrame.numSamples * vts_bytesPerSample(decodedFrame.metadata.format);
-                referenceBuffer.resize(output_buffer_size);
-                reference_file.read(reinterpret_cast<char*>(referenceBuffer.data()), output_buffer_size);
-
-                //TODO: validate the decoded output
-                rms_diff = vts_computeRMSDiff(referenceBuffer.data(), decodedFrame.data.data(), decodedFrame.numSamples, decodedFrame.metadata.format);
-                UT_ASSERT_TRUE(rms_diff <= inputFrame.rms_threshold);
-            }
-
-            auto duration = chrono::duration_cast<chrono::microseconds>(decodedFrame.receiveTime - inputFrame.sendTime);
-            UT_LOG_INFO("Decode Time in msec [PTS: %lld]: %lld", decodedFrame.framePTS, duration.count());
+            auto duration = chrono::duration_cast<chrono::microseconds>(receiveTime - inputFrame.sendTime);
+            UT_LOG_INFO("Decode Time in micro second [PTS: %lld]: %lld", PTS, duration.count());
         }
-        if (errorCount > 0)
+        //TODO: check for error frames
+        /*if (errorCount > 0)
         {
             //TODO: check for correct validation
             UT_LOG_INFO("No. of Error frames pushed: %d", errorCount);
             UT_LOG_INFO("No. of Error frames Callbacks: %d", mEventListener->getErrors().size());
             UT_ASSERT_EQUAL(mEventListener->getErrors().size(), errorCount);
-        }
+        }*/
         UT_LOG_INFO("[PID: %d, TID: %d] consumerThreadFunc end", getpid(), syscall(SYS_gettid));
     }
     void decodeAndConsumeAudioStreams()
@@ -474,17 +511,18 @@ private:
 
         for(const auto& [frameSize, framePTS, errorFrame]: mTestConfiguration.frameDetails)
         {
-            vector<uint8_t> inputBuffer; //TODO: replace with mapped buffer
+            vector<uint8_t> inputBuffer;
             vector<uint8_t> referenceBuffer;
-            size_t numSamples = 0, output_buffer_size;
+            size_t output_buffer_size;
             double rms_diff = 0.0;
-            int32_t trimEndNs = 0;
-            int32_t trimStartNs = 0;
-            int32_t startFramesDecoded, startFrameErrors, startFramesDropped;
-            int32_t endFramesDecoded, endFrameErrors, endFramesDropped;
+            int32_t trimEndNs = mTestConfiguration.trimEndNs;
+            int32_t trimStartNs = mTestConfiguration.trimStartNs;
             DecodedAudioFrame_t decodedFrame;
+            void *mapBuffer = nullptr;
+            uint32_t mapSize = 0;
 
-            chrono::steady_clock::time_point startTime, endTime;
+            chrono::steady_clock::time_point startTime, receiveTime;
+            int64_t PTS = framePTS;
 
             /* Allocate the audio buffer */
             AVBUFFER_ALLOC_SUCCESS(mAVBufferManager, audioPool, frameSize, audioBufferHandle);
@@ -492,45 +530,66 @@ private:
             inputBuffer.resize(frameSize);
             inputFile.read(reinterpret_cast<char*>(inputBuffer.data()), frameSize);
 
-            //TODO: Fill the buffer and call decoder. Add different machanism for secure decode
-            startTime = chrono::steady_clock::now();
-            //AUDIODECODER_DECODEBUFFER_SUCCESS(audioDecoderController, framePTS, audioBufferHandle, trimStartNs, trimEndNs);
-
-            //TODO: wait for the decoded output
-            mControlListener->getNextFrame(decodedFrame);
-
-            /* Verify the decodec buffer in non-tunnel mode */
-            /* TODO: Check for trim start and end */
-            if(!decodedFrame.data.empty())
+            if(mSecureDecode)
             {
-                output_buffer_size = numSamples * vts_bytesPerSample(decodedFrame.metadata.format);
-                referenceBuffer.resize(output_buffer_size);
-                //refFile.read(reinterpret_cast<char*>(referenceBuffer.data()), output_buffer_size);
-
-                //TODO: validate the decoded output
-                rms_diff = vts_computeRMSDiff(referenceBuffer.data(), decodedFrame.data.data(), numSamples, decodedFrame.metadata.format);
-                UT_ASSERT_TRUE(rms_diff <= mTestConfiguration.rms_diff_threashold);
+                bool status;
+                if(!mAVbufferHelper->writeSecureHandle(audioBufferHandle, inputBuffer.data(), frameSize))
+                {
+                    UT_LOG_ERROR("Failed to copy the data to secure buffer");
+                    AVBUFFER_FREE_SUCCESS(mAVBufferManager, audioBufferHandle);
+                    continue;
+                }
+            }
+            else
+            {
+                mapBuffer = mAVbufferHelper->mapHandle(audioBufferHandle, &mapSize);
+                memcpy(mapBuffer, inputBuffer.data(), mapSize);
             }
 
-            auto duration = chrono::duration_cast<chrono::microseconds>(endTime - startTime);
-            UT_LOG_INFO("Decode Time [PTS: %lld]: %lld", framePTS, duration.count());
+            startTime = receiveTime = chrono::steady_clock::now();
+            AUDIODECODER_DECODEBUFFER_SUCCESS(audioDecoderController, framePTS, audioBufferHandle, trimStartNs, trimEndNs);
 
-            startFramesDecoded++;
-
-            /* If frame is a error frame increase the error count */
             if(errorFrame)
             {
-                startFrameErrors++;
+                ErrorDetails_t errorDetails;
+
+                if(!mEventListener->getNextError(errorDetails))
+                {
+                    UT_ASSERT_TRUE(false);
+                }
+                else
+                {
+                    receiveTime = errorDetails.receiveTime;
+                }
+            }
+            else
+            {
+                if(!mControlListener->getNextFrame(decodedFrame))
+                {
+                    UT_ASSERT_TRUE(false);
+                }
+
+                /* Verify the decodec buffer in non-tunnel mode */
+                /* TODO: Check for trim start and end */
+                if(!decodedFrame.data.empty())
+                {
+                    output_buffer_size = decodedFrame.data.size();
+                    referenceBuffer.resize(output_buffer_size);
+                    referenceFile.read(reinterpret_cast<char*>(referenceBuffer.data()), output_buffer_size);
+
+                    //TODO: validate the decoded output
+                    rms_diff = vts_computeRMSDiff(referenceBuffer.data(), decodedFrame.data.data(), output_buffer_size, decodedFrame.metadata.format);
+                    UT_ASSERT_TRUE(rms_diff <= mTestConfiguration.rms_diff_threashold);
+                    receiveTime = decodedFrame.receiveTime;
+                    PTS = decodedFrame.framePTS;
+                }
             }
 
-            /* Validate the decoder metrics */
-            UT_ASSERT_TRUE(startFramesDecoded == endFramesDecoded);
-            UT_ASSERT_TRUE(startFrameErrors == endFrameErrors);
-            UT_ASSERT_TRUE(startFramesDropped == endFramesDropped);
+            auto duration = chrono::duration_cast<chrono::microseconds>(receiveTime - startTime);
+            UT_LOG_INFO("Decode Time in micro second [PTS: %lld]: %lld", PTS, duration.count());
 
             /* Free the audio buffer */
             AVBUFFER_FREE_SUCCESS(mAVBufferManager, audioBufferHandle);
-            break;
         }
 
         /* Stop the decoder */
@@ -590,31 +649,6 @@ public:
         }
     }
 
-    /*void similateonframeoutput(sp<AudioDecoderControllerListener> controlListener)
-    {
-        int64_t PTS[] = {0,21333333,42666666,63999999,85333332,106666665,127999998,149333331,170666664,191999997};
-        optional<FrameMetadata> metadata;
-        metadata->sourceCodec = Codec::AAC_LC;
-        metadata->isDolbyAtmos = false;
-        metadata->numChannels = 2;
-        metadata->channelTypes = {ChannelType::FRONT_LEFT, ChannelType::FRONT_RIGHT};
-        metadata->sampleRate = 48000;
-        metadata->format = PCMFormat::S16LE;
-        metadata->planarFormat = 0;
-        metadata->trimStartNs = 0;
-        metadata->trimEndNs = 0;
-        metadata->lowLatency = 0;
-        metadata->endOfStream = 0;
-        metadata->discontinuity = 0;
-        metadata->source = AVSource::IP;
-        UT_LOG_INFO("similateonframeoutput: start simulation, listener: %p\n", controlListener.get());
-        for(int32_t i=0;i<10;i++)
-        {
-            controlListener->onFrameOutput(PTS[i], -1, metadata);
-            this_thread::sleep_for(chrono::milliseconds(50));
-        }
-
-    }*/
     void runSequentialDecode(testConfiguration_t& testConfig, bool secureDecode, bool concurrentDecodeConsume)
     {
         for (const auto& [_decoderId, decoderHandle, controlListener, eventListener, capabilities] : mAudioDecoderList)
@@ -642,24 +676,12 @@ public:
                                     eventListener, mAVBufferManager, secureDecode, testConfig);
 
             /* Get decoder metrics before decoding */
-            //UT_ASSERT_TRUE(getDecoderMetrics(decoderHandle, startFramesDecoded, startFrameErrors, startFramesDropped));
+            UT_ASSERT_TRUE(decodeTest.getDecoderMetrics(startFramesDecoded, startFrameErrors, startFramesDropped));
 
             decodeTest.run(concurrentDecodeConsume);
-            /*{
-                this_thread::sleep_for(chrono::milliseconds(40));
-                 vector<thread> threads;
-                 UT_LOG_INFO("runSequentialDecode_v2: start simulation thread listener:%p\n", controlListener.get());
-                 threads.emplace_back(&VTS_L3_AudioDecoder::similateonframeoutput, this,
-                                            controlListener);
-                for (auto& t : threads)
-                {
-                    t.join();
-                }
-            }*/
-            //decodeTest.wait();
 
             /* Get decoder metrics after decoding */
-            //UT_ASSERT_TRUE(getDecoderMetrics(decoderHandle, endFramesDecoded, endFrameErrors, endFramesDropped));
+            UT_ASSERT_TRUE(decodeTest.getDecoderMetrics(endFramesDecoded, endFrameErrors, endFramesDropped));
 
             /* Get heap metrics */
             AVBUFFER_GETMETRICS(mAVBufferManager, secureDecode, afterHeapMetrics);

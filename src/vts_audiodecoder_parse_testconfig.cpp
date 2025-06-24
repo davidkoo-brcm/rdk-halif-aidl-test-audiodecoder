@@ -194,7 +194,7 @@ UT_status_t vts_audiodeccoder_parse_testconfig(void* pTestInstance, const char *
             int64_t PTS = ut_kvp_getUInt64Field(kvpTestInstance, eachPTS.c_str());
             if(errorFrameNum.size() > 0)
             {
-                if (find(errorFrameNum.begin(), errorFrameNum.end(), j+1) != errorFrameNum.end())
+                if (find(errorFrameNum.begin(), errorFrameNum.end(), j) != errorFrameNum.end())
                 {
                     errorFrame = true;
                 }

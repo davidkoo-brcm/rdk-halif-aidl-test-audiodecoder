@@ -373,11 +373,12 @@ size_t vts_bytesPerSample(PCMFormat format)
     }
 }
 
-double vts_computeRMSDiff(const void* ref_buf, const void* act_buf, size_t num_samples, PCMFormat format)
+double vts_computeRMSDiff(const void* ref_buf, const void* act_buf, size_t size, PCMFormat format)
 {
     const uint8_t* ref = static_cast<const uint8_t*>(ref_buf);
     const uint8_t* act = static_cast<const uint8_t*>(act_buf);
     const size_t bps = vts_bytesPerSample(format);
+    size_t num_samples = size / bps;
 
     double sum_sq = 0.0;
 

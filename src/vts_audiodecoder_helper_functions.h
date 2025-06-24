@@ -97,7 +97,7 @@ void vts_audiodecoder_helper_validateCapabilities(int decoder_id, const Capabili
 Codec vts_audiodecoder_helper_StringTocodec(const std::string& format);
 PCMFormat vts_audiodecoder_helper_StringToFormat(const std::string& format);
 size_t vts_bytesPerSample(PCMFormat format);
-double vts_computeRMSDiff(const void* ref_buf, const void* act_buf, size_t num_samples, PCMFormat format);
+double vts_computeRMSDiff(const void* ref_buf, const void* act_buf, size_t size, PCMFormat format);
 
 #endif //__VTS_AUDIODECODER_HELPER_H__
 

@@ -77,6 +77,7 @@
 
 #include "com/rdk/hal/avbuffer/IAVBuffer.h"
 #include "com/rdk/hal/avbuffer/BnAVBufferSpaceListener.h"
+#include "IAVBufferHelper.h"
 
 using android::sp;
 using android::String16;
@@ -177,20 +178,30 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         ::com::rdk::hal::State state; \
         UT_LOG_INFO("Calling getProperty(IN:property[%s], OUT:propertyValue[]", audiodecoder::toString(property).c_str()); \
         status = (audioDecoder)->getProperty(property, &propertyValue); \
-        switch (propertyValue->value.value().getTag()) \
+        if(propertyValue.has_value()) \
         { \
-            case PropertyValue::Value::Tag::intValue: \
-                UT_LOG_INFO("Result getProperty(IN:property[%s], OUT:propertyValue[%d]), status:[isOK:%s, exception:%s]", audiodecoder::toString(property).c_str(), \
-                propertyValue->value->get<PropertyValue::Value::Tag::intValue>(), \
-                UT_Control_GetMapString(bool_mapTable, status.isOk()), \
-                UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-                break; \
-            case PropertyValue::Value::Tag::stringValue: \
-                UT_LOG_INFO("Result getProperty(IN:property[%s], OUT:propertyValue[%s]), status:[isOK:%s, exception:%s]", audiodecoder::toString(property).c_str(), \
-                propertyValue->value->get<PropertyValue::Value::Tag::stringValue>().string(), \
-                UT_Control_GetMapString(bool_mapTable, status.isOk()), \
-                UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-                break; \
+            switch (propertyValue->value.value().getTag()) \
+            { \
+                case PropertyValue::Value::Tag::intValue: \
+                    UT_LOG_INFO("Result getProperty(IN:property[%s], OUT:propertyValue[%d]), status:[isOK:%s, exception:%s]", audiodecoder::toString(property).c_str(), \
+                    propertyValue->value->get<PropertyValue::Value::Tag::intValue>(), \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+                    break; \
+                case PropertyValue::Value::Tag::stringValue: \
+                    UT_LOG_INFO("Result getProperty(IN:property[%s], OUT:propertyValue[%s]), status:[isOK:%s, exception:%s]", audiodecoder::toString(property).c_str(), \
+                    propertyValue->value->get<PropertyValue::Value::Tag::stringValue>().string(), \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+                    break; \
+            } \
+        } \
+        else \
+        { \
+            UT_LOG_INFO("Result getProperty(IN:property[%s], OUT:propertyValue[]), status:[isOK:%s, exception:%s]", audiodecoder::toString(property).c_str(), \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+            UT_ASSERT_TRUE(false); \
         } \
         UT_ASSERT_TRUE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
@@ -689,7 +700,6 @@ typedef struct DecodedAudioFrame
 {
     vector<uint8_t> data;
     int64_t framePTS;
-    size_t numSamples;
     bool isMetaAvailable;
     struct AudioMetatData metadata;
     chrono::steady_clock::time_point receiveTime;
@@ -704,6 +714,13 @@ typedef struct InputAudioFrame
     chrono::steady_clock::time_point sendTime;
 }InputAudioFrame_t;
 
+typedef struct ErrorDetails
+{
+    ErrorCode vendorErrorCode;
+    int32_t errorCode;
+    chrono::steady_clock::time_point receiveTime;
+}ErrorDetails_t;
+
 class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
 {
     public:
@@ -712,22 +729,29 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
 
         Status onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::optional<FrameMetadata>& metadata) override
         {
-            UT_LOG_INFO("onFrameOutput: Received frameoutput: %lld", nsPresentationTime);
-            //TODO: update these variables
-            uint32_t numSamples = 0;
-            uint32_t bps = 0;
+            UT_LOG_INFO("onFrameOutput: Received frameoutput [PTS:%lld, handle: %lld]", nsPresentationTime, frameBufferHandle);
 
-            //TODO: Update the code with av buffer helper
-            //TODO: metadata its not always valid
             DecodedAudioFrame_t frame;
             frame.receiveTime = chrono::steady_clock::now();
             frame.framePTS = nsPresentationTime;
-            /*if(frameBufferHandle != -1)
+            if(frameBufferHandle != -1)
             {
-                frame.numSamples = numSamples;
-                frame.data.resize(numSamples * bps);
-                //memcpy(frame.data.data(), decodedData, frame.data.size());
-            }*/
+                void *mapBuffer = nullptr;
+                uint32_t mapSize = 0;
+                IAVBufferHelper* avbufferHelper = getAVBufferHelperInstance();
+                frameBufferHandle = frameBufferHandle &0x0000FFFF;
+                mapBuffer = avbufferHelper->mapHandle(frameBufferHandle, &mapSize);
+
+                if(mapBuffer == nullptr || mapSize == 0)
+                {
+                    UT_LOG_ERROR("Invalid buffer handle received [handle: %lld]", frameBufferHandle);
+                }
+                else
+                {
+                    frame.data.resize(mapSize);
+                    memcpy(frame.data.data(), mapBuffer, frame.data.size());
+                }
+            }
 
             frame.isMetaAvailable = false;
             if (metadata.has_value())
@@ -756,15 +780,22 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
 
             return ::android::binder::Status::ok();
         }
-
+#define MAX_WAIT_TIME 300
         bool getNextFrame(DecodedAudioFrame_t &frameInfo)
         {
             DecodedAudioFrame_t frame;
+            int32_t count = 0;
             //TODO: change waiting mechanism
             while (mFrameQueue.empty())
             {
                 //mFrameAvailable.wait(lock);
                 this_thread::sleep_for(chrono::milliseconds(1));
+                count++;
+                if(count > MAX_WAIT_TIME)
+                {
+                    UT_LOG_ERROR("Decoded frame not received after %d msec", MAX_WAIT_TIME);
+                    return false;
+                }
             }
             {
                 unique_lock<std::mutex> lock(mQueueMutex);
@@ -795,9 +826,16 @@ class AudioDecoderEventListener : public BnAudioDecoderEventListener
 
         Status onDecodeError(ErrorCode vendorErrorCode, int32_t errorCode) override
         {
+            ErrorDetails_t errorDetails;
+            errorDetails.receiveTime = chrono::steady_clock::now();
+
             UT_LOG_INFO("[%p]Error Callback: Vendor Error Code: %s, errorCode: %d", this, audiodecoder::toString(vendorErrorCode).c_str(), errorCode);
+
+            errorDetails.errorCode = errorCode;
+            errorDetails.vendorErrorCode = vendorErrorCode;
+
             lock_guard<mutex> lock(mErrorMutex);
-            mErrors.push_back({vendorErrorCode, errorCode});
+            mErrors.push(errorDetails);
             return Status::ok();
         }
         Status onStateChanged(State oldState,State newState) override
@@ -810,6 +848,31 @@ class AudioDecoderEventListener : public BnAudioDecoderEventListener
             }
             mCV.notify_all(); // Unblock any waiting test code
             return Status::ok();
+        }
+#define MAX_WAIT_TIME 300
+        bool getNextError(ErrorDetails_t &errorDetails)
+        {
+            int32_t count = 0;
+            ErrorDetails_t err;
+            while (mErrors.empty())
+            {
+                //mFrameAvailable.wait(lock);
+                this_thread::sleep_for(chrono::milliseconds(1));
+                count++;
+                if(count > MAX_WAIT_TIME)
+                {
+                    UT_LOG_ERROR("Error event not received after %d msec", MAX_WAIT_TIME);
+                    return false;
+                }
+            }
+            {
+                unique_lock<std::mutex> lock(mErrorMutex);
+                err = mErrors.front();
+                mErrors.pop();
+            }
+
+            errorDetails = err;
+            return true;
         }
         /**
          * Wait for the decoder to reach a particular State within a given timeout.
@@ -853,16 +916,13 @@ class AudioDecoderEventListener : public BnAudioDecoderEventListener
             return foundClosedToOpening;
         }
 
-        vector<tuple<ErrorCode, int32_t>> getErrors()
-        {
-            lock_guard<mutex> lock(mErrorMutex);
-            return mErrors;
-        }
-
         void resetErrors()
         {
             lock_guard<mutex> lock(mErrorMutex);
-            mErrors.clear();
+            while (!mErrors.empty())
+            {
+                mErrors.pop();
+            }
         }
     private:
         mutable mutex mMutex;
@@ -871,7 +931,7 @@ class AudioDecoderEventListener : public BnAudioDecoderEventListener
 
         State mCurrentState;
         vector<pair<State, State>> mStateChanges;
-        vector<tuple<ErrorCode, int32_t>> mErrors;
+        queue<ErrorDetails_t> mErrors;
 };
 
 #endif //__VTS_AUDIODECODER_H__
