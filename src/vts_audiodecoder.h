@@ -442,15 +442,15 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         UT_ASSERT_FALSE(status.isOk()); \
     } while (0)
 
-#define AUDIODECODER_DECODEBUFFER_SUCCESS(audioDecoderController, nsPresentationTime, bufferHandle, trimEndNs, trimStartNs) \
+#define AUDIODECODER_DECODEBUFFER_SUCCESS(decoderID, audioDecoderController, nsPresentationTime, bufferHandle, trimEndNs, trimStartNs) \
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%X], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[])", \
-            nsPresentationTime, bufferHandle, trimStartNs, trimEndNs); \
+        UT_LOG_INFO("[DecoderID: %d] Calling decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%X], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[])", \
+            decoderID, nsPresentationTime, bufferHandle, trimStartNs, trimEndNs); \
         status = audioDecoderController->decodeBuffer(nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, &_aidl_return); \
-        UT_LOG_INFO("Result decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%X], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
-            nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+        UT_LOG_INFO("[DecoderID: %d] Result decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%X], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+            decoderID, nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
@@ -701,6 +701,7 @@ typedef struct DecodedAudioFrame
     vector<uint8_t> data;
     int64_t framePTS;
     bool isMetaAvailable;
+    bool isTunnel;
     struct AudioMetatData metadata;
     chrono::steady_clock::time_point receiveTime;
 }DecodedAudioFrame_t;
@@ -708,8 +709,6 @@ typedef struct DecodedAudioFrame
 typedef struct InputAudioFrame
 {
     int64_t framePTS;
-    std::string reference;
-    double rms_threshold;
     bool isErrorFrame;
     chrono::steady_clock::time_point sendTime;
 }InputAudioFrame_t;
@@ -729,33 +728,28 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
 
         Status onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::optional<FrameMetadata>& metadata) override
         {
-            UT_LOG_INFO("onFrameOutput: Received frameoutput [PTS:%lld, handle: %lld]", nsPresentationTime, frameBufferHandle);
+            UT_LOG_INFO("[DecoderID: %d] onFrameOutput: Received frameoutput [PTS:%lld, handle: %llX]", mDecoderID, nsPresentationTime, frameBufferHandle);
 
             DecodedAudioFrame_t frame;
             frame.receiveTime = chrono::steady_clock::now();
             frame.framePTS = nsPresentationTime;
-            if(frameBufferHandle != -1)
+
+            frame.isTunnel = false;
+            if (frameBufferHandle == -1)
             {
-                void *mapBuffer = nullptr;
-                uint32_t mapSize = 0;
-                IAVBufferHelper* avbufferHelper = getAVBufferHelperInstance();
-                frameBufferHandle = frameBufferHandle &0x0000FFFF;
-                mapBuffer = avbufferHelper->mapHandle(frameBufferHandle, &mapSize);
-
-                if(mapBuffer == nullptr || mapSize == 0)
-                {
-                    UT_LOG_ERROR("Invalid buffer handle received [handle: %lld]", frameBufferHandle);
-                }
-                else
-                {
-                    frame.data.resize(mapSize);
-                    memcpy(frame.data.data(), mapBuffer, frame.data.size());
-                }
+                frame.isTunnel = true;
             }
-
             frame.isMetaAvailable = false;
             if (metadata.has_value())
             {
+                UT_LOG_INFO("[DecoderID: %d] Stream Details [Codec: %d - %s, SampleRate: %d, Channels: %d, channelType: %d format: %d - %s planarFormat: %s, isDolbyAtom: %s]",
+                            mDecoderID, metadata->sourceCodec, audiodecoder::toString(metadata->sourceCodec).c_str(), metadata->sampleRate, metadata->numChannels,
+                            metadata->channelTypes, metadata->format, audiodecoder::toString(metadata->format).c_str(),
+                            UT_Control_GetMapString(bool_mapTable, metadata->planarFormat), UT_Control_GetMapString(bool_mapTable, metadata->isDolbyAtmos));
+                UT_LOG_INFO("[DecoderID: %d] Control Parameters [PTS: %lld, discontinuity: %d, EOS: %d, LowLatency: %d, Source: %d, Trim(%lld-%lld)]",
+                            mDecoderID, nsPresentationTime, metadata->discontinuity, metadata->endOfStream, metadata->lowLatency,
+                            metadata->source, metadata->trimStartNs, metadata->trimEndNs);
+
                 frame.isMetaAvailable = true;
                 frame.metadata.sourceCodec = metadata->sourceCodec;
                 frame.metadata.isDolbyAtmos = metadata->isDolbyAtmos;
@@ -780,8 +774,8 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
 
             return ::android::binder::Status::ok();
         }
-#define MAX_WAIT_TIME 300
-        bool getNextFrame(DecodedAudioFrame_t &frameInfo)
+#define MAX_WAIT_TIME 500
+        bool getNextFrame(DecodedAudioFrame_t &frameInfo, bool popFrame)
         {
             DecodedAudioFrame_t frame;
             int32_t count = 0;
@@ -800,22 +794,30 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
             {
                 unique_lock<std::mutex> lock(mQueueMutex);
                 frame = mFrameQueue.front();
-                mFrameQueue.pop();
+                if (popFrame)
+                    mFrameQueue.pop();
             }
 
             frameInfo = frame;
             return true;
         }
+
+
         void shutdown()
         {
             mShutdownFlag = true;
             mFrameAvailable.notify_all();
+        }
+        void setDecoderID(int32_t id)
+        {
+            mDecoderID = id;
         }
     private:
         queue<DecodedAudioFrame_t> mFrameQueue;
         mutex mQueueMutex;
         condition_variable mFrameAvailable;
         atomic<bool> mShutdownFlag;
+        int32_t mDecoderID;
 };
 
 class AudioDecoderEventListener : public BnAudioDecoderEventListener
@@ -829,7 +831,7 @@ class AudioDecoderEventListener : public BnAudioDecoderEventListener
             ErrorDetails_t errorDetails;
             errorDetails.receiveTime = chrono::steady_clock::now();
 
-            UT_LOG_INFO("[%p]Error Callback: Vendor Error Code: %s, errorCode: %d", this, audiodecoder::toString(vendorErrorCode).c_str(), errorCode);
+            UT_LOG_INFO("[DecoderID: %d] Error Callback: Vendor Error Code: %s, errorCode: %d", mDecoderID, audiodecoder::toString(vendorErrorCode).c_str(), errorCode);
 
             errorDetails.errorCode = errorCode;
             errorDetails.vendorErrorCode = vendorErrorCode;
@@ -840,7 +842,7 @@ class AudioDecoderEventListener : public BnAudioDecoderEventListener
         }
         Status onStateChanged(State oldState,State newState) override
         {
-            UT_LOG_INFO("[%p]State Change received: %s -> %s", this, com::rdk::hal::toString(oldState).c_str(), com::rdk::hal::toString(newState).c_str());
+            UT_LOG_INFO("[DecoderID: %d] State Change received: %s -> %s", mDecoderID, com::rdk::hal::toString(oldState).c_str(), com::rdk::hal::toString(newState).c_str());
             {
                 lock_guard<mutex> lock(mMutex);
                 mStateChanges.emplace_back(oldState, newState);
@@ -924,6 +926,10 @@ class AudioDecoderEventListener : public BnAudioDecoderEventListener
                 mErrors.pop();
             }
         }
+        void setDecoderID(int32_t id)
+        {
+            mDecoderID = id;
+        }
     private:
         mutable mutex mMutex;
         mutable mutex mErrorMutex;
@@ -932,6 +938,7 @@ class AudioDecoderEventListener : public BnAudioDecoderEventListener
         State mCurrentState;
         vector<pair<State, State>> mStateChanges;
         queue<ErrorDetails_t> mErrors;
+        int32_t mDecoderID;
 };
 
 #endif //__VTS_AUDIODECODER_H__

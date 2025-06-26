@@ -141,6 +141,7 @@ UT_status_t vts_audiodeccoder_parse_testconfig(void* pTestInstance, const char *
         string errorFrames = streamsDetails + "." + string(resultKVP) + "." +"error_frames";
         string framePTS    = streamList + "." + to_string(i) + "." +"PTS";
         string rmsDiff     = streamList + "." + to_string(i) + "." +"rms_diff_threshold";
+        string decodeTime  = streamList + "." + to_string(i) + "." +"decode_time_threshold";
         string trimStart   = streamList + "." + to_string(i) + "." +"trim.0";
         string trimEnd     = streamList + "." + to_string(i) + "." +"trim.1";
         string decoderDelay = controlList + "." +"delay_between_decode_calls";
@@ -203,7 +204,7 @@ UT_status_t vts_audiodeccoder_parse_testconfig(void* pTestInstance, const char *
         }
 
         testDetails.rms_diff_threashold = ut_kvp_getDoubleField(kvpTestInstance, rmsDiff.c_str());
-
+        testDetails.decodeTime = ut_kvp_getDoubleField(kvpTestInstance, decodeTime.c_str());
         testDetails.trimStartNs  = ut_kvp_getUInt64Field(kvpTestInstance, trimStart.c_str());
         testDetails.trimEndNs    = ut_kvp_getUInt64Field(kvpTestInstance, trimEnd.c_str());
         testDetails.decoderDelay = ut_kvp_getUInt32Field(kvpTestInstance, numOfFrames.c_str());

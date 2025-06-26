@@ -87,6 +87,7 @@ typedef struct testConfiguration
     PCMFormat format;
     int32_t numOfFrames;
     double rms_diff_threashold;
+    int64_t decodeTime;
     int64_t trimStartNs;
     int64_t trimEndNs;
     int32_t decoderDelay;

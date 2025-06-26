@@ -26,4 +26,4 @@ IAudioDecoderManager:
               - 42666666
               - 85333332
             rms_diff_threshold: 0.5
-            decode_time_threshold: 10000000
+            decode_time_threshold: 10000

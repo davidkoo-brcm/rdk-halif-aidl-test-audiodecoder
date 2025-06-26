@@ -1,7 +1,7 @@
 AudioStreams:
   tones_8k_2_64_aac:
-    input: tones_8k_2_64k.aac # Stream name
-    reference: tones_8k_2_64k_ref.pcm #Reference stream name
+    input: tones_8k_2_64.aac # Stream name
+    reference: tones_8k_2_64_ref.pcm #Reference stream name
     codec: AAC_LC # audio codec information, Refer `Codec` enum
     sample_rate: 8000 #Sample rate in `Hz`
     channels: 2 #Number of audio channels
@@ -20,8 +20,8 @@ AudioStreams:
       - 288
 
   tones_11_025k_2_64_aac:
-    input: tones_11.025k_2_64k.aac
-    reference: tones_11.025k_2_64k_ref.pcm
+    input: tones_11.025k_2_64.aac
+    reference: tones_11.025k_2_64_ref.pcm
     codec: AAC_LC
     sample_rate: 11025
     channels: 2
@@ -40,8 +40,8 @@ AudioStreams:
       - 498
 
   tones_16k_2_64_aac:
-    input: tones_16k_2_64k.aac
-    reference: tones_16k_2_64k_ref.pcm
+    input: tones_16k_2_64.aac
+    reference: tones_16k_2_64_ref.pcm
     codec: AAC_LC
     sample_rate: 16000
     channels: 2
@@ -60,8 +60,8 @@ AudioStreams:
       - 474
 
   tones_32k_2_64_aac:
-    input: tones_32k_2_64k.aac
-    reference: tones_32k_2_64k_ref.pcm
+    input: tones_32k_2_64.aac
+    reference: tones_32k_2_64_ref.pcm
     codec: AAC_LC
     sample_rate: 32000
     channels: 2

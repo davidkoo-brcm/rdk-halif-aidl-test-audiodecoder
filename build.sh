@@ -19,6 +19,14 @@
 #*
 #* ******************************************************************************
 
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+RESET='\033[0m'
+
 # Define the directory where the repository will be cloned
 declare -r TOP=`dirname $(realpath $0)`
 declare -r UT_CORE_DIR="${TOP}/ut-core"
@@ -219,6 +227,7 @@ dist_clean_test()
     rm -rf ${MOCK_SERVICE_DIR}/src/*.o
     rm -rf $RDK_HAL_DIR
     rm -rf ${UT_CORE_DIR}
+    echo -e "${BOLD}${GREEN}distclean Completed.....${RESET}"
 }
 
 clean_test()
@@ -226,18 +235,11 @@ clean_test()
     rm -rf $BUILD_DIR
     rm -rf src/*.o
     rm -rf ${MOCK_SERVICE_DIR}/src/*.o
+    echo -e "${BOLD}${GREEN}Clean Completed.....${RESET}"
 }
 
 help()
 {
-    # Colors
-    RED='\033[0;31m'
-    GREEN='\033[0;32m'
-    YELLOW='\033[1;33m'
-    CYAN='\033[0;36m'
-    BOLD='\033[1m'
-    RESET='\033[0m'
-
     echo -e "${BOLD}${CYAN}Usage:${RESET}"
 
     echo -e "${BOLD}╔════════════════════════════════════════════════════════════════════╗${RESET}"
@@ -247,6 +249,12 @@ help()
     echo -e "${BOLD}* ${GREEN}$0 help/-h/--help${RESET} ${YELLOW}- Prints this message${RESET}                    ${BOLD}*${RESET}"
     echo -e "${BOLD}╚════════════════════════════════════════════════════════════════════╝${RESET}"
 }
+
+echo -e "${BOLD}${GREEN}VTS Version            : ${RESET}${YELLOW}$(git rev-parse --abbrev-ref HEAD)${RESET}"
+echo -e "${BOLD}${GREEN}UT_CORE_VERSION        : ${RESET}${YELLOW}$UT_CORE_VERSION${RESET}"
+echo -e "${BOLD}${GREEN}RDK_HALIF_AIDL_VERSION : ${RESET}${YELLOW}$RDK_HALIF_AIDL_VERSION${RESET}"
+echo -e "${BOLD}${GREEN}AIDL_BIN               : ${RESET}${YELLOW}$AIDL_BIN${RESET}"
+echo -e "${BOLD}${GREEN}LINUX_BINDER_OUT_DIR   : ${RESET}${YELLOW}$LINUX_BINDER_OUT_DIR${RESET}"
 
 if [ "$1" == "clean" ]; then
     clean_test
@@ -267,6 +275,7 @@ elif [ "$1" == "all" ]; then
     # Building test module using ut-core framework
     make -j`nproc` -C ${TOP}
     install_test
+    echo -e "${BOLD}${GREEN}Build Completed.....${RESET}"
 else
     # Colors
     RED='\033[0;31m'

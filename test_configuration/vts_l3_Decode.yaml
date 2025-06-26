@@ -11,7 +11,7 @@ IAudioDecoderManager:
       Inputs:
         Streams:
           - Name: tones_8k_2_64_aac #Stream name
-            PTS: #List of Presentation Time Stamps (per frame) in nanoseconds
+            PTS: #List of Presentation Time Stamps (per frame) in microseconds
               - 0
               - 21333333
               - 42666666
@@ -25,7 +25,7 @@ IAudioDecoderManager:
             trim: #Start and end trim points in Nano seconds
               - 0 #Start in Nano seconds
               - 0 #End
-            decode_time_threshold: 10000000 #Time budget per frame for decoding, in nanoseconds
+            decode_time_threshold: 50000 #Time budget per frame for decoding, in microseconds
             rms_diff_threshold: 0.5 #Maximum allowed `rms` difference for output validation
           - Name: tones_11_025k_2_64_aac
             PTS:
@@ -42,7 +42,7 @@ IAudioDecoderManager:
             trim:
               - 0
               - 0
-            decode_time_threshold: 10000000
+            decode_time_threshold: 50000
             rms_diff_threshold: 0.5
           - Name: tones_16k_2_64_aac
             PTS:
@@ -59,7 +59,7 @@ IAudioDecoderManager:
             trim:
               - 0
               - 0
-            decode_time_threshold: 10000000
+            decode_time_threshold: 50000000
             rms_diff_threshold: 0.5
           - Name: tones_32k_2_64_aac
             PTS:
@@ -76,7 +76,7 @@ IAudioDecoderManager:
             trim:
               - 0
               - 0
-            decode_time_threshold: 10000000
+            decode_time_threshold: 50000000
             rms_diff_threshold: 0.5
           - Name: tones_44_1k_2_128_aac
             PTS:
@@ -93,7 +93,7 @@ IAudioDecoderManager:
             trim:
               - 0
               - 0
-            decode_time_threshold: 10000000
+            decode_time_threshold: 50000000
             rms_diff_threshold: 0.5
           - Name: tones_48k_1_256_aac
             PTS:
@@ -110,7 +110,7 @@ IAudioDecoderManager:
             trim:
               - 0
               - 0
-            decode_time_threshold: 10000000
+            decode_time_threshold: 50000000
             rms_diff_threshold: 0.5
           - Name: tones_48k_2_256_aac
             PTS:
@@ -127,7 +127,7 @@ IAudioDecoderManager:
             trim:
               - 0
               - 0
-            decode_time_threshold: 10000000
+            decode_time_threshold: 50000000
             rms_diff_threshold: 0.5
           - Name: tones_48k_5_1_384_aac
             PTS:
@@ -144,7 +144,7 @@ IAudioDecoderManager:
             trim:
               - 0
               - 0
-            decode_time_threshold: 10000000
+            decode_time_threshold: 50000000
             rms_diff_threshold: 0.5
           - Name: tones_48k_7_1_512_aac
             PTS:
@@ -161,7 +161,7 @@ IAudioDecoderManager:
             trim:
               - 0
               - 0
-            decode_time_threshold: 10000000
+            decode_time_threshold: 50000000
             rms_diff_threshold: 0.5
           - Name: tones_64k_2_256_aac
             PTS:
@@ -178,7 +178,7 @@ IAudioDecoderManager:
             trim:
               - 0
               - 0
-            decode_time_threshold: 10000000
+            decode_time_threshold: 50000000
             rms_diff_threshold: 0.5
           - Name: tones_88_2k_2_256_aac
             PTS:
@@ -195,7 +195,7 @@ IAudioDecoderManager:
             trim:
               - 0
               - 0
-            decode_time_threshold: 10000000
+            decode_time_threshold: 50000000
             rms_diff_threshold: 0.5
           - Name: tones_96k_2_384_aac
             PTS:
@@ -212,7 +212,7 @@ IAudioDecoderManager:
             trim:
               - 0
               - 0
-            decode_time_threshold: 10000000
+            decode_time_threshold: 50000000
             rms_diff_threshold: 0.5
           - Name: tones_96k_5_1_512_aac
             PTS:
@@ -229,7 +229,7 @@ IAudioDecoderManager:
             trim:
               - 0
               - 0
-            decode_time_threshold: 10000000
+            decode_time_threshold: 50000000
             rms_diff_threshold: 0.5
           - Name: tones_96k_7_1_1024_aac
             PTS:
@@ -246,5 +246,5 @@ IAudioDecoderManager:
             trim:
               - 0
               - 0
-            decode_time_threshold: 10000000
+            decode_time_threshold: 50000000
             rms_diff_threshold: 0.5

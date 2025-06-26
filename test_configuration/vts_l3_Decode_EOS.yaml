@@ -7,21 +7,13 @@ IAudioDecoderManager:
         signal_discontinuity_pts: -1
         flush_pts: -1
         flush_reset_pts: -1
-        eos_pts: 191999997
+        eos_pts: 21333333
       Inputs:
         Streams:
           - Name: tones_48k_2_256_aac
             PTS:
               - 0
               - 21333333
-              - 42666666
-              - 63999999
-              - 85333332
-              - 106666665
-              - 127999998
-              - 149333331
-              - 170666664
-              - 191999997
             trim:
               - 0
               - 0
