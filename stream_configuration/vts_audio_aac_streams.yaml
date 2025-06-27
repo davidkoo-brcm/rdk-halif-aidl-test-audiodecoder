@@ -39,6 +39,26 @@ AudioStreams:
       - 540
       - 498
 
+  tones_12k_2_64_aac:
+    input: tones_12k_2_64.aac
+    reference: tones_12k_2_64_ref.pcm
+    codec: AAC_LC
+    sample_rate: 12000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 480
+      - 549
+      - 510
+      - 573
+      - 581
+      - 628
+      - 573
+      - 561
+      - 552
+      - 600
+
   tones_16k_2_64_aac:
     input: tones_16k_2_64.aac
     reference: tones_16k_2_64_ref.pcm
@@ -57,6 +77,46 @@ AudioStreams:
       - 486
       - 469
       - 470
+      - 474
+
+  tones_22_05k_2_96_aac:
+    input: tones_22.05k_2_96.aac
+    reference: tones_22.05k_2_96_ref.pcm
+    codec: AAC_LC
+    sample_rate: 22050
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 469
+      - 547
+      - 565
+      - 569
+      - 590
+      - 596
+      - 605
+      - 532
+      - 577
+      - 474
+
+  tones_24k_2_96_aac:
+    input: tones_24k_2_96.aac
+    reference: tones_24k_2_96_ref.pcm
+    codec: AAC_LC
+    sample_rate: 24000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 470
+      - 516
+      - 540
+      - 554
+      - 580
+      - 568
+      - 525
+      - 547
+      - 521
       - 474
 
   tones_32k_2_64_aac:
@@ -300,6 +360,8 @@ AudioStreams:
       - 355
       - 334
     error_frames:
+      - 0
+      - 1
       - 2
       - 3
       - 4

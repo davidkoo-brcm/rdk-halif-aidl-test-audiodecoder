@@ -27,3 +27,20 @@ IAudioDecoderManager:
               - 85333332
             rms_diff_threshold: 0.5
             decode_time_threshold: 10000
+          - Name: tones_48k_2_192_ac3
+            PTS:
+              - 0
+              - 21333333
+              - 42666666
+              - 63999999
+              - 85333332
+              - 106666665
+              - 127999998
+              - 149333331
+              - 170666664
+              - 191999997
+            trim:
+              - 127999998
+              - 137999998
+            rms_diff_threshold: 0.5
+            decode_time_threshold: 10000000

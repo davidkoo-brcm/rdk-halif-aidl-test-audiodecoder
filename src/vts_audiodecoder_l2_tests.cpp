@@ -108,6 +108,9 @@ VTS_L2_AudioDecoder() : UTCore() {}
 
             sp<AudioDecoderControllerListener> controlListener = new AudioDecoderControllerListener();
 
+            controlListener->setDecoderID(_decoderId.value);
+            eventListener->setDecoderID(_decoderId.value);
+
             /* Get Audio decoder handle */
             AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 

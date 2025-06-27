@@ -742,9 +742,9 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
             frame.isMetaAvailable = false;
             if (metadata.has_value())
             {
-                UT_LOG_INFO("[DecoderID: %d] Stream Details [Codec: %d - %s, SampleRate: %d, Channels: %d, channelType: %d format: %d - %s planarFormat: %s, isDolbyAtom: %s]",
-                            mDecoderID, metadata->sourceCodec, audiodecoder::toString(metadata->sourceCodec).c_str(), metadata->sampleRate, metadata->numChannels,
-                            metadata->channelTypes, metadata->format, audiodecoder::toString(metadata->format).c_str(),
+                UT_LOG_INFO("[DecoderID: %d] Stream Details [Codec: %s, SampleRate: %d, Channels: %d, channelType: %d format: %s planarFormat: %s, isDolbyAtom: %s]",
+                            mDecoderID, audiodecoder::toString(metadata->sourceCodec).c_str(), metadata->sampleRate, metadata->numChannels,
+                            metadata->channelTypes, audiodecoder::toString(metadata->format).c_str(),
                             UT_Control_GetMapString(bool_mapTable, metadata->planarFormat), UT_Control_GetMapString(bool_mapTable, metadata->isDolbyAtmos));
                 UT_LOG_INFO("[DecoderID: %d] Control Parameters [PTS: %lld, discontinuity: %d, EOS: %d, LowLatency: %d, Source: %d, Trim(%lld-%lld)]",
                             mDecoderID, nsPresentationTime, metadata->discontinuity, metadata->endOfStream, metadata->lowLatency,

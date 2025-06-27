@@ -87,7 +87,8 @@ UT_status_t vts_audiodecoder_parseAudioDecoderHFP()
         return UT_STATUS_FAILURE;
     }
 
-    available_decoders = UT_KVP_PROFILE_GET_LIST_COUNT(audiodecoderpath.c_str());
+    available_decoders = UT_KVP_PROFILE_GET_LIST_COUNT(availableDecodersPath.c_str());
+
     for(int32_t i = 0; i < available_decoders; i++)
     {
         std::string decoderIdPath = availableDecodersPath + "." + std::to_string(i);

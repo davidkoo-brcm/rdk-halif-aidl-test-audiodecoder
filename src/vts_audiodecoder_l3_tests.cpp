@@ -96,6 +96,7 @@ UT_ADD_TEST_TO_GROUP(VTS_L3_AudioDecoder, UT_TESTS_L3)
 
 static const char *gModuleName = "IAudioDecoderManager";
 static const char *gTestGroup = "L3";
+static IAVBufferHelper* gAVbufferHelper;
 
 sp<IAVBuffer> vts_avbuffer_getService()
 {
@@ -206,7 +207,6 @@ public:
         mEventListener = eventListener;
         mTestConfiguration = config;
         mAVBufferManager = AVBufferManager;
-        mAVbufferHelper = getAVBufferHelperInstance();
     }
 
     void run()
@@ -217,8 +217,6 @@ public:
     bool getDecoderMetrics(int32_t &framesDecoded, int32_t &decodeErrors, int32_t framesDropped)
     {
         optional<PropertyValue> propertyValue;
-
-        framesDecoded = decodeErrors = framesDropped = -1;
 
         AUDIODECODER_GET_PROPERTY_SUCCESS(mDecoderHandle, Property::METRIC_FRAMES_DECODED, propertyValue);
         if (!propertyValue.has_value() || !propertyValue->value.has_value())
@@ -253,7 +251,6 @@ private:
     bool mSecureDecode;
     testConfiguration_t mTestConfiguration;
     deque<InputAudioFrame_t> mInputFrame;
-    IAVBufferHelper* mAVbufferHelper;
 
     void decodeAndConsumeAudioStreams()
     {
@@ -297,9 +294,6 @@ private:
             uint32_t mapSize = 0;
             InputAudioFrame_t inputFrame;
 
-            chrono::steady_clock::time_point startTime, receiveTime;
-            int64_t PTS = framePTS;
-
             /* Allocate the audio buffer */
             AVBUFFER_ALLOC_SUCCESS(mAVBufferManager, audioPool, frameSize, audioBufferHandle);
 
@@ -309,7 +303,7 @@ private:
             if(mSecureDecode)
             {
                 bool status;
-                if(!mAVbufferHelper->writeSecureHandle(audioBufferHandle, inputBuffer.data(), frameSize))
+                if(!gAVbufferHelper->writeSecureHandle(audioBufferHandle, inputBuffer.data(), frameSize))
                 {
                     UT_LOG_ERROR("[DecoderID: %d] Failed to copy the data to secure buffer", mDecoderId.value);
                     AVBUFFER_FREE_SUCCESS(mAVBufferManager, audioBufferHandle);
@@ -318,7 +312,7 @@ private:
             }
             else
             {
-                mapBuffer = mAVbufferHelper->mapHandle(audioBufferHandle, &mapSize);
+                mapBuffer = gAVbufferHelper->mapHandle(audioBufferHandle, &mapSize);
                 memcpy(mapBuffer, inputBuffer.data(), mapSize);
             }
 
@@ -424,7 +418,21 @@ private:
             {
                 UT_ASSERT_TRUE(decodedFrame.isMetaAvailable && (mTestConfiguration.trimStartNs == decodedFrame.metadata.trimStartNs));
                 UT_ASSERT_TRUE(decodedFrame.isMetaAvailable && (mTestConfiguration.trimEndNs == decodedFrame.metadata.trimEndNs));
+
+                //TODO: check
+                if(inputFrame.framePTS < decodedFrame.framePTS)
+                {
+                    UT_LOG_INFO("[DecoderID: %d] Frame [PTS: %lld] is Trimmed", mDecoderId.value, inputFrame.framePTS);
+                    continue;
+                }
                 //TODO: Add validation to check whether trim is done or not
+            }
+
+            if(inputFrame.framePTS < decodedFrame.framePTS)
+            {
+                UT_LOG_ERROR("[DecoderID: %d] Frame [PTS: %lld] is Missed", mDecoderId.value, inputFrame.framePTS);
+                UT_ASSERT_TRUE(false);
+                continue;
             }
 
             if(mTestConfiguration.eosPts == decodedFrame.framePTS)
@@ -435,9 +443,15 @@ private:
             framesDecoded++;
             mControlListener->getNextFrame(decodedFrame, true);
 
+            if(inputFrame.framePTS != decodedFrame.framePTS)
+            {
+                UT_LOG_ERROR("[DecoderID: %d] Input Frame [PTS: %lld] and Out Frame [PTS: %lld] are not matching", mDecoderId.value, inputFrame.framePTS, decodedFrame.framePTS);
+                UT_ASSERT_TRUE(false);
+                continue;
+            }
             auto duration = chrono::duration_cast<chrono::microseconds>(decodedFrame.receiveTime - inputFrame.sendTime);
             UT_LOG_INFO("[DecoderID: %d] Decode Time in micro second [PTS: %lld]: %lld", mDecoderId.value, decodedFrame.framePTS, duration.count());
-            //UT_ASSERT_TRUE(duration.count() <= mTestConfiguration.decodeTime);
+            UT_ASSERT_TRUE(duration.count() <= mTestConfiguration.decodeTime);
         }
 
         /* Get decoder metrics after decoding */
@@ -481,6 +495,8 @@ public:
         mAVBufferManager = vts_avbuffer_getService();
         gTestConfiguration = vts_kvp_create_instance(VTS_TEST_CONFIG_PATH);
 
+        gAVbufferHelper = getAVBufferHelperInstance();
+
         /* Get the Audio decoder IDs */
         AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
@@ -509,6 +525,12 @@ public:
             AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
             mAudioDecoderList.push_back({_decoderId, audioDecoder, controlListener, eventListener, capabilities});
+
+            for(const auto& supportedcodec_from_api: capabilities->supportedCodecs)
+            {
+                UT_LOG_INFO("[BHANU] codec support: %d", supportedcodec_from_api);
+            }
+
 
         }
     }

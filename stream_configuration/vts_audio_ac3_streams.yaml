@@ -39,7 +39,7 @@ AudioStreams:
       - 384
       - 384
 
-  tones_44.1k_1_64_ac3:
+  tones_44_1k_1_64_ac3:
     input: tones_44.1k_1_64.ac3
     reference: tones_44.1k_1_64_ref.pcm
     codec: DOLBY_AC3
@@ -59,7 +59,7 @@ AudioStreams:
       - 278
       - 278
 
-  tones_44.1k_2_96_ac3:
+  tones_44_1k_2_96_ac3:
     input: tones_44.1k_2_64.ac3
     reference: tones_44.1k_2_64_ref.pcm
     codec: DOLBY_AC3
@@ -119,7 +119,7 @@ AudioStreams:
       - 768
       - 768
 
-  tones_48k_2.1_256_ac3:
+  tones_48k_2_1_256_ac3:
     input: tones_48k_2.1_256.ac3
     reference: tones_48k_2.1_256_ref.pcm
     codec: DOLBY_AC3
@@ -139,7 +139,7 @@ AudioStreams:
       - 1024
       - 1024
 
-  tones_48k_3.0_256_ac3:
+  tones_48k_3_0_256_ac3:
     input: tones_48k_3.0_256.ac3
     reference: tones_48k_3.0_256_ref.pcm
     codec: DOLBY_AC3
@@ -159,7 +159,7 @@ AudioStreams:
       - 1024
       - 1024
 
-  tones_48k_4.0_256_ac3:
+  tones_48k_4_0_256_ac3:
     input: tones_48k_4.0_256.ac3
     reference: tones_48k_4.0_256_ref.pcm
     codec: DOLBY_AC3
@@ -179,7 +179,7 @@ AudioStreams:
       - 1024
       - 1024
 
-  tones_48k_5.0_384_ac3:
+  tones_48k_5_0_384_ac3:
     input: tones_48k_5.0_384.ac3
     reference: tones_48k_5.0_384_ref.pcm
     codec: DOLBY_AC3
@@ -199,7 +199,7 @@ AudioStreams:
       - 1536
       - 1536
 
-  tones_48k_5.1_640_ac3:
+  tones_48k_5_1_640_ac3:
     input: tones_48k_5.1_640.ac3
     reference: tones_48k_5.1_640_ref.pcm
     codec: DOLBY_AC3

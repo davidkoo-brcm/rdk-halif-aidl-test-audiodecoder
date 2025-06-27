@@ -10,90 +10,142 @@ IAudioDecoderManager:
         eos_pts: -1 #`pts` value in nano seconds that determine when the test should sent `eos` signal to decoder. -1 indicates that test should not signal `eos`
       Inputs:
         Streams:
+####### AAC Streams ##############
           - Name: tones_8k_2_64_aac #Stream name
             PTS: #List of Presentation Time Stamps (per frame) in microseconds
               - 0
-              - 21333333
-              - 42666666
-              - 63999999
-              - 85333332
-              - 106666665
-              - 127999998
-              - 149333331
-              - 170666664
-              - 191999997
+              - 128000000
+              - 256000000
+              - 384000000
+              - 512000000
+              - 640000000
+              - 768000000
+              - 896000000
+              - 1024000000
+              - 1152000000
             trim: #Start and end trim points in Nano seconds
               - 0 #Start in Nano seconds
               - 0 #End
-            decode_time_threshold: 50000 #Time budget per frame for decoding, in microseconds
+            decode_time_threshold: 100000 #Time budget per frame for decoding, in microseconds
             rms_diff_threshold: 0.5 #Maximum allowed `rms` difference for output validation
           - Name: tones_11_025k_2_64_aac
             PTS:
               - 0
-              - 21333333
-              - 42666666
-              - 63999999
-              - 85333332
-              - 106666665
-              - 127999998
-              - 149333331
-              - 170666664
-              - 191999997
+              - 92879818
+              - 185759636
+              - 278639454
+              - 371519272
+              - 464399090
+              - 557278908
+              - 650158726
+              - 743038544
+              - 835918362
             trim:
               - 0
               - 0
-            decode_time_threshold: 50000
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_12k_2_64_aac
+            PTS:
+              - 0
+              - 85333333
+              - 170666666
+              - 256000000
+              - 341333333
+              - 426666666
+              - 512000000
+              - 597333333
+              - 682666666
+              - 768000000
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
             rms_diff_threshold: 0.5
           - Name: tones_16k_2_64_aac
             PTS:
               - 0
-              - 21333333
-              - 42666666
-              - 63999999
-              - 85333332
-              - 106666665
-              - 127999998
-              - 149333331
-              - 170666664
-              - 191999997
+              - 64000000
+              - 128000000
+              - 192000000
+              - 256000000
+              - 320000000
+              - 384000000
+              - 448000000
+              - 512000000
+              - 576000000
             trim:
               - 0
               - 0
-            decode_time_threshold: 50000000
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_22_05k_2_96_aac
+            PTS:
+              - 0
+              - 46439909
+              - 92879818
+              - 139319727
+              - 185759636
+              - 232199545
+              - 278639454
+              - 325079363
+              - 371519272
+              - 417959181
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_24k_2_96_aac
+            PTS:
+              - 0
+              - 42666666
+              - 85333332
+              - 127999998
+              - 170666664
+              - 213333330
+              - 255999996
+              - 298666662
+              - 341333328
+              - 383999994
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
             rms_diff_threshold: 0.5
           - Name: tones_32k_2_64_aac
             PTS:
               - 0
-              - 21333333
-              - 42666666
-              - 63999999
-              - 85333332
-              - 106666665
-              - 127999998
-              - 149333331
-              - 170666664
-              - 191999997
+              - 32000000
+              - 64000000
+              - 96000000
+              - 128000000
+              - 160000000
+              - 192000000
+              - 224000000
+              - 256000000
+              - 288000000
             trim:
               - 0
               - 0
-            decode_time_threshold: 50000000
+            decode_time_threshold: 100000
             rms_diff_threshold: 0.5
           - Name: tones_44_1k_2_128_aac
             PTS:
               - 0
-              - 21333333
-              - 42666666
-              - 63999999
-              - 85333332
-              - 106666665
-              - 127999998
-              - 149333331
-              - 170666664
-              - 191999997
+              - 23219954
+              - 46439908
+              - 69659862
+              - 92879816
+              - 116099770
+              - 139319724
+              - 162539678
+              - 185759632
+              - 208979586
             trim:
               - 0
               - 0
-            decode_time_threshold: 50000000
+            decode_time_threshold: 100000
             rms_diff_threshold: 0.5
           - Name: tones_48k_1_256_aac
             PTS:
@@ -110,7 +162,7 @@ IAudioDecoderManager:
             trim:
               - 0
               - 0
-            decode_time_threshold: 50000000
+            decode_time_threshold: 100000
             rms_diff_threshold: 0.5
           - Name: tones_48k_2_256_aac
             PTS:
@@ -127,7 +179,7 @@ IAudioDecoderManager:
             trim:
               - 0
               - 0
-            decode_time_threshold: 50000000
+            decode_time_threshold: 100000
             rms_diff_threshold: 0.5
           - Name: tones_48k_5_1_384_aac
             PTS:
@@ -144,7 +196,7 @@ IAudioDecoderManager:
             trim:
               - 0
               - 0
-            decode_time_threshold: 50000000
+            decode_time_threshold: 100000
             rms_diff_threshold: 0.5
           - Name: tones_48k_7_1_512_aac
             PTS:
@@ -161,90 +213,279 @@ IAudioDecoderManager:
             trim:
               - 0
               - 0
-            decode_time_threshold: 50000000
+            decode_time_threshold: 100000
             rms_diff_threshold: 0.5
           - Name: tones_64k_2_256_aac
             PTS:
               - 0
-              - 21333333
-              - 42666666
-              - 63999999
-              - 85333332
-              - 106666665
-              - 127999998
-              - 149333331
-              - 170666664
-              - 191999997
+              - 16000000
+              - 32000000
+              - 48000000
+              - 64000000
+              - 80000000
+              - 96000000
+              - 112000000
+              - 128000000
+              - 144000000
             trim:
               - 0
               - 0
-            decode_time_threshold: 50000000
+            decode_time_threshold: 100000
             rms_diff_threshold: 0.5
           - Name: tones_88_2k_2_256_aac
             PTS:
               - 0
-              - 21333333
-              - 42666666
-              - 63999999
-              - 85333332
-              - 106666665
-              - 127999998
-              - 149333331
-              - 170666664
-              - 191999997
+              - 11609977
+              - 23219954
+              - 34829931
+              - 46439908
+              - 58049885
+              - 69659862
+              - 81269839
+              - 92879816
+              - 104489793
             trim:
               - 0
               - 0
-            decode_time_threshold: 50000000
+            decode_time_threshold: 100000
             rms_diff_threshold: 0.5
           - Name: tones_96k_2_384_aac
             PTS:
               - 0
-              - 21333333
+              - 10666666
+              - 21333332
+              - 32000000
               - 42666666
-              - 63999999
+              - 53333332
+              - 64000000
+              - 74666666
               - 85333332
-              - 106666665
-              - 127999998
-              - 149333331
-              - 170666664
-              - 191999997
+              - 96000000
             trim:
               - 0
               - 0
-            decode_time_threshold: 50000000
+            decode_time_threshold: 100000
             rms_diff_threshold: 0.5
           - Name: tones_96k_5_1_512_aac
             PTS:
               - 0
-              - 21333333
+              - 10666666
+              - 21333332
+              - 32000000
               - 42666666
-              - 63999999
+              - 53333332
+              - 64000000
+              - 74666666
               - 85333332
-              - 106666665
-              - 127999998
-              - 149333331
-              - 170666664
-              - 191999997
+              - 96000000
             trim:
               - 0
               - 0
-            decode_time_threshold: 50000000
+            decode_time_threshold: 100000
             rms_diff_threshold: 0.5
           - Name: tones_96k_7_1_1024_aac
             PTS:
               - 0
-              - 21333333
+              - 10666666
+              - 21333332
+              - 32000000
               - 42666666
-              - 63999999
+              - 53333332
+              - 64000000
+              - 74666666
               - 85333332
-              - 106666665
-              - 127999998
-              - 149333331
-              - 170666664
-              - 191999997
+              - 96000000
             trim:
               - 0
               - 0
-            decode_time_threshold: 50000000
+            decode_time_threshold: 100000
             rms_diff_threshold: 0.5
+####### AC3 Streams ##############
+          - Name: tones_32k_1_64_ac3
+            PTS:
+              - 123456
+              - 48123456
+              - 96123456
+              - 144123456
+              - 192123456
+              - 240123456
+              - 288123456
+              - 336123456
+              - 384123456
+              - 432123456
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_32k_2_64_ac3
+            PTS:
+              - 123456
+              - 48123456
+              - 96123456
+              - 144123456
+              - 192123456
+              - 240123456
+              - 288123456
+              - 336123456
+              - 384123456
+              - 432123456
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_44_1k_1_64_ac3
+            PTS:
+              - 123456
+              - 34712833
+              - 69321710
+              - 103930587
+              - 138539464
+              - 173148341
+              - 207757218
+              - 242366095
+              - 276974972
+              - 311583849
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_44_1k_2_96_ac3
+            PTS:
+              - 123456
+              - 34712833
+              - 69321710
+              - 103930587
+              - 138539464
+              - 173148341
+              - 207757218
+              - 242366095
+              - 276974972
+              - 311583849
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_48k_1_128_ac3
+            PTS:
+              - 123456
+              - 32123456
+              - 64123456
+              - 96123456
+              - 128123456
+              - 160123456
+              - 192123456
+              - 224123456
+              - 256123456
+              - 288123456
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_48k_2_192_ac3
+            PTS:
+              - 123456
+              - 32123456
+              - 64123456
+              - 96123456
+              - 128123456
+              - 160123456
+              - 192123456
+              - 224123456
+              - 256123456
+              - 288123456
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_48k_2_1_256_ac3
+            PTS:
+              - 123456
+              - 32123456
+              - 64123456
+              - 96123456
+              - 128123456
+              - 160123456
+              - 192123456
+              - 224123456
+              - 256123456
+              - 288123456
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_48k_3_0_256_ac3
+            PTS:
+              - 123456
+              - 32123456
+              - 64123456
+              - 96123456
+              - 128123456
+              - 160123456
+              - 192123456
+              - 224123456
+              - 256123456
+              - 288123456
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_48k_4_0_256_ac3
+            PTS:
+              - 123456
+              - 32123456
+              - 64123456
+              - 96123456
+              - 128123456
+              - 160123456
+              - 192123456
+              - 224123456
+              - 256123456
+              - 288123456
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_48k_5_0_384_ac3
+            PTS:
+              - 123456
+              - 32123456
+              - 64123456
+              - 96123456
+              - 128123456
+              - 160123456
+              - 192123456
+              - 224123456
+              - 256123456
+              - 288123456
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_48k_5_1_640_ac3
+            PTS:
+              - 123456
+              - 32123456
+              - 64123456
+              - 96123456
+              - 128123456
+              - 160123456
+              - 192123456
+              - 224123456
+              - 256123456
+              - 288123456
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+

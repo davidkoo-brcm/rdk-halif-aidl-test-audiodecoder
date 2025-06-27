@@ -10,6 +10,7 @@ IAudioDecoderManager:
         eos_pts: -1 #`pts` value in nano seconds that determine when the test should sent `eos` signal to decoder. -1 indicates that test should not signal `eos`
       Inputs:
         Streams:
+####### AAC Streams ##############
           - Name: tones_48k_2_256_random_bitflip_aac #Stream name
             PTS: #List of Presentation Time Stamps (per frame) in nanoseconds
               - 0
@@ -107,6 +108,92 @@ IAudioDecoderManager:
               - 149333331
               - 170666664
               - 191999997
+            trim:
+              - 0
+              - 0
+            rms_diff_threshold: 0.5
+            decode_time_threshold: 10000000
+####### AC3 Streams ##############
+          - Name: tones_48k_2_192_header_ac3
+            PTS:
+              - 123456
+              - 32123456
+              - 64123456
+              - 96123456
+              - 128123456
+              - 160123456
+              - 192123456
+              - 224123456
+              - 256123456
+              - 288123456
+            trim:
+              - 0
+              - 0
+            rms_diff_threshold: 0.5
+            decode_time_threshold: 10000000
+          - Name: tones_48k_2_192_sync_ac3
+            PTS:
+              - 123456
+              - 32123456
+              - 64123456
+              - 96123456
+              - 128123456
+              - 160123456
+              - 192123456
+              - 224123456
+              - 256123456
+              - 288123456
+            trim:
+              - 0
+              - 0
+            rms_diff_threshold: 0.5
+            decode_time_threshold: 10000000
+          - Name: tones_48k_2_192_zero_ac3
+            PTS:
+              - 123456
+              - 32123456
+              - 64123456
+              - 96123456
+              - 128123456
+              - 160123456
+              - 192123456
+              - 224123456
+              - 256123456
+              - 288123456
+            trim:
+              - 0
+              - 0
+            rms_diff_threshold: 0.5
+            decode_time_threshold: 10000000
+          - Name: tones_48k_2_192_random_ac3
+            PTS:
+              - 123456
+              - 32123456
+              - 64123456
+              - 96123456
+              - 128123456
+              - 160123456
+              - 192123456
+              - 224123456
+              - 256123456
+              - 288123456
+            trim:
+              - 0
+              - 0
+            rms_diff_threshold: 0.5
+            decode_time_threshold: 10000000
+          - Name: tones_48k_2_192_incomplete_ac3
+            PTS:
+              - 123456
+              - 32123456
+              - 64123456
+              - 96123456
+              - 128123456
+              - 160123456
+              - 192123456
+              - 224123456
+              - 256123456
+              - 288123456
             trim:
               - 0
               - 0
