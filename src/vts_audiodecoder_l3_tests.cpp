@@ -214,7 +214,7 @@ public:
         decodeAndConsumeAudioStreams();
     }
 
-    bool getDecoderMetrics(int32_t &framesDecoded, int32_t &decodeErrors, int32_t framesDropped)
+    bool getDecoderMetrics(int32_t &framesDecoded, int32_t &decodeErrors, int32_t &framesDropped)
     {
         optional<PropertyValue> propertyValue;
 
@@ -259,9 +259,13 @@ private:
         Pool audioPool;
         sp<IAVBufferSpaceListener> bufferListener = new AVBufferSpaceListener();
         int32_t framesDecoded = 0;
+        int32_t inputFrameIndex = 0;
         int32_t errorFrames = 0;
         int32_t startFramesDecoded, startFrameErrors, startFramesDropped;
         int32_t endFramesDecoded, endFrameErrors, endFramesDropped;
+        PropertyValue avSourcePropertyValue;
+
+        avSourcePropertyValue.value = PropertyValue::Value::make<PropertyValue::Value::Tag::intValue>(int32_t(static_cast<int32_t>(AVSource::IP)));
 
         UT_LOG_INFO("[DecoderID: %d] Start of Testing Stream: %s", mDecoderId.value, mTestConfiguration.input.c_str());
 
@@ -278,6 +282,9 @@ private:
         /* Open the Decoder */
         AUDIODECODER_OPEN_SUCCESS(mDecoderHandle, mTestConfiguration.codec, mSecureDecode, mControlListener, audioDecoderController, true);
 
+        /* Set AV Source */
+        AUDIODECODER_SETPROPERTY_SUCCESS(audioDecoderController, Property::AV_SOURCE, avSourcePropertyValue);
+
         /* Start the decoder */
         AUDIODECODER_START_SUCCESS(mDecoderHandle, audioDecoderController, true);
 
@@ -289,7 +296,6 @@ private:
             vector<uint8_t> inputBuffer;
             int32_t trimEndNs = mTestConfiguration.trimEndNs;
             int32_t trimStartNs = mTestConfiguration.trimStartNs;
-            DecodedAudioFrame_t decodedFrame;
             void *mapBuffer = nullptr;
             uint32_t mapSize = 0;
             InputAudioFrame_t inputFrame;
@@ -372,6 +378,8 @@ private:
             DecodedAudioFrame_t decodedFrame;
             chrono::steady_clock::time_point receiveTime;
 
+            inputFrameIndex++;
+
             if(inputFrame.isErrorFrame)
             {
                 ErrorDetails_t errorDetails;
@@ -395,6 +403,19 @@ private:
                 UT_LOG_ERROR("[DecoderID: %d] onFrameOutput callback not received...", mDecoderId.value);
                 UT_ASSERT_TRUE(false);
                 break;
+            }
+
+            /* Validate metadata */
+            if(inputFrameIndex == 1)
+            {
+                UT_ASSERT_TRUE(decodedFrame.isMetaAvailable);
+            }
+            if(decodedFrame.isMetaAvailable)
+            {
+                UT_ASSERT_EQUAL(decodedFrame.metadata.sourceCodec, mTestConfiguration.codec);
+                UT_ASSERT_EQUAL(decodedFrame.metadata.numChannels, mTestConfiguration.numChannels);
+                UT_ASSERT_EQUAL(decodedFrame.metadata.sampleRate, mTestConfiguration.sampleRate);
+                UT_ASSERT_EQUAL(int32_t(static_cast<int32_t>(decodedFrame.metadata.source)), avSourcePropertyValue.value->get<PropertyValue::Value::Tag::intValue>());
             }
 
             if(mTestConfiguration.discontinuityPts == decodedFrame.framePTS)
@@ -457,6 +478,7 @@ private:
         /* Get decoder metrics after decoding */
         UT_ASSERT_TRUE(getDecoderMetrics(endFramesDecoded, endFrameErrors, endFramesDropped));
 
+        UT_LOG_INFO("[BHANU] Frames drop info: %d, %d", startFramesDropped, endFramesDropped);
         /* Validate decoder metrics */
         if(startFramesDecoded >= 0 && endFramesDecoded >= 0)
             UT_ASSERT_TRUE((endFramesDecoded - startFramesDecoded) == framesDecoded);
@@ -525,13 +547,6 @@ public:
             AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities);
 
             mAudioDecoderList.push_back({_decoderId, audioDecoder, controlListener, eventListener, capabilities});
-
-            for(const auto& supportedcodec_from_api: capabilities->supportedCodecs)
-            {
-                UT_LOG_INFO("[BHANU] codec support: %d", supportedcodec_from_api);
-            }
-
-
         }
     }
 
@@ -804,12 +819,30 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_FlushRese
 }
 
 /**
+ * @brief Test decoder stops and restart
+ *        Modes: Non-Tunnel, Non-Secure
+ *
+ * **Test Group ID:** 003@n
+ * **Test Case ID:** 008@n
+ *
+ * **Test Procedure:**
+ * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
+ */
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_StopStart)
+{
+    const char *testName = "Decode_Stop_Start";
+    bool secureMode = false;
+    bool concurrentMode = false;
+    runSingleProcessTest(testName, secureMode, concurrentMode);
+}
+
+/**
  * @brief Test the ability to decode audio frames
  *        Decoding type: Sequential
  *        Modes: Non-Tunnel, Secure
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 008@n
+ * **Test Case ID:** 009@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -827,7 +860,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure)
  *        Modes: Non-Tunnel, Secure
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 009@n
+ * **Test Case ID:** 010@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -845,7 +878,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Error)
  *        Modes: Non-Tunnel, Secure
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 010@n
+ * **Test Case ID:** 011@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -863,7 +896,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Trim)
  *        Modes: Non-Tunnel, Secure
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 011@n
+ * **Test Case ID:** 012@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -881,7 +914,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Discontinuit
  *        Modes: Non-Tunnel, Secure
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 012@n
+ * **Test Case ID:** 013@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -899,7 +932,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_EOS)
  *        Modes: Non-Tunnel, Secure
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 013@n
+ * **Test Case ID:** 014@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -917,7 +950,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Flush)
  *        Modes: Non-Tunnel, Secure
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 014@n
+ * **Test Case ID:** 015@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -931,11 +964,29 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_FlushReset)
 }
 
 /**
+ * @brief Test decoder stops and restart
+ *        Modes: Non-Tunnel, Secure
+ *
+ * **Test Group ID:** 003@n
+ * **Test Case ID:** 016@n
+ *
+ * **Test Procedure:**
+ * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
+ */
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_StopStart)
+{
+    const char *testName = "Decode_Stop_Start";
+    bool secureMode = true;
+    bool concurrentMode = false;
+    runSingleProcessTest(testName, secureMode, concurrentMode);
+}
+
+/**
  * @brief Test sequential decode in tunnel mode (Non-Secure)
  *        Modes: Tunnel, Non-Secure
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 015@n
+ * **Test Case ID:** 017@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -953,7 +1004,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure)
  *        Modes: Tunnel, Non-Secure
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 016@n
+ * **Test Case ID:** 018@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -971,7 +1022,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Error)
  *        Modes: Tunnel, Non-Secure
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 017@n
+ * **Test Case ID:** 019@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -989,7 +1040,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Trim)
  *        Modes: Tunnel, Non-Secure
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 018@n
+ * **Test Case ID:** 020@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1007,7 +1058,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Discontinuit
  *        Modes: Tunnel, Non-Secure
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 019@n
+ * **Test Case ID:** 021@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1025,7 +1076,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_EOS)
  *        Modes: Tunnel, Non-Secure
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 020@n
+ * **Test Case ID:** 022@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1043,7 +1094,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Flush)
  *        Modes: Tunnel, Non-Secure
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 021@n
+ * **Test Case ID:** 023@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1057,11 +1108,29 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_FlushReset)
 }
 
 /**
+ * @brief Test decoder stops and restart
+ *        Modes: Tunnel, Non-Secure
+ *
+ * **Test Group ID:** 003@n
+ * **Test Case ID:** 024@n
+ *
+ * **Test Procedure:**
+ * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
+ */
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_StopStart)
+{
+    const char *testName = "Decode_Stop_Start";
+    bool secureMode = false;
+    bool concurrentMode = false;
+    runSingleProcessTest(testName, secureMode, concurrentMode);
+}
+
+/**
  * @brief Test sequential decode in secure mode (Tunnel)
  *        Modes: Tunnel, Secure, Sequential
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 022@n
+ * **Test Case ID:** 025@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1079,7 +1148,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure)
  *        Modes: Tunnel, Secure, Sequential
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 023@n
+ * **Test Case ID:** 026@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1097,7 +1166,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Error)
  *        Modes: Tunnel, Secure, Sequential
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 024@n
+ * **Test Case ID:** 027@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1115,7 +1184,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Trim)
  *        Modes: Tunnel, Secure, Sequential
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 025@n
+ * **Test Case ID:** 028@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1133,7 +1202,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Discontinuity)
  *        Modes: Tunnel, Secure, Sequential
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 026@n
+ * **Test Case ID:** 029@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1151,7 +1220,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_EOS)
  *        Modes: Tunnel, Secure, Sequential
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 027@n
+ * **Test Case ID:** 030@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1169,7 +1238,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Flush)
  *        Modes: Tunnel, Secure, Sequential
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 028@n
+ * **Test Case ID:** 031@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1183,11 +1252,29 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_FlushReset)
 }
 
 /**
+ * @brief Test decoder stops and restart
+ *        Modes: Tunnel, Secure, Sequential
+ *
+ * **Test Group ID:** 003@n
+ * **Test Case ID:** 032@n
+ *
+ * **Test Procedure:**
+ * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
+ */
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_StopStart)
+{
+    const char *testName = "Decode_Stop_Start";
+    bool secureMode = true;
+    bool concurrentMode = false;
+    runSingleProcessTest(testName, secureMode, concurrentMode);
+}
+
+/**
  * @brief Test concurrent decode in non-tunnel mode (Non-Secure)
  *        Modes: Non-Tunnel, Non-Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 029@n
+ * **Test Case ID:** 033@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1205,7 +1292,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure)
  *        Modes: Non-Tunnel, Non-Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 030@n
+ * **Test Case ID:** 034@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1223,7 +1310,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Error)
  *        Modes: Non-Tunnel, Non-Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 031@n
+ * **Test Case ID:** 035@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1241,7 +1328,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Trim)
  *        Modes: Non-Tunnel, Non-Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 032@n
+ * **Test Case ID:** 036@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1259,7 +1346,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Discontin
  *        Modes: Non-Tunnel, Non-Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 033@n
+ * **Test Case ID:** 037@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1277,7 +1364,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_EOS)
  *        Modes: Non-Tunnel, Non-Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 034@n
+ * **Test Case ID:** 038@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1295,7 +1382,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Flush)
  *        Modes: Non-Tunnel, Non-Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 035@n
+ * **Test Case ID:** 039@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1309,11 +1396,29 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_FlushRese
 }
 
 /**
+ * @brief Test decoder stops and restart
+ *        Modes: Non-Tunnel, Non-Secure, Concurrent
+ *
+ * **Test Group ID:** 003@n
+ * **Test Case ID:** 040@n
+ *
+ * **Test Procedure:**
+ * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
+ */
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_StopStart)
+{
+    const char *testName = "Decode_Stop_Start";
+    bool secureMode = false;
+    bool concurrentMode = true;
+    runSingleProcessTest(testName, secureMode, concurrentMode);
+}
+
+/**
  * @brief Test concurrent decode in secure mode (Non-Tunnel)
  *        Modes: Non-Tunnel, Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 036@n
+ * **Test Case ID:** 041@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1331,7 +1436,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure)
  *        Modes: Non-Tunnel, Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 037@n
+ * **Test Case ID:** 042@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1349,7 +1454,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Error)
  *        Modes: Non-Tunnel, Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 038@n
+ * **Test Case ID:** 043@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1367,7 +1472,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Trim)
  *        Modes: Non-Tunnel, Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 039@n
+ * **Test Case ID:** 044@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1385,7 +1490,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Discontinuit
  *        Modes: Non-Tunnel, Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 040@n
+ * **Test Case ID:** 045@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1403,7 +1508,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_EOS)
  *        Modes: Non-Tunnel, Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 041@n
+ * **Test Case ID:** 046@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1421,7 +1526,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Flush)
  *        Modes: Non-Tunnel, Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 042@n
+ * **Test Case ID:** 047@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1435,11 +1540,29 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_FlushReset)
 }
 
 /**
+ * @brief Test decoder stops and restart
+ *        Modes: Non-Tunnel, Secure, Concurrent
+ *
+ * **Test Group ID:** 003@n
+ * **Test Case ID:** 048@n
+ *
+ * **Test Procedure:**
+ * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
+ */
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_StopStart)
+{
+    const char *testName = "Decode_Stop_Start";
+    bool secureMode = true;
+    bool concurrentMode = true;
+    runSingleProcessTest(testName, secureMode, concurrentMode);
+}
+
+/**
  * @brief Test concurrent decode in secure mode (Tunnel)
  *        Modes: Tunnel, Non-Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 043@n
+ * **Test Case ID:** 049@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1457,7 +1580,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure)
  *        Modes: Tunnel, Non-Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 044@n
+ * **Test Case ID:** 050@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1475,7 +1598,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Error)
  *        Modes: Tunnel, Non-Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 045@n
+ * **Test Case ID:** 051@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1493,7 +1616,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Trim)
  *        Modes: Tunnel, Non-Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 046@n
+ * **Test Case ID:** 052@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1511,7 +1634,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Discontinuit
  *        Modes: Tunnel, Non-Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 047@n
+ * **Test Case ID:** 053@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1529,7 +1652,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_EOS)
  *        Modes: Tunnel, Non-Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 048@n
+ * **Test Case ID:** 054@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1547,7 +1670,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Flush)
  *        Modes: Tunnel, Non-Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 049@n
+ * **Test Case ID:** 055@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1561,11 +1684,29 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_FlushReset)
 }
 
 /**
+ * @brief Test decoder stops and restart
+ *        Modes: Tunnel, Non-Secure, Concurrent
+ *
+ * **Test Group ID:** 003@n
+ * **Test Case ID:** 056@n
+ *
+ * **Test Procedure:**
+ * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
+ */
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_StopStart)
+{
+    const char *testName = "Decode_Stop_Start";
+    bool secureMode = false;
+    bool concurrentMode = true;
+    runSingleProcessTest(testName, secureMode, concurrentMode);
+}
+
+/**
  * @brief Test concurrent decode in secure mode (Tunnel)
  *        Modes: Tunnel, Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 050@n
+ * **Test Case ID:** 057@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1583,7 +1724,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure)
  *        Modes: Tunnel, Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 051@n
+ * **Test Case ID:** 058@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1601,7 +1742,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Error)
  *        Modes: Tunnel, Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 052@n
+ * **Test Case ID:** 059@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1619,7 +1760,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Trim)
  *        Modes: Tunnel, Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 053@n
+ * **Test Case ID:** 060@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1637,7 +1778,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Discontinuity)
  *        Modes: Tunnel, Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 054@n
+ * **Test Case ID:** 061@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1655,7 +1796,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_EOS)
  *        Modes: Tunnel, Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 055@n
+ * **Test Case ID:** 062@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1673,7 +1814,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Flush)
  *        Modes: Tunnel, Secure, Concurrent
  *
  * **Test Group ID:** 003@n
- * **Test Case ID:** 056@n
+ * **Test Case ID:** 063@n
  *
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
@@ -1681,6 +1822,24 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Flush)
 UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_FlushReset)
 {
     const char *testName = "Decode_FlushReset";
+    bool secureMode = true;
+    bool concurrentMode = true;
+    runSingleProcessTest(testName, secureMode, concurrentMode);
+}
+
+/**
+ * @brief Test decoder stops and restart
+ *        Modes: Tunnel, Secure, Concurrent
+ *
+ * **Test Group ID:** 003@n
+ * **Test Case ID:** 064@n
+ *
+ * **Test Procedure:**
+ * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
+ */
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_StopStart)
+{
+    const char *testName = "Decode_Stop_Start";
     bool secureMode = true;
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);

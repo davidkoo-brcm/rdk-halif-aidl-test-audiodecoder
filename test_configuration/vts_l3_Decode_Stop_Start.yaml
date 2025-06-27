@@ -1,6 +1,6 @@
 IAudioDecoderManager:
   L3:
-    Decode_Flush:
+    Decode_Stop_Start:
       Controls:
         delay_between_decode_calls: 5
         stop_start_pts: 127999998

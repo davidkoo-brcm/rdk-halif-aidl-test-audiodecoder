@@ -726,6 +726,17 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
         AudioDecoderControllerListener() : BnAudioDecoderControllerListener(), mShutdownFlag(false){}
         virtual ~AudioDecoderControllerListener() = default;
 
+        // Convert vector to comma-separated string
+        string formatChannelVector(const std::vector<ChannelType>& channels)
+        {
+            std::ostringstream oss;
+            for (size_t i = 0; i < channels.size(); ++i) {
+                oss << audiodecoder::toString(channels[i]);
+                if (i != channels.size() - 1) oss << ", ";
+            }
+            return oss.str();
+        }
+
         Status onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::optional<FrameMetadata>& metadata) override
         {
             UT_LOG_INFO("[DecoderID: %d] onFrameOutput: Received frameoutput [PTS:%lld, handle: %llX]", mDecoderID, nsPresentationTime, frameBufferHandle);
@@ -742,9 +753,9 @@ class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
             frame.isMetaAvailable = false;
             if (metadata.has_value())
             {
-                UT_LOG_INFO("[DecoderID: %d] Stream Details [Codec: %s, SampleRate: %d, Channels: %d, channelType: %d format: %s planarFormat: %s, isDolbyAtom: %s]",
+                UT_LOG_INFO("[DecoderID: %d] Stream Details [Codec: %s, SampleRate: %d, Channels: %d, channelType: [%s] format: %s planarFormat: %s, isDolbyAtom: %s]",
                             mDecoderID, audiodecoder::toString(metadata->sourceCodec).c_str(), metadata->sampleRate, metadata->numChannels,
-                            metadata->channelTypes, audiodecoder::toString(metadata->format).c_str(),
+                            formatChannelVector(metadata->channelTypes).c_str(), audiodecoder::toString(metadata->format).c_str(),
                             UT_Control_GetMapString(bool_mapTable, metadata->planarFormat), UT_Control_GetMapString(bool_mapTable, metadata->isDolbyAtmos));
                 UT_LOG_INFO("[DecoderID: %d] Control Parameters [PTS: %lld, discontinuity: %d, EOS: %d, LowLatency: %d, Source: %d, Trim(%lld-%lld)]",
                             mDecoderID, nsPresentationTime, metadata->discontinuity, metadata->endOfStream, metadata->lowLatency,
