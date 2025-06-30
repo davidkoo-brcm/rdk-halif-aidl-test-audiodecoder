@@ -249,10 +249,10 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         ::android::binder::Status status; \
         \
         /* Open the Decoder */ \
-        UT_LOG_INFO("Calling open(IN:codec[%d], IN:secure[%s], IN:controllerListener[0x%p], OUT:audioDecoderController[])", \
+        UT_LOG_INFO("Calling open(IN:codec[%d], IN:secure[%s], IN:controllerListener[%p], OUT:audioDecoderController[])", \
             codec, UT_Control_GetMapString(bool_mapTable, secure), controllerListener); \
         status = (audioDecoder)->open(codec, secure, controllerListener, &audioDecoderController); \
-        UT_LOG_INFO("Result open(IN:codec[%d], IN:secure[%s], IN:controllerListener[0x%p], OUT:audioDecoderController[0x%X]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_INFO("Result open(IN:codec[%d], IN:secure[%s], IN:controllerListener[%p], OUT:audioDecoderController[0x%X]), status:[isOK:%s, exception:%s]", \
             codec, UT_Control_GetMapString(bool_mapTable, secure), controllerListener, audioDecoderController.get(), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -271,10 +271,10 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_OPEN_FAILURE(audioDecoder, codec, secure, controllerListener, audioDecoderController, exception) \
     do { \
         ::android::binder::Status status; \
-        UT_LOG_INFO("Calling open(IN:codec[%d], IN:secure[%s], IN:controllerListener[0x%p], OUT:audioDecoderController[])", \
+        UT_LOG_INFO("Calling open(IN:codec[%d], IN:secure[%s], IN:controllerListener[%p], OUT:audioDecoderController[])", \
             codec, UT_Control_GetMapString(bool_mapTable, secure), controllerListener); \
         status = audioDecoder->open(codec, secure, controllerListener, &audioDecoderController); \
-        UT_LOG_INFO("Result open(IN:codec[%d], IN:secure[%s], IN:controllerListener[0x%p], OUT:audioDecoderController[0x%X]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_INFO("Result open(IN:codec[%d], IN:secure[%s], IN:controllerListener[%p], OUT:audioDecoderController[0x%X]), status:[isOK:%s, exception:%s]", \
             codec, UT_Control_GetMapString(bool_mapTable, secure), controllerListener, audioDecoderController.get(), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -287,9 +287,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling close(IN:audioDecoderController[0x%p], OUT:_aidl_return[])", audioDecoderController.get()); \
+        UT_LOG_INFO("Calling close(IN:audioDecoderController[%p], OUT:_aidl_return[])", audioDecoderController.get()); \
         status = audioDecoder->close(audioDecoderController, &_aidl_return); \
-        UT_LOG_INFO("Result close(IN:audioDecoderController[0x%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_INFO("Result close(IN:audioDecoderController[%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
             audioDecoderController.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -308,9 +308,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling close(IN:audioDecoderController[0x%p], OUT:_aidl_return[])", audioDecoderController.get()); \
+        UT_LOG_INFO("Calling close(IN:audioDecoderController[%p], OUT:_aidl_return[])", audioDecoderController.get()); \
         status = audioDecoder->close(audioDecoderController, &_aidl_return); \
-        UT_LOG_INFO("Result close(IN:audioDecoderController[0x%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_INFO("Result close(IN:audioDecoderController[%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
             audioDecoderController.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -323,9 +323,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling registerEventListener(IN:eventListener[0x%p], OUT:_aidl_return[])", eventListener.get()); \
+        UT_LOG_INFO("Calling registerEventListener(IN:eventListener[%p], OUT:_aidl_return[])", eventListener.get()); \
         status = audioDecoder->registerEventListener(eventListener, &_aidl_return); \
-        UT_LOG_INFO("Result registerEventListener(IN:eventListener[0x%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_INFO("Result registerEventListener(IN:eventListener[%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
             eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -338,9 +338,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling registerEventListener(IN:eventListener[0x%p], OUT:_aidl_return[])", eventListener.get()); \
+        UT_LOG_INFO("Calling registerEventListener(IN:eventListener[%p], OUT:_aidl_return[])", eventListener.get()); \
         status = audioDecoder->registerEventListener(eventListener, &_aidl_return); \
-        UT_LOG_INFO("Result registerEventListener(IN:eventListener[0x%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_INFO("Result registerEventListener(IN:eventListener[%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
             eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -356,9 +356,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling unregisterEventListener(IN:eventListener[0x%p], OUT:_aidl_return[])", eventListener.get()); \
+        UT_LOG_INFO("Calling unregisterEventListener(IN:eventListener[%p], OUT:_aidl_return[])", eventListener.get()); \
         status = audioDecoder->unregisterEventListener(eventListener, &_aidl_return); \
-        UT_LOG_INFO("Result unregisterEventListener(IN:eventListener[0x%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_INFO("Result unregisterEventListener(IN:eventListener[%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
             eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -371,9 +371,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling unregisterEventListener(IN:eventListener[0x%p], OUT:_aidl_return[])", eventListener.get()); \
+        UT_LOG_INFO("Calling unregisterEventListener(IN:eventListener[%p], OUT:_aidl_return[])", eventListener.get()); \
         status = audioDecoder->unregisterEventListener(eventListener, &_aidl_return); \
-        UT_LOG_INFO("Result unregisterEventListener(IN:eventListener[0x%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_INFO("Result unregisterEventListener(IN:eventListener[%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
             eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -679,6 +679,7 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         } \
     } while (0)
 
+/* Stream metadata */
 struct AudioMetatData
 {
     Codec sourceCodec;
@@ -696,6 +697,7 @@ struct AudioMetatData
     AVSource source;
 };
 
+/* Decoded Frame details */
 typedef struct DecodedAudioFrame
 {
     vector<uint8_t> data;
@@ -706,6 +708,7 @@ typedef struct DecodedAudioFrame
     chrono::steady_clock::time_point receiveTime;
 }DecodedAudioFrame_t;
 
+/* Input frame to decoder */
 typedef struct InputAudioFrame
 {
     int64_t framePTS;
@@ -713,6 +716,7 @@ typedef struct InputAudioFrame
     chrono::steady_clock::time_point sendTime;
 }InputAudioFrame_t;
 
+/* Error frame details */
 typedef struct ErrorDetails
 {
     ErrorCode vendorErrorCode;
@@ -720,236 +724,69 @@ typedef struct ErrorDetails
     chrono::steady_clock::time_point receiveTime;
 }ErrorDetails_t;
 
+/* Contoller Listener Class */
 class AudioDecoderControllerListener : public BnAudioDecoderControllerListener
 {
-    public:
-        AudioDecoderControllerListener() : BnAudioDecoderControllerListener(), mShutdownFlag(false){}
-        virtual ~AudioDecoderControllerListener() = default;
+public:
+    AudioDecoderControllerListener() : BnAudioDecoderControllerListener(), mShutdownFlag(false){}
+    virtual ~AudioDecoderControllerListener() = default;
 
-        // Convert vector to comma-separated string
-        string formatChannelVector(const std::vector<ChannelType>& channels)
-        {
-            std::ostringstream oss;
-            for (size_t i = 0; i < channels.size(); ++i) {
-                oss << audiodecoder::toString(channels[i]);
-                if (i != channels.size() - 1) oss << ", ";
-            }
-            return oss.str();
-        }
+    string formatChannelVector(const std::vector<ChannelType>& channels);
 
-        Status onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::optional<FrameMetadata>& metadata) override
-        {
-            UT_LOG_INFO("[DecoderID: %d] onFrameOutput: Received frameoutput [PTS:%lld, handle: %llX]", mDecoderID, nsPresentationTime, frameBufferHandle);
+    Status onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::optional<FrameMetadata>& metadata) override;
 
-            DecodedAudioFrame_t frame;
-            frame.receiveTime = chrono::steady_clock::now();
-            frame.framePTS = nsPresentationTime;
+    bool getNextFrame(DecodedAudioFrame_t &frameInfo, bool popFrame);
 
-            frame.isTunnel = false;
-            if (frameBufferHandle == -1)
-            {
-                frame.isTunnel = true;
-            }
-            frame.isMetaAvailable = false;
-            if (metadata.has_value())
-            {
-                UT_LOG_INFO("[DecoderID: %d] Stream Details [Codec: %s, SampleRate: %d, Channels: %d, channelType: [%s] format: %s planarFormat: %s, isDolbyAtom: %s]",
-                            mDecoderID, audiodecoder::toString(metadata->sourceCodec).c_str(), metadata->sampleRate, metadata->numChannels,
-                            formatChannelVector(metadata->channelTypes).c_str(), audiodecoder::toString(metadata->format).c_str(),
-                            UT_Control_GetMapString(bool_mapTable, metadata->planarFormat), UT_Control_GetMapString(bool_mapTable, metadata->isDolbyAtmos));
-                UT_LOG_INFO("[DecoderID: %d] Control Parameters [PTS: %lld, discontinuity: %d, EOS: %d, LowLatency: %d, Source: %d, Trim(%lld-%lld)]",
-                            mDecoderID, nsPresentationTime, metadata->discontinuity, metadata->endOfStream, metadata->lowLatency,
-                            metadata->source, metadata->trimStartNs, metadata->trimEndNs);
-
-                frame.isMetaAvailable = true;
-                frame.metadata.sourceCodec = metadata->sourceCodec;
-                frame.metadata.isDolbyAtmos = metadata->isDolbyAtmos;
-                frame.metadata.numChannels = metadata->numChannels;
-                frame.metadata.channelTypes = metadata->channelTypes;
-                frame.metadata.sampleRate = metadata->sampleRate;
-                frame.metadata.format = metadata->format;
-                frame.metadata.planarFormat = metadata->planarFormat;
-                frame.metadata.trimStartNs = metadata->trimStartNs;
-                frame.metadata.trimEndNs = metadata->trimEndNs;
-                frame.metadata.lowLatency = metadata->lowLatency;
-                frame.metadata.endOfStream = metadata->endOfStream;
-                frame.metadata.discontinuity = metadata->discontinuity;
-                frame.metadata.source = metadata->source;
-            }
-            {
-                lock_guard<mutex> lock(mQueueMutex);
-                mFrameQueue.push(frame);
-            }
-
-            mFrameAvailable.notify_one();
-
-            return ::android::binder::Status::ok();
-        }
-#define MAX_WAIT_TIME 500
-        bool getNextFrame(DecodedAudioFrame_t &frameInfo, bool popFrame)
-        {
-            DecodedAudioFrame_t frame;
-            int32_t count = 0;
-            //TODO: change waiting mechanism
-            while (mFrameQueue.empty())
-            {
-                //mFrameAvailable.wait(lock);
-                this_thread::sleep_for(chrono::milliseconds(1));
-                count++;
-                if(count > MAX_WAIT_TIME)
-                {
-                    UT_LOG_ERROR("Decoded frame not received after %d msec", MAX_WAIT_TIME);
-                    return false;
-                }
-            }
-            {
-                unique_lock<std::mutex> lock(mQueueMutex);
-                frame = mFrameQueue.front();
-                if (popFrame)
-                    mFrameQueue.pop();
-            }
-
-            frameInfo = frame;
-            return true;
-        }
-
-
-        void shutdown()
-        {
-            mShutdownFlag = true;
-            mFrameAvailable.notify_all();
-        }
-        void setDecoderID(int32_t id)
-        {
-            mDecoderID = id;
-        }
-    private:
-        queue<DecodedAudioFrame_t> mFrameQueue;
-        mutex mQueueMutex;
-        condition_variable mFrameAvailable;
-        atomic<bool> mShutdownFlag;
-        int32_t mDecoderID;
+    void shutdown();
+    void setDecoderID(int32_t id);
+private:
+    queue<DecodedAudioFrame_t> mFrameQueue;
+    mutex mQueueMutex;
+    condition_variable mFrameAvailable;
+    atomic<bool> mShutdownFlag;
+    int32_t mDecoderID;
 };
 
+/* Event Listener Class */
 class AudioDecoderEventListener : public BnAudioDecoderEventListener
 {
-    public:
-        AudioDecoderEventListener(): mCurrentState(State::CLOSED) {}
-        virtual ~AudioDecoderEventListener() = default;
+public:
+    AudioDecoderEventListener(): mCurrentState(State::CLOSED) {}
+    virtual ~AudioDecoderEventListener() = default;
 
-        Status onDecodeError(ErrorCode vendorErrorCode, int32_t errorCode) override
-        {
-            ErrorDetails_t errorDetails;
-            errorDetails.receiveTime = chrono::steady_clock::now();
+    Status onDecodeError(ErrorCode vendorErrorCode, int32_t errorCode) override;
 
-            UT_LOG_INFO("[DecoderID: %d] Error Callback: Vendor Error Code: %s, errorCode: %d", mDecoderID, audiodecoder::toString(vendorErrorCode).c_str(), errorCode);
+    Status onStateChanged(State oldState,State newState) override;
 
-            errorDetails.errorCode = errorCode;
-            errorDetails.vendorErrorCode = vendorErrorCode;
+    bool getNextError(ErrorDetails_t &errorDetails);
 
-            lock_guard<mutex> lock(mErrorMutex);
-            mErrors.push(errorDetails);
-            return Status::ok();
-        }
-        Status onStateChanged(State oldState,State newState) override
-        {
-            UT_LOG_INFO("[DecoderID: %d] State Change received: %s -> %s", mDecoderID, com::rdk::hal::toString(oldState).c_str(), com::rdk::hal::toString(newState).c_str());
-            {
-                lock_guard<mutex> lock(mMutex);
-                mStateChanges.emplace_back(oldState, newState);
-                mCurrentState = newState;
-            }
-            mCV.notify_all(); // Unblock any waiting test code
-            return Status::ok();
-        }
-#define MAX_WAIT_TIME 300
-        bool getNextError(ErrorDetails_t &errorDetails)
-        {
-            int32_t count = 0;
-            ErrorDetails_t err;
-            while (mErrors.empty())
-            {
-                //mFrameAvailable.wait(lock);
-                this_thread::sleep_for(chrono::milliseconds(1));
-                count++;
-                if(count > MAX_WAIT_TIME)
-                {
-                    UT_LOG_ERROR("Error event not received after %d msec", MAX_WAIT_TIME);
-                    return false;
-                }
-            }
-            {
-                unique_lock<std::mutex> lock(mErrorMutex);
-                err = mErrors.front();
-                mErrors.pop();
-            }
+    /**
+     * Wait for the decoder to reach a particular State within a given timeout.
+     *
+     * @param desiredState The state we want to observe.
+     * @param timeout      How long to wait, e.g. chrono::milliseconds(500).
+     * @return true if the state was reached; false if we timed out waiting.
+     */
+    bool waitForState(State desiredState, chrono::milliseconds timeout);
 
-            errorDetails = err;
-            return true;
-        }
-        /**
-         * Wait for the decoder to reach a particular State within a given timeout.
-         *
-         * @param desiredState The state we want to observe.
-         * @param timeout      How long to wait, e.g. chrono::milliseconds(500).
-         * @return true if the state was reached; false if we timed out waiting.
-         */
-        bool waitForState(State desiredState, chrono::milliseconds timeout)
-        {
-            unique_lock<mutex> lock(mMutex);
-            // Wait until mCurrentState == desiredState or until timeout
-            return mCV.wait_for(lock, timeout, [this, desiredState]() {
-                return (mCurrentState == desiredState);
-            });
-        }
-        // Accessors for test verifications if desired
-        vector<pair<State, State>> getStateChanges() const
-        {
-            lock_guard<mutex> lock(mMutex);
-            return mStateChanges;
-        }
+    // Accessors for test verifications if desired
+    vector<pair<State, State>> getStateChanges() const;
 
-        void resetStateChanges()
-        {
-            lock_guard<mutex> lock(mMutex);
-            mStateChanges.clear();
-        }
+    void resetStateChanges();
 
-        bool checkStateTransistion(State expOldState, State expNewState)
-        {
-            bool foundClosedToOpening = false;
-            for (const auto &[oldState, newState] : mStateChanges)
-            {
-                if (oldState == expOldState && newState == expNewState)
-                {
-                    foundClosedToOpening = true;
-                    break;
-                }
-            }
-            return foundClosedToOpening;
-        }
+    bool checkStateTransistion(State expOldState, State expNewState);
 
-        void resetErrors()
-        {
-            lock_guard<mutex> lock(mErrorMutex);
-            while (!mErrors.empty())
-            {
-                mErrors.pop();
-            }
-        }
-        void setDecoderID(int32_t id)
-        {
-            mDecoderID = id;
-        }
-    private:
-        mutable mutex mMutex;
-        mutable mutex mErrorMutex;
-        condition_variable mCV;
+    void resetErrors();
+    void setDecoderID(int32_t id);
+private:
+    mutable mutex mMutex;
+    mutable mutex mErrorMutex;
+    condition_variable mCV;
 
-        State mCurrentState;
-        vector<pair<State, State>> mStateChanges;
-        queue<ErrorDetails_t> mErrors;
-        int32_t mDecoderID;
+    State mCurrentState;
+    vector<pair<State, State>> mStateChanges;
+    queue<ErrorDetails_t> mErrors;
+    int32_t mDecoderID;
 };
 
 #endif //__VTS_AUDIODECODER_H__

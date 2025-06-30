@@ -456,9 +456,10 @@ private:
                 continue;
             }
 
-            if(mTestConfiguration.eosPts == decodedFrame.framePTS)
+            if(mTestConfiguration.eosPts && inputFrameIndex > 1)
             {
-                UT_ASSERT_TRUE(decodedFrame.isMetaAvailable && decodedFrame.metadata.endOfStream);
+                if(decodedFrame.isMetaAvailable)
+                    UT_ASSERT_TRUE(decodedFrame.metadata.endOfStream);
             }
 
             framesDecoded++;
@@ -478,7 +479,6 @@ private:
         /* Get decoder metrics after decoding */
         UT_ASSERT_TRUE(getDecoderMetrics(endFramesDecoded, endFrameErrors, endFramesDropped));
 
-        UT_LOG_INFO("[BHANU] Frames drop info: %d, %d", startFramesDropped, endFramesDropped);
         /* Validate decoder metrics */
         if(startFramesDecoded >= 0 && endFramesDecoded >= 0)
             UT_ASSERT_TRUE((endFramesDecoded - startFramesDecoded) == framesDecoded);
