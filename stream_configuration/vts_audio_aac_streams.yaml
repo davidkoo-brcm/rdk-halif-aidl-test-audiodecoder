@@ -8,16 +8,16 @@ AudioStreams:
     format: S16LE # `pcm` format of the reference stream. Refer `PCMFormat` enum
     num_of_frames: 10 #Total number of frames in the stream
     frame_size: #Byte size for each frame, listed in order
-      - 184
-      - 508
-      - 593
-      - 384
-      - 330
-      - 335
-      - 311
-      - 301
-      - 360
-      - 288
+      - 414
+      - 452
+      - 394
+      - 460
+      - 445
+      - 480
+      - 481
+      - 461
+      - 497
+      - 494
 
   tones_11_025k_2_64_aac:
     input: tones_11.025k_2_64.aac

@@ -442,7 +442,7 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         UT_ASSERT_FALSE(status.isOk()); \
     } while (0)
 
-#define AUDIODECODER_DECODEBUFFER_SUCCESS(decoderID, audioDecoderController, nsPresentationTime, bufferHandle, trimEndNs, trimStartNs) \
+#define AUDIODECODER_DECODEBUFFER_SUCCESS(decoderID, audioDecoderController, nsPresentationTime, bufferHandle, trimStartNs, trimEndNs) \
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
@@ -457,7 +457,7 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
-#define AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, nsPresentationTime, bufferHandle, trimEndNs, trimStartNs, exception) \
+#define AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, exception) \
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \

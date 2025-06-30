@@ -366,10 +366,12 @@ private:
             }
 
             /* Free the audio buffer */
+            gAVbufferHelper->unmapHandle(audioBufferHandle);
             AVBUFFER_FREE_SUCCESS(mAVBufferManager, audioBufferHandle);
 
             /* wait time to next frames */
-            this_thread::sleep_for(chrono::milliseconds(mTestConfiguration.decoderDelay));
+            if(mTestConfiguration.decoderDelay > 0)
+                this_thread::sleep_for(chrono::milliseconds(mTestConfiguration.decoderDelay));
         }
 
         /* Validate the decoder */
@@ -456,7 +458,7 @@ private:
                 continue;
             }
 
-            if(mTestConfiguration.eosPts && inputFrameIndex > 1)
+            if(mTestConfiguration.eosPts > 0 && inputFrameIndex > 1)
             {
                 if(decodedFrame.isMetaAvailable)
                     UT_ASSERT_TRUE(decodedFrame.metadata.endOfStream);
@@ -676,7 +678,6 @@ public:
             }
         }
     }
-
 
     void TearDown() override
     {

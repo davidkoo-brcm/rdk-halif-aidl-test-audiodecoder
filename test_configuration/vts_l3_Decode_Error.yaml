@@ -27,7 +27,7 @@ IAudioDecoderManager:
               - 0 #Start in Nano seconds
               - 0 #End
             rms_diff_threshold: 0.5 #Maximum allowed `rms` difference for output validation
-            decode_time_threshold: 10000000 #Time budget per frame for decoding, in nanoseconds
+            decode_time_threshold: 100000 #Time budget per frame for decoding, in nanoseconds
           - Name: tones_48k_2_256_random_aac
             PTS:
               - 0
@@ -44,7 +44,7 @@ IAudioDecoderManager:
               - 0
               - 0
             rms_diff_threshold: 0.5
-            decode_time_threshold: 10000000
+            decode_time_threshold: 100000
           - Name: tones_48k_2_256_sync_aac
             PTS:
               - 0
@@ -61,7 +61,7 @@ IAudioDecoderManager:
               - 0
               - 0
             rms_diff_threshold: 0.5
-            decode_time_threshold: 10000000
+            decode_time_threshold: 100000
           - Name: tones_48k_2_256_zero_aac
             PTS:
               - 0
@@ -78,7 +78,7 @@ IAudioDecoderManager:
               - 0
               - 0
             rms_diff_threshold: 0.5
-            decode_time_threshold: 10000000
+            decode_time_threshold: 100000
           - Name: tones_48k_2_256_header_fields_aac
             PTS:
               - 0
@@ -95,7 +95,7 @@ IAudioDecoderManager:
               - 0
               - 0
             rms_diff_threshold: 0.5
-            decode_time_threshold: 10000000
+            decode_time_threshold: 100000
           - Name: tones_48k_2_256_incomplete_aac
             PTS:
               - 0
@@ -112,7 +112,7 @@ IAudioDecoderManager:
               - 0
               - 0
             rms_diff_threshold: 0.5
-            decode_time_threshold: 10000000
+            decode_time_threshold: 100000
 ####### AC3 Streams ##############
           - Name: tones_48k_2_192_header_ac3
             PTS:
@@ -130,7 +130,7 @@ IAudioDecoderManager:
               - 0
               - 0
             rms_diff_threshold: 0.5
-            decode_time_threshold: 10000000
+            decode_time_threshold: 100000
           - Name: tones_48k_2_192_sync_ac3
             PTS:
               - 123456
@@ -147,7 +147,7 @@ IAudioDecoderManager:
               - 0
               - 0
             rms_diff_threshold: 0.5
-            decode_time_threshold: 10000000
+            decode_time_threshold: 100000
           - Name: tones_48k_2_192_zero_ac3
             PTS:
               - 123456
@@ -164,7 +164,7 @@ IAudioDecoderManager:
               - 0
               - 0
             rms_diff_threshold: 0.5
-            decode_time_threshold: 10000000
+            decode_time_threshold: 100000
           - Name: tones_48k_2_192_random_ac3
             PTS:
               - 123456
@@ -181,7 +181,7 @@ IAudioDecoderManager:
               - 0
               - 0
             rms_diff_threshold: 0.5
-            decode_time_threshold: 10000000
+            decode_time_threshold: 100000
           - Name: tones_48k_2_192_incomplete_ac3
             PTS:
               - 123456
@@ -198,4 +198,4 @@ IAudioDecoderManager:
               - 0
               - 0
             rms_diff_threshold: 0.5
-            decode_time_threshold: 10000000
+            decode_time_threshold: 100000
