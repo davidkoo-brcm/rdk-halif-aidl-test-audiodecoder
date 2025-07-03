@@ -101,19 +101,20 @@ void vts_kvp_destroy_instance(void *instance)
     ut_kvp_destroyInstance((ut_kvp_instance_t*)instance);
 }
 
-UT_status_t vts_audiodeccoder_parse_testconfig(void* pTestInstance, const char *module, const char *testGroup, const char *testName, vector<testConfiguration_t>& testConfiguration)
+UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *module, const char *testGroup, const char *testName, vector<testConfiguration_t>& testConfiguration)
 {
     ut_kvp_status_t status;
     ut_kvp_instance_t* kvpTestInstance = (ut_kvp_instance_t*)pTestInstance;
     char streamInputPath[UT_KVP_MAX_ELEMENT_SIZE] = {0};
     char streamRefPath[UT_KVP_MAX_ELEMENT_SIZE] = {0};
     int32_t streamCount = 0;
-    filesystem::path currentPath = filesystem::current_path();
     filesystem::path fullPath;
-    string testList = string(module) + "." + string(testGroup) + "." + string(testName);
-    string controlList = testList + "." + "Controls";
-    string streamList = testList + "." + "Inputs" + "." + string("Streams");
-    string streamsDetails = string("AudioStreams");
+
+    const filesystem::path currentPath = filesystem::current_path();
+    const string testList = string(module) + "." + string(testGroup) + "." + string(testName);
+    const string controlList = testList + "." + "Controls";
+    const string streamList = testList + "." + "Inputs" + "." + string("Streams");
+    const string streamsDetails = string("AudioStreams");
 
     status = ut_kvp_getStringField(kvpTestInstance, STREAM_INPUT_PATH, streamInputPath, UT_KVP_MAX_ELEMENT_SIZE);
     status = ut_kvp_getStringField(kvpTestInstance, STREAM_REF_PATH, streamRefPath, UT_KVP_MAX_ELEMENT_SIZE);
@@ -207,7 +208,7 @@ UT_status_t vts_audiodeccoder_parse_testconfig(void* pTestInstance, const char *
         testDetails.decodeTime = ut_kvp_getDoubleField(kvpTestInstance, decodeTime.c_str());
         testDetails.trimStartNs  = ut_kvp_getUInt64Field(kvpTestInstance, trimStart.c_str());
         testDetails.trimEndNs    = ut_kvp_getUInt64Field(kvpTestInstance, trimEnd.c_str());
-        testDetails.decoderDelay = ut_kvp_getUInt32Field(kvpTestInstance, numOfFrames.c_str());
+        testDetails.decoderDelay = ut_kvp_getUInt32Field(kvpTestInstance, decoderDelay.c_str());
         testDetails.stopPts      = ut_kvp_getUInt64Field(kvpTestInstance, stopPts.c_str());
         testDetails.discontinuityPts = ut_kvp_getUInt64Field(kvpTestInstance, discontinuityPts.c_str());
         testDetails.flushPts     = ut_kvp_getUInt64Field(kvpTestInstance, flushPts.c_str());

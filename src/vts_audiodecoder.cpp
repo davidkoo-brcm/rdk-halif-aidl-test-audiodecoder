@@ -96,7 +96,9 @@
 using namespace std::chrono;
 using namespace std;
 
-#define MAX_WAIT_TIME 500
+#define MAX_WAIT_TIME 200
+
+/* Controller listener Class Functions */
 
 /**
  * Convert vector to comma-separated string
@@ -181,28 +183,26 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
  */
 bool AudioDecoderControllerListener::getNextFrame(DecodedAudioFrame_t &frameInfo, bool popFrame)
 {
-    DecodedAudioFrame_t frame;
-    int32_t count = 0;
-    //TODO: change waiting mechanism
-    while (mFrameQueue.empty())
+    std::unique_lock<std::mutex> lock(mQueueMutex);
+
+    // Wait until queue is not empty or timeout occurs
+    bool gotFrame = mFrameAvailable.wait_for(
+        lock,
+        std::chrono::milliseconds(MAX_WAIT_TIME),
+        [this]() { return !mFrameQueue.empty(); }
+    );
+
+    if (!gotFrame)
     {
-        //mFrameAvailable.wait(lock);
-        this_thread::sleep_for(chrono::milliseconds(1));
-        count++;
-        if(count > MAX_WAIT_TIME)
-        {
-            UT_LOG_ERROR("Decoded frame not received after %d msec", MAX_WAIT_TIME);
-            return false;
-        }
-    }
-    {
-        unique_lock<std::mutex> lock(mQueueMutex);
-        frame = mFrameQueue.front();
-        if (popFrame)
-            mFrameQueue.pop();
+        UT_LOG_ERROR("Decoded frame not received after %d msec", MAX_WAIT_TIME);
+        return false;
     }
 
-    frameInfo = frame;
+    frameInfo = mFrameQueue.front();
+    if (popFrame) {
+        mFrameQueue.pop();
+    }
+
     return true;
 }
 
@@ -229,6 +229,8 @@ void AudioDecoderControllerListener::setDecoderID(int32_t id)
     mDecoderID = id;
 }
 
+/* Event listener Class Functions */
+
 /**
  * Override Call-back funtion for decoder errors
  *
@@ -246,8 +248,11 @@ Status AudioDecoderEventListener::onDecodeError(ErrorCode vendorErrorCode, int32
     errorDetails.errorCode = errorCode;
     errorDetails.vendorErrorCode = vendorErrorCode;
 
-    lock_guard<mutex> lock(mErrorMutex);
-    mErrors.push(errorDetails);
+    {
+        lock_guard<mutex> lock(mErrorMutex);
+        mErrors.push(errorDetails);
+    }
+    mErrorAvailable.notify_one();
     return Status::ok();
 }
 
@@ -278,26 +283,22 @@ Status AudioDecoderEventListener::onStateChanged(State oldState,State newState)
  */
 bool AudioDecoderEventListener::getNextError(ErrorDetails_t &errorDetails)
 {
-    int32_t count = 0;
-    ErrorDetails_t err;
-    while (mErrors.empty())
-    {
-        //mFrameAvailable.wait(lock);
-        this_thread::sleep_for(chrono::milliseconds(1));
-        count++;
-        if(count > MAX_WAIT_TIME)
-        {
-            UT_LOG_ERROR("Error event not received after %d msec", MAX_WAIT_TIME);
-            return false;
-        }
-    }
-    {
-        unique_lock<std::mutex> lock(mErrorMutex);
-        err = mErrors.front();
-        mErrors.pop();
+    std::unique_lock<std::mutex> lock(mErrorMutex);
+
+    bool gotError = mErrorAvailable.wait_for(
+        lock,
+        std::chrono::milliseconds(MAX_WAIT_TIME),
+        [this]() { return !mErrors.empty(); }
+    );
+
+    if (!gotError) {
+        UT_LOG_ERROR("Error event not received after %d msec", MAX_WAIT_TIME);
+        return false;
     }
 
-    errorDetails = err;
+    errorDetails = mErrors.front();
+    mErrors.pop();
+
     return true;
 }
 
@@ -315,19 +316,6 @@ bool AudioDecoderEventListener::waitForState(State desiredState, chrono::millise
     return mCV.wait_for(lock, timeout, [this, desiredState]() {
         return (mCurrentState == desiredState);
     });
-}
-
-
-/**
- * Gets the state changes received from onStateChanged.
- *
- * @param None.
- * @return vector of old and new states
- */
-vector<pair<State, State>> AudioDecoderEventListener::getStateChanges() const
-{
-    lock_guard<mutex> lock(mMutex);
-    return mStateChanges;
 }
 
 /**

@@ -122,6 +122,10 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define MAX_TRANSITORY_STATE_WAIT_MS  5
 #define MAX_FINAL_STATE_WAIT_MS  500
 
+#ifdef DISABLE_UT_INFO_LOGGING
+#define UT_LOG_INFO(...)
+#endif
+
 #define AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds) \
     do { \
         ::android::binder::Status status; \
@@ -769,9 +773,6 @@ public:
      */
     bool waitForState(State desiredState, chrono::milliseconds timeout);
 
-    // Accessors for test verifications if desired
-    vector<pair<State, State>> getStateChanges() const;
-
     void resetStateChanges();
 
     bool checkStateTransistion(State expOldState, State expNewState);
@@ -785,6 +786,7 @@ private:
 
     State mCurrentState;
     vector<pair<State, State>> mStateChanges;
+    condition_variable mErrorAvailable;
     queue<ErrorDetails_t> mErrors;
     int32_t mDecoderID;
 };

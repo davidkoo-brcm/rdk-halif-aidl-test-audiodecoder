@@ -147,6 +147,7 @@ VTS_L2_AudioDecoder() : UTCore() {}
         {
             /* Un-register the events */
             AUDIODECODER_UNREGISTER_EVENT_SUCCESS(decoder, eventListener);
+            delete capabilities;
         }
         mAudioDecoderList.clear();
         //TODO: check right place to call joinThreadPool
