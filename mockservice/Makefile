@@ -39,51 +39,6 @@ VIDEO_DECODER_AIDL_GEN_DIR ?= $(BUILD_DIR)/videodecoder_gen/current
 
 MOCK_SERVICE_DIR ?= $(CURDIR)/src
 
-AVBUFFER_AIDL_SRC += ${AV_BUFFER_AIDL_GEN_DIR}/cpp/com/rdk/hal/avbuffer/HeapMetrics.cpp
-AVBUFFER_AIDL_SRC += ${AV_BUFFER_AIDL_GEN_DIR}/cpp/com/rdk/hal/avbuffer/IAVBuffer.cpp
-AVBUFFER_AIDL_SRC += ${AV_BUFFER_AIDL_GEN_DIR}/cpp/com/rdk/hal/avbuffer/IAVBufferSpaceListener.cpp
-AVBUFFER_AIDL_SRC += ${AV_BUFFER_AIDL_GEN_DIR}/cpp/com/rdk/hal/avbuffer/Pool.cpp
-AVBUFFER_AIDL_SRC += ${AV_BUFFER_AIDL_GEN_DIR}/cpp/com/rdk/hal/avbuffer/PoolMetrics.cpp
-
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/AVSource.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/HALError.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/PropertyValue.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/State.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/Capabilities.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/ChannelType.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/Codec.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/CSDAudioFormat.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/ErrorCode.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/FrameMetadata.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/IAudioDecoderController.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/IAudioDecoderControllerListener.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/IAudioDecoder.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/IAudioDecoderEventListener.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/IAudioDecoderManager.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/PCMFormat.cpp
-AUDIODECODER_AIDL_SRC += ${AIDL_GEN_DIR}/cpp/com/rdk/hal/audiodecoder/Property.cpp
-
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/AVSource.cpp
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/PropertyValue.cpp
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/State.cpp
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodecoder/Capabilities.cpp
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodecoder/CodecCapabilities.cpp
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodecoder/Codec.cpp
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodecoder/CSDVideoFormat.cpp
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodecoder/DynamicRange.cpp
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodecoder/ErrorCode.cpp
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodecoder/FrameMetadata.cpp
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodecoder/IVideoDecoderController.cpp
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodecoder/IVideoDecoderControllerListener.cpp
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodecoder/IVideoDecoder.cpp
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodecoder/IVideoDecoderEventListener.cpp
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodecoder/IVideoDecoderManager.cpp
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodecoder/OperationalMode.cpp
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodecoder/PixelFormat.cpp
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodecoder/Property.cpp
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodecoder/PropertyKVPair.cpp
-VIDEODECODER_AIDL_SRC += $(VIDEO_DECODER_AIDL_GEN_DIR)/cpp/com/rdk/hal/videodecoder/ScanType.cpp
-
 MOCK_SERVICE_BIN_SRC := $(MOCK_SERVICE_DIR)/AudioDecoderService.cpp
 MOCK_SERVICE_BIN_SRC += $(MOCK_SERVICE_DIR)/AudioDecoder.cpp
 
@@ -104,18 +59,8 @@ AUDIODECODER_AIDL_LIB := $(BUILD_DIR)/usr/lib/$(AUDIODECODER_AIDL_LIB)
 VIDEODECODER_AIDL_LIB := $(BUILD_DIR)/usr/lib/$(VIDEODECODER_AIDL_LIB)
 MOCK_SERVICE_BIN := $(BUILD_DIR)/usr/lib/$(MOCK_SERVICE_BIN)
 
-all: $(MOCK_SERVICE_BIN) $(AVBUFFER_AIDL_LIB) $(VIDEODECODER_AIDL_LIB) $(AUDIODECODER_AIDL_LIB)
+all: $(MOCK_SERVICE_BIN)
 
-$(AUDIODECODER_AIDL_LIB): $(AUDIODECODER_AIDL_SRC:%.cpp=%.o)
-	g++ -shared $(MOCK_SERVICE_LDFLAGS) $^ -o $@ $(MOCK_SERVICE_LD_LIBS)
-
-$(VIDEODECODER_AIDL_LIB): $(VIDEODECODER_AIDL_SRC:%.cpp=%.o) $(COMMON_AIDL_GEN_SRC:%.cpp=%.o)
-	g++ -shared $(MOCK_SERVICE_LDFLAGS) $^ -o $@ $(MOCK_SERVICE_LD_LIBS)
-
-$(AVBUFFER_AIDL_LIB): $(AVBUFFER_AIDL_SRC:%.cpp=%.o) $(COMMON_AIDL_GEN_SRC:%.cpp=%.o)
-	g++ -shared $(MOCK_SERVICE_LDFLAGS) $^ -o $@ $(MOCK_SERVICE_LD_LIBS)
-
-$(MOCK_SERVICE_BIN): $(AUDIODECODER_AIDL_LIB)
 $(MOCK_SERVICE_BIN): $(MOCK_SERVICE_BIN_SRC:%.cpp=%.o)
 	g++ $(MOCK_SERVICE_LDFLAGS) \
 		$(MOCK_SERVICE_BIN_SRC:%.cpp=%.o) -o $@ \
