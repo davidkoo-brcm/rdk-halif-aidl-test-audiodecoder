@@ -76,6 +76,7 @@
 
 #include "vts_audiodecoder_helper_functions.h"
 #include "vts_audiodecoder_parse_hfp.h"
+#include "vts_audiodecoder_parse_testconfig.h"
 #include "vts_audiodecoder.h"
 
 /* Test class registration with UT_Core */

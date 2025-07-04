@@ -71,7 +71,7 @@
 
 UT_status_t vts_audiodecoder_getAudioDecoderService();
 sp<IAudioDecoderManager> gAudioDecoderManager;
-void *gTestConfiguration;
+void *gAudioDecoderTestConfiguration;
 
 UT_status_t VTS_AudioDecoder_init()
 {
@@ -84,14 +84,14 @@ UT_status_t VTS_AudioDecoder_init()
         UT_LOG_ERROR("Failed to process the HFP file");
         return UT_STATUS_FAILURE;
     }
-    gTestConfiguration = vts_kvp_create_instance(VTS_TEST_CONFIG_PATH);
+    gAudioDecoderTestConfiguration = vts_kvp_create_instance(VTS_TEST_CONFIG_PATH);
 
     return UT_STATUS_OK;
 }
 
 void VTS_AudioDecoder_destroy()
 {
-    vts_kvp_destroy_instance(gTestConfiguration);
+    vts_kvp_destroy_instance(gAudioDecoderTestConfiguration);
 }
 
 /** @} */ // End of AUDIO_DECODER_HALTEST_INIT

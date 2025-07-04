@@ -91,7 +91,7 @@ using namespace com::rdk::hal::audiodecoder;
 using namespace com::rdk::hal::avbuffer;
 
 extern sp<IAudioDecoderManager> gAudioDecoderManager;
-extern void *gTestConfiguration;
+extern void *gAudioDecoderTestConfiguration;
 
 /* Status::Exception */
 const static ut_control_keyStringMapping_t statusException_mapTable[] =
@@ -683,6 +683,76 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         } \
     } while (0)
 
+#define AVBUFFER_CREATE_AUDIOPOOL_SUCCESS(avBufferManager, secureHeap, audioDecoderId, listener, audioPool) \
+    do { \
+        UT_LOG_INFO("Calling createAudioPool(IN:secureHeap:[%d], IN:audioDecoderId:[%d], IN:listener:[%p], OUT:audioPool)", \
+                    secureHeap, audioDecoderId.value, listener.get()); \
+        Status status = avBufferManager->createAudioPool(secureHeap, audioDecoderId, listener, &audioPool); \
+        UT_LOG_INFO("Result createAudioPool(IN:secureHeap:[%d], IN:audioDecoderId:[%d], IN:listener:[%p], OUT:audioPool.handle:[%d]), status:[isOK:%s, exception:%s]", \
+                    secureHeap, audioDecoderId.value, listener.get(), audioPool.handle, \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_NOT_EQUAL(audioPool.handle, Pool::INVALID); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+    } while (0)
+
+#define AVBUFFER_DESTROY_POOL_SUCCESS(avBufferManager, pool) \
+    do { \
+        bool _aidl_return = false; \
+        Status status; \
+        UT_LOG_INFO("Calling destroyPool(IN:poolHandle:[%d], OUT:_aidl_return:[])", pool); \
+        status = avBufferManager->destroyPool(pool, &_aidl_return); \
+        UT_LOG_INFO("Result destroyPool with (IN:poolHandle:[%d], OUT:_aidl_return:[%s]), status:[isOK:%s, exception:%s]", \
+                    pool.handle, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_TRUE(_aidl_return); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+    } while (0)
+
+#define AVBUFFER_ALLOC_SUCCESS(avBufferManager, pool, size, bufferHandle) \
+    do { \
+        UT_LOG_INFO("Calling alloc(IN:poolHandle:[%d], IN:size:[%d], OUT:bufferHandle)", pool.handle, size); \
+        Status status = avBufferManager->alloc(pool, size, &bufferHandle); \
+        UT_LOG_INFO("Result alloc(IN:poolHandle:[%d], IN:size:[%d], OUT:bufferHandle:[0x%X]), status:[isOK:%s, exception:%s]", \
+                    pool.handle, size, bufferHandle, UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_NOT_EQUAL(bufferHandle, IAVBuffer::INVALID_HANDLE); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+    } while (0)
+
+#define AVBUFFER_FREE_SUCCESS(avBufferManager, bufferHandle) \
+    do { \
+        bool _aidl_return = false; \
+        UT_LOG_INFO("Calling free(IN:bufferHandle:[0x%X], OUT:_aidl_return)", bufferHandle); \
+        Status status = avBufferManager->free(bufferHandle, &_aidl_return); \
+        UT_LOG_INFO("Result free(IN:bufferHandle:[0x%X], OUT:_aidl_return:[%s]), status:[isOK:%s, exception:%s]", \
+                    bufferHandle, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_TRUE(_aidl_return); \
+    } while (0)
+
+#define AVBUFFER_GETMETRICS(avBufferManager, secureHeap, heapMetrics) \
+    do { \
+        UT_LOG_INFO("Calling getHeapMetrics(IN:secureHeap:[%s], OUT:heapMetrics[])", \
+                    UT_Control_GetMapString(bool_mapTable, secureHeap)); \
+        Status status = avBufferManager->getHeapMetrics(secureHeap, &heapMetrics); \
+        UT_LOG_INFO("Result getHeapMetrics(IN:secureHeap:[%s], OUT:heapMetrics[secure:%s, bytesUsed:%d, bytesTotal:%d]), status:[isOK:%s, exception:%s]", \
+                    UT_Control_GetMapString(bool_mapTable, secureHeap), \
+                    UT_Control_GetMapString(bool_mapTable, heapMetrics.secure), \
+                    heapMetrics.bytesUsed, \
+                    heapMetrics.bytesTotal, \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+    } while (0)
+
 /* Stream metadata */
 struct AudioMetatData
 {
@@ -789,6 +859,43 @@ private:
     condition_variable mErrorAvailable;
     queue<ErrorDetails_t> mErrors;
     int32_t mDecoderID;
+};
+
+class DecoderTest
+{
+public:
+    DecoderTest(IAudioDecoder::Id decoderId, sp<IAudioDecoder> decoderHandle,
+                sp<AudioDecoderControllerListener> controlListener,
+                sp<AudioDecoderEventListener> eventListener,
+                sp<IAVBuffer> AVBufferManager, IAVBufferHelper* avbufferHelper,
+                bool secureDecode, testConfiguration_t config)
+    {
+        mDecoderId = decoderId;
+        mDecoderHandle = decoderHandle;
+        mControlListener = controlListener;
+        mSecureDecode = secureDecode;
+        mEventListener = eventListener;
+        mTestConfiguration = config;
+        mAVBufferManager = AVBufferManager;
+        mAVbufferHelper = avbufferHelper;
+    }
+
+    void run(bool validateMetrics);
+
+    bool getDecoderMetrics(int32_t &framesDecoded, int32_t &decodeErrors, int32_t &framesDropped);
+
+private:
+    IAudioDecoder::Id mDecoderId;
+    sp<IAudioDecoder> mDecoderHandle;
+    sp<AudioDecoderControllerListener> mControlListener;
+    sp<AudioDecoderEventListener> mEventListener;
+    sp<IAVBuffer> mAVBufferManager;
+    bool mSecureDecode;
+    testConfiguration_t mTestConfiguration;
+    deque<InputAudioFrame_t> mInputFrame;
+    IAVBufferHelper* mAVbufferHelper;
+
+    void decodeAndConsumeAudioStreams(bool validateMetrics);
 };
 
 #endif //__VTS_AUDIODECODER_H__
