@@ -268,7 +268,7 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         { \
             ::com::rdk::hal::State lastState; \
             AUDIODECODER_WAIT_FOR_STATE(audioDecoder, State::READY, lastState); \
-            UT_ASSERT_EQUAL(lastState, State::READY); \
+            UT_ASSERT_EQUAL_FATAL(lastState, State::READY); \
         } \
     } while (0)
 
@@ -304,7 +304,7 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         { \
             ::com::rdk::hal::State lastState; \
             AUDIODECODER_WAIT_FOR_STATE(audioDecoder, State::CLOSED, lastState); \
-            UT_ASSERT_EQUAL(lastState, State::CLOSED); \
+            UT_ASSERT_EQUAL_FATAL(lastState, State::CLOSED); \
         } \
     } while (0)
 
