@@ -232,7 +232,6 @@ dist_clean_test()
 
 clean_test()
 {
-    rm -rf $BUILD_DIR
     rm -rf src/*.o
     rm -rf ${MOCK_SERVICE_DIR}/src/*.o
     echo -e "${BOLD}${GREEN}Clean Completed.....${RESET}"

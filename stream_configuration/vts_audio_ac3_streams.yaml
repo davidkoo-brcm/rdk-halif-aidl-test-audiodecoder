@@ -60,8 +60,8 @@ AudioStreams:
       - 278
 
   tones_44_1k_2_96_ac3:
-    input: tones_44.1k_2_64.ac3
-    reference: tones_44.1k_2_64_ref.pcm
+    input: tones_44.1k_2_96.ac3
+    reference: tones_44.1k_2_96_ref.pcm
     codec: DOLBY_AC3
     sample_rate: 44100
     channels: 2
