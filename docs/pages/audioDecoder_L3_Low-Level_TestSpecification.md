@@ -202,6 +202,8 @@ classDiagram
       TearDown()
       runSequentialDecode()
       runConcurrentDecode()
+      runSingleProcessTest()
+      isDecoderUsable()
     }
     VTS_L3_AudioDecoder <|-- L3_Testcases
     note for L3_Testcases "uses vts_l3_test_config.yaml"
@@ -216,7 +218,7 @@ The class overrides `SetUp()` and `TearDown()` from `ut_core` to handle initiali
 |2|TearDown|None|Cleans up by unregistering event listeners|`unregisterEventListener()`|
 |3|runSequentialDecode|vector\<testConfiguration_t\>& configuration<br>bool secureDecode|Decodes streams using all decoders sequentially using `DecoderTest` Class|`getHeapMetrics()`|
 |4|runConcurrentDecode|vector\<testConfiguration_t\>& configuration<br>bool secureDecode|Launches multiple threads to decode streams concurrently using `DecoderTest` Class|`getHeapMetrics()`|
-|5|runTest|char *testName<br>bool secureMode<br>bool concurrentMode|If `concurrentMode` is enabled, this function invokes `runConcurrentDecode`; otherwise, it calls `runSequentialDecode`||
+|5|runSingleProcessTest|char *testName<br>bool secureMode<br>bool concurrentMode|If `concurrentMode` is enabled, this function invokes `runConcurrentDecode`; otherwise, it calls `runSequentialDecode`||
 
 #### Setup
 
@@ -307,54 +309,10 @@ This class includes methods for testing individual streams and frames.
 
 |#|Function|Arguments|Description|HAL API|
 |-|--------|---------|-----------|-------|
-|1|decoderThreadFunc||Decodes input streams frame by frame using a specific decoder instance|`createAudioPool()`<br>`alloc()`<br>`free()`<br>`destroyPool()`<br>`open()`<br>`start()`<br>`decodeBuffer()`<br>`stop()`<br>`close()`|
-|2|consumerThreadFunc||Validates the decoded `pcm` buffer received from `onFrameOutput()` callback|`onFrameOutput()`|
-|3|decodeAndConsumeAudioStreams|None|Decodes and consumes the audio frames sequentially|`createAudioPool()`<br>`alloc()`<br>`free()`<br>`destroyPool()`<br>`open()`<br>`start()`<br>`decodeBuffer()`<br>`stop()`<br>`close()`|
-|4|run|bool concurrentDecodeConsume|Starts `decoderThreadFunc` and `consumerThreadFunc` threads or `decodeAndConsumeAudioStreams`|None|
+|1|decodeAndConsumeAudioStreams|bool validateMetrics|Decodes and consumes the audio frames sequentially|`createAudioPool()`<br>`alloc()`<br>`free()`<br>`destroyPool()`<br>`open()`<br>`start()`<br>`decodeBuffer()`<br>`stop()`<br>`close()`|
+|2|run|bool validateMetrics|calls decodeAndConsumeAudioStreams||
+|3|getDecoderMetrics|int32_t &framesDecoded<br>int32_t &decodeErrors<br>int32_t &framesDropped|Gets the decoder metrics|`getProperty()`|
 
-#### decoderThreadFunc
-
-The following sequence diagram illustrates the flow of the `decoderThreadFunc` function:
-
-```mermaid
-sequenceDiagram
-  participant rundecoder as DecoderTest(decoderThreadFunc)
-  participant AudioDecoder HAL
-  participant AV Buffer HAL
-
-  rundecoder->>AV Buffer HAL: createAudioPool()
-  AV Buffer HAL-->>rundecoder: pool handle
-  rundecoder->>AudioDecoder HAL: open()
-  AudioDecoder HAL-->>rundecoder: controller handle
-  rundecoder->>AudioDecoder HAL: start()
-  loop For each frame
-    rundecoder->>AV Buffer HAL: alloc()
-    AV Buffer HAL-->>rundecoder: buffer handle
-    rundecoder->>rundecoder: read frame & copy to buffer
-    rundecoder->>AudioDecoder HAL: decodeBuffer()
-    rundecoder->>AV Buffer HAL: free()
-    rundecoder->>AudioDecoder HAL: stop()
-    rundecoder->>AudioDecoder HAL: close()
-  end
-  rundecoder->>AV Buffer HAL: destroyPool()
-```
-
-#### consumerThreadFunc
-
-The following sequence diagram illustrates the flow of the `consumerThreadFunc` function:
-
-```mermaid
-sequenceDiagram
-  participant consumer as DecoderTest(consumerThreadFunc)
-  participant AudioDecoder HAL
-  loop For each decoded frame
-      consumer->>consumer: wait for onFrameOutput()
-      AudioDecoder HAL-->>consumer: onFrameOutput()
-      consumer->>consumer: validate decode time
-      consumer->>consumer: compare with reference frame
-      consumer->>consumer: validate metadata and metrics
-  end
-```
 #### decodeAndConsumeAudioStreams
 
 The following sequence diagram illustrates the flow of the `decodeAndConsumeAudioStreams` function:
@@ -379,7 +337,6 @@ sequenceDiagram
       rundecoder->>rundecoder: wait for onFrameOutput()
       AudioDecoder HAL-->>rundecoder: onFrameOutput()
       rundecoder->>rundecoder: validate decode time
-      rundecoder->>rundecoder: compare with reference frame
       rundecoder->>rundecoder: validate metadata and metrics
       rundecoder->>AV Buffer HAL: free()
     end
@@ -422,7 +379,34 @@ typedef struct DecodedAudioFrame
     chrono::steady_clock::time_point receiveTime; /* Time at which test received the buffer */
 }DecodedAudioFrame_t;
 ```
+##### InputAudioFrame_t
 
+This structure encapsulates information about each input audio frame
+
+```cpp
+typedef struct InputAudioFrame
+{
+    int64_t framePTS;
+    bool isErrorFrame;
+    chrono::steady_clock::time_point sendTime;
+}InputAudioFrame_t;
+```
+
+##### ErrorDetails_t
+
+The ErrorDetrails_t structure encapsulates information about an error,
+including error codes, descriptions, and any relevant context needed for
+error handling or debugging. This structure is typically used to provide
+comprehensive error reporting within the application.
+
+```cpp
+typedef struct ErrorDetails
+{
+    ErrorCode vendorErrorCode;
+    int32_t errorCode;
+    chrono::steady_clock::time_point receiveTime;
+}ErrorDetails_t;
+```
 #### AudioDecoderControllerListener Class Functions
 
 |#|Function|Arguments|Description|
@@ -445,6 +429,7 @@ classDiagram
         onStateChanged()
         waitForState()
         checkStateTransistion()
+        getNextError()
     }
 ```
 
@@ -456,6 +441,7 @@ classDiagram
 |2|onStateChanged|State oldState<br>State newState|Callback invoked when the decoder transitions between states. Logs the transition in a queue to allow the test case to verify correct state sequencing|
 |3|waitForState|State desiredState<br>chrono::milliseconds timeout|Blocks execution until the decoder reaches the desired state or the timeout expires. Used to synchronize test flow with HAL state transitions|
 |4|checkStateTransistion|State expOldState<br>State expNewState|Validates whether the expected transition from expOldState to expNewState has occurred by scanning the recorded state transition queue|
+|5|getNextError|ErrorDetails_t &errorDetails|Pops the next available error from the internal queue|
 
 ## Helper Functions
 
@@ -496,15 +482,10 @@ typedef struct testConfiguration
 |-|----------------|---------|-----------|
 |1|vts_audiodeccoder_parse_testconfig|void* pTestInstance: ut kvp instance<br>char *module: Module name<br>char *testGroup: Test group L1, L2, L3<br>char *testNameL: Test name<br>vector\<testConfiguration_t\>& configuration|Parses the `vts_l3_test_config.yaml` for the given module, test group, and test name. Populates a list of testConfiguration_t structures for use in the test|
 |2|vts_audiodecoder_parseAudioDecoderHFP|None|Parses the HAL feature profile (HFP) file to determine supported capabilities of the AudioDecoder HAL under test|
-|3|vts_computeRMSDiff|const void* ref_buf<br>const void* act_buf<br>size_t num_samples<br>PCMFormat format|Computes the Root Mean Square (RMS) difference between two PCM buffers (reference and actual). Used for validating decoded output accuracy.|
 
 ## Common Validation Functions
 
 These functions provide standard mechanisms for validating the output and behaviour of the audio decoder under test
-
-### Validate Decoded Buffer
-
-The decoded `PCM` output is validated by comparing its `rms` value against the reference stream. The comparison uses the `rms_diff_threshold` defined in the [vts_l3_test_config.yaml](../../test_configuration/vts_l3_test_config.yaml) configuration file.
 
 ### Validate Decoder Metrics
 
@@ -528,61 +509,70 @@ This check ensures that both the test suite and the decoder HAL properly release
 
 The L3 tests validate the functional correctness and performance of the AudioDecoder HAL by simulating real-world decoding workflows. Each test calls `runTest` with different parameters. `Test Configuration Controls` describes the control parameters used from test configuration file `vts_l3_test_config.yaml`
 
-|#|Test|function|Arguments|Test Configuration Controls|
-|-|----|--------|---------|---------------------------|
-|1|Decode_Sequential_NonTunnel_NonSecure|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams|
-|2|Decode_Sequential_NonTunnel_NonSecure_Error|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams|
-|3|Decode_Sequential_NonTunnel_NonSecure_Trim|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Inputs.Streams.trim|
-|4|Decode_Sequential_NonTunnel_NonSecure_Discontinuity|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Controls.signal_discontinuity_pts|
-|5|Decode_Sequential_NonTunnel_NonSecure_EOS|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Controls.eos_pts|
-|6|Decode_Sequential_NonTunnel_NonSecure_Flush|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Controls.flush_pts|
-|7|Decode_Sequential_NonTunnel_NonSecure_FlushReset|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Controls.flush_reset_pts|
-|8|Decode_Sequential_NonTunnel_Secure|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams|
-|9|Decode_Sequential_NonTunnel_Secure_Error|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams|
-|10|Decode_Sequential_NonTunnel_Secure_Trim|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Inputs.Streams.trim|
-|11|Decode_Sequential_NonTunnel_Secure_Discontinuity|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Controls.signal_discontinuity_pts|
-|12|Decode_Sequential_NonTunnel_Secure_EOS|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Controls.eos_pts|
-|13|Decode_Sequential_NonTunnel_Secure_Flush|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Controls.flush_pts|
-|14|Decode_Sequential_NonTunnel_Secure_FlushReset|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Controls.flush_reset_pts|
-|15|Decode_Sequential_Tunnel_NonSecure|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams|
-|16|Decode_Sequential_Tunnel_NonSecure_Error|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams|
-|17|Decode_Sequential_Tunnel_NonSecure_Trim|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Inputs.Streams.trim|
-|18|Decode_Sequential_Tunnel_NonSecure_Discontinuity|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Controls.signal_discontinuity_pts|
-|19|Decode_Sequential_Tunnel_NonSecure_EOS|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Controls.eos_pts|
-|20|Decode_Sequential_Tunnel_NonSecure_Flush|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Controls.flush_pts|
-|21|Decode_Sequential_Tunnel_NonSecure_FlushReset|runTest()|secureMode = false<br>concurrentMode=false|Inputs.Streams<br>Controls.flush_reset_pts|
-|22|Decode_Sequential_Tunnel_Secure|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams|
-|23|Decode_Sequential_Tunnel_Secure_Error|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams|
-|24|Decode_Sequential_Tunnel_Secure_Trim|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Inputs.Streams.trim|
-|25|Decode_Sequential_Tunnel_Secure_Discontinuity|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Controls.signal_discontinuity_pts|
-|26|Decode_Sequential_Tunnel_Secure_EOS|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Controls.eos_pts|
-|27|Decode_Sequential_Tunnel_Secure_Flush|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Controls.flush_pts|
-|28|Decode_Sequential_Tunnel_Secure_FlushReset|runTest()|secureMode = true<br>concurrentMode=false|Inputs.Streams<br>Controls.flush_reset_pts|
-|29|Decode_Concurrent_NonTunnel_NonSecure|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams|
-|30|Decode_Concurrent_NonTunnel_NonSecure_Error|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams|
-|31|Decode_Concurrent_NonTunnel_NonSecure_Trim|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Inputs.Streams.trim|
-|32|Decode_Concurrent_NonTunnel_NonSecure_Discontinuity|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Controls.signal_discontinuity_pts|
-|33|Decode_Concurrent_NonTunnel_NonSecure_EOS|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Controls.eos_pts|
-|34|Decode_Concurrent_NonTunnel_NonSecure_Flush|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Controls.flush_pts|
-|35|Decode_Concurrent_NonTunnel_NonSecure_FlushReset|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Controls.flush_reset_pts|
-|36|Decode_Concurrent_NonTunnel_Secure|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams|
-|37|Decode_Concurrent_NonTunnel_Secure_Error|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams|
-|38|Decode_Concurrent_NonTunnel_Secure_Trim|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams<br>Inputs.Streams.trim|
-|39|Decode_Concurrent_NonTunnel_Secure_Discontinuity|runTest()|secureMode = true<br>concurrentMode=ftruealse|Inputs.Streams<br>Controls.signal_discontinuity_pts|
-|40|Decode_Concurrent_NonTunnel_Secure_EOS|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams<br>Controls.eos_pts|
-|41|Decode_Concurrent_NonTunnel_Secure_Flush|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams<br>Controls.flush_pts|
-|42|Decode_Concurrent_NonTunnel_Secure_FlushReset|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams<br>Controls.flush_reset_pts|
-|43|Decode_Concurrent_Tunnel_NonSecure|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams|
-|44|Decode_Concurrent_Tunnel_NonSecure_Error|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams|
-|45|Decode_Concurrent_Tunnel_NonSecure_Trim|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Inputs.Streams.trim|
-|46|Decode_Concurrent_Tunnel_NonSecure_Discontinuity|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Controls.signal_discontinuity_pts|
-|47|Decode_Concurrent_Tunnel_NonSecure_EOS|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Controls.eos_pts|
-|48|Decode_Concurrent_Tunnel_NonSecure_Flush|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Controls.flush_pts|
-|49|Decode_Concurrent_Tunnel_NonSecure_FlushReset|runTest()|secureMode = false<br>concurrentMode=true|Inputs.Streams<br>Controls.flush_reset_pts|
-|50|Decode_Concurrent_Tunnel_Secure|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams|
-|51|Decode_Concurrent_Tunnel_Secure_Error|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams|
-|52|Decode_Concurrent_Tunnel_Secure_Trim|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams<br>Inputs.Streams.trim|
-|53|Decode_Concurrent_Tunnel_Secure_Discontinuity|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams<br>Controls.signal_discontinuity_pts|
-|54|Decode_Concurrent_Tunnel_Secure_EOS|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams<br>Controls.eos_pts|
-|55|Decode_Concurrent_Tunnel_Secure_Flush|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams<br>Controls.flush_pts|
-|56|Decode_Concurrent_Tunnel_Secure_FlushReset|runTest()|secureMode = true<br>concurrentMode=true|Inputs.Streams<br>Controls.flush_reset_pts|
+|# | Test Name                                         | function             | Arguments                                      | Test Configuration Controls                |
+|--|---------------------------------------------------|----------------------|------------------------------------------------|--------------------------------------------|
+| 1| Decode_Sequential_NonTunnel_NonSecure             | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams                             |
+| 2| Decode_Sequential_NonTunnel_NonSecure_Error       | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams                             |
+| 3| Decode_Sequential_NonTunnel_NonSecure_Trim        | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Inputs.Streams.trim      |
+| 4| Decode_Sequential_NonTunnel_NonSecure_Discontinuity| runSingleProcessTest| secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+| 5| Decode_Sequential_NonTunnel_NonSecure_EOS         | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.eos_pts         |
+| 6| Decode_Sequential_NonTunnel_NonSecure_Flush       | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.flush_pts       |
+| 7| Decode_Sequential_NonTunnel_NonSecure_FlushReset  | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.flush_reset_pts |
+| 8| Decode_Sequential_NonTunnel_NonSecure_StopStart   | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.stop_start_pts  |
+| 9| Decode_Sequential_NonTunnel_Secure                | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams                             |
+|10| Decode_Sequential_NonTunnel_Secure_Error          | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams                             |
+|11| Decode_Sequential_NonTunnel_Secure_Trim           | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Inputs.Streams.trim      |
+|12| Decode_Sequential_NonTunnel_Secure_Discontinuity  | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|13| Decode_Sequential_NonTunnel_Secure_EOS            | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.eos_pts         |
+|14| Decode_Sequential_NonTunnel_Secure_Flush          | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.flush_pts       |
+|15| Decode_Sequential_NonTunnel_Secure_FlushReset     | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.flush_reset_pts |
+|16| Decode_Sequential_NonTunnel_Secure_StopStart      | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.stop_start_pts  |
+|17| Decode_Sequential_Tunnel_NonSecure                | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams                             |
+|18| Decode_Sequential_Tunnel_NonSecure_Error          | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams                             |
+|19| Decode_Sequential_Tunnel_NonSecure_Trim           | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Inputs.Streams.trim      |
+|20| Decode_Sequential_Tunnel_NonSecure_Discontinuity  | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|21| Decode_Sequential_Tunnel_NonSecure_EOS            | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.eos_pts         |
+|22| Decode_Sequential_Tunnel_NonSecure_Flush          | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.flush_pts       |
+|23| Decode_Sequential_Tunnel_NonSecure_FlushReset     | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.flush_reset_pts |
+|24| Decode_Sequential_Tunnel_NonSecure_StopStart      | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.stop_start_pts  |
+|25| Decode_Sequential_Tunnel_Secure                   | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams                             |
+|26| Decode_Sequential_Tunnel_Secure_Error             | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams                             |
+|27| Decode_Sequential_Tunnel_Secure_Trim              | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Inputs.Streams.trim      |
+|28| Decode_Sequential_Tunnel_Secure_Discontinuity     | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|29| Decode_Sequential_Tunnel_Secure_EOS               | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.eos_pts         |
+|30| Decode_Sequential_Tunnel_Secure_Flush             | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.flush_pts       |
+|31| Decode_Sequential_Tunnel_Secure_FlushReset        | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.flush_reset_pts |
+|32| Decode_Sequential_Tunnel_Secure_StopStart         | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.stop_start_pts  |
+|33| Decode_Concurrent_NonTunnel_NonSecure             | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams                             |
+|34| Decode_Concurrent_NonTunnel_NonSecure_Error       | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams                             |
+|35| Decode_Concurrent_NonTunnel_NonSecure_Trim        | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Inputs.Streams.trim      |
+|36| Decode_Concurrent_NonTunnel_NonSecure_Discontinuity| runSingleProcessTest| secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|37| Decode_Concurrent_NonTunnel_NonSecure_EOS         | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.eos_pts         |
+|38| Decode_Concurrent_NonTunnel_NonSecure_Flush       | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.flush_pts       |
+|39| Decode_Concurrent_NonTunnel_NonSecure_FlushReset  | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.flush_reset_pts |
+|40| Decode_Concurrent_NonTunnel_NonSecure_StopStart   | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.stop_start_pts  |
+|41| Decode_Concurrent_NonTunnel_Secure                | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams                             |
+|42| Decode_Concurrent_NonTunnel_Secure_Error          | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams                             |
+|43| Decode_Concurrent_NonTunnel_Secure_Trim           | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Inputs.Streams.trim      |
+|44| Decode_Concurrent_NonTunnel_Secure_Discontinuity  | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|45| Decode_Concurrent_NonTunnel_Secure_EOS            | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.eos_pts         |
+|46| Decode_Concurrent_NonTunnel_Secure_Flush          | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.flush_pts       |
+|47| Decode_Concurrent_NonTunnel_Secure_FlushReset     | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.flush_reset_pts |
+|48| Decode_Concurrent_NonTunnel_Secure_StopStart      | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.stop_start_pts  |
+|49| Decode_Concurrent_Tunnel_NonSecure                | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams                             |
+|50| Decode_Concurrent_Tunnel_NonSecure_Error          | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams                             |
+|51| Decode_Concurrent_Tunnel_NonSecure_Trim           | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Inputs.Streams.trim      |
+|52| Decode_Concurrent_Tunnel_NonSecure_Discontinuity  | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|53| Decode_Concurrent_Tunnel_NonSecure_EOS            | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.eos_pts         |
+|54| Decode_Concurrent_Tunnel_NonSecure_Flush          | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.flush_pts       |
+|55| Decode_Concurrent_Tunnel_NonSecure_FlushReset     | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.flush_reset_pts |
+|56| Decode_Concurrent_Tunnel_NonSecure_StopStart      | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.stop_start_pts  |
+|57| Decode_Concurrent_Tunnel_Secure                   | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams                             |
+|58| Decode_Concurrent_Tunnel_Secure_Error             | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams                             |
+|59| Decode_Concurrent_Tunnel_Secure_Trim              | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Inputs.Streams.trim      |
+|60| Decode_Concurrent_Tunnel_Secure_Discontinuity     | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|61| Decode_Concurrent_Tunnel_Secure_EOS               | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.eos_pts         |
+|62| Decode_Concurrent_Tunnel_Secure_Flush             | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.flush_pts       |
+|63| Decode_Concurrent_Tunnel_Secure_FlushReset        | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.flush_reset_pts |
+|64| Decode_Concurrent_Tunnel_Secure_StopStart         | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.stop_start_pts  |
+
