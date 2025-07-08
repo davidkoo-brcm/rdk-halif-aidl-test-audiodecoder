@@ -507,7 +507,7 @@ This check ensures that both the test suite and the decoder HAL properly release
 
 ## L3 Tests
 
-The L3 tests validate the functional correctness and performance of the AudioDecoder HAL by simulating real-world decoding workflows. Each test calls `runTest` with different parameters. `Test Configuration Controls` describes the control parameters used from test configuration file `vts_l3_test_config.yaml`
+The L3 tests validate the functional correctness and performance of the AudioDecoder HAL by simulating real-world decoding workflows. Each test calls `runSingleProcessTest` with different parameters. `Test Configuration Controls` describes the control parameters used from test configuration file `vts_l3_test_config.yaml`
 
 |# | Test Name                                         | function             | Arguments                                      | Test Configuration Controls                |
 |--|---------------------------------------------------|----------------------|------------------------------------------------|--------------------------------------------|
