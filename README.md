@@ -30,7 +30,7 @@ git clone git@github.com:rdkcentral/rdk-halif-binder-test-audiodecoder.git
 cd rdk-halif-binder-test-audiodecoder
 ```
 
-Addition environment variables can be used:
+Set below environment variable:
 
 - AIDL_BIN: Path to the `AIDL` compiler (e.g., /path/to/linux_binder_idl/out/aidl).
 
@@ -49,10 +49,16 @@ export AIDL_BIN=/path/linux_binder_idl/out/aidl
 export LINUX_BINDER_OUT_DIR=/path//linux_binder_idl/local/
 ```
 
+By default, UT logs are Enabled. To disable them, Set below environment variable
+
+```bash
+export DISABLE_UT_INFO_LOGGING=1
+```
+
 Run the build script:
 
 ```bash
-./build.sh
+./build.sh all
 ```
 
 The build.sh script:
@@ -68,20 +74,48 @@ Example directory structure :
 ```bash
 build/bin/
 ├── aidl
-├── EmulateAudioDecoderService
+├── assets
+│   └── streams
+│       ├── input
+│       └── reference
 ├── lib
 ├── libaudiodecoderaidl.so
+├── libavbufferaidl.so
 ├── libbase.so
 ├── libbinder.so
 ├── libcutils.so
 ├── libcutils_sockets.so
+├── libhal_logger.so
 ├── liblog.so
 ├── libut_control.so
 ├── libutils.so
+├── libvideodecoderaidl.so
+├── MockAudioDecoderService
 ├── profiles
-│   └── hfp-audiodecoder.yaml
+│   ├── hfp-audiodecoder_mock.yaml
+│   ├── hfp-audiodecoder_vdevice_instance_1.yaml
+│   ├── hfp-audiodecoder_vdevice_instance_2.yaml
+│   ├── hfp-audiodecoder_vdevice_instance_3.yaml
+│   └── hfp-audiodecoder_vdevice.yaml
 ├── run.sh
 ├── servicemanager
+├── stream_configuration
+│   ├── vts_audio_aac_streams.yaml
+│   ├── vts_audio_ac3_streams.yaml
+│   ├── vts_audio_heaac2_streams.yaml
+│   ├── vts_audio_heaac_streams.yaml
+│   ├── vts_audio_mp2_streams.yaml
+│   └── vts_audio_mp3_streams.yaml
+├── test_configuration
+│   ├── vts_l3_Decode_Discontinuity.yaml
+│   ├── vts_l3_Decode_EOS.yaml
+│   ├── vts_l3_Decode_Error.yaml
+│   ├── vts_l3_Decode_FlushReset.yaml
+│   ├── vts_l3_Decode_Flush.yaml
+│   ├── vts_l3_Decode_Stop_Start.yaml
+│   ├── vts_l3_Decode_Trim.yaml
+│   ├── vts_l3_Decode.yaml
+│   └── vts_l3_test_config.yaml
 └── vts_audiodecoder_hal_test
 
 ```
@@ -115,9 +149,23 @@ tar -zxf audiodecoder_vts.tar.gz
 cd bin
 ```
 
+To execute `L3` test cases, elementary streams are required. Please copy all necessary test streams into the `bin/assets/streams/input/` folder on the target device.
+
 - Run the Test:
 Execute the run.sh script as root:
 
 ```bash
 sudo ./run.sh -p profiles/hfp-audiodecoder.yaml
+```
+
+To run the binary with two processes simultaneously:
+
+Open two separate SSH sessions to the target device. In each session, navigate to the `bin` directory  and execute one of the following commands:
+
+```bash
+sudo  ./run.sh -p profiles/hfp-audiodecoder_vdevice_instance_1.yaml
+```
+
+```bash
+sudo ./run.sh -p profiles/hfp-audiodecoder_vdevice_instance_2.yaml
 ```
