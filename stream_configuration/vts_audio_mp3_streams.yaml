@@ -1,0 +1,221 @@
+AudioStreams:
+  tones_32k_1_256_mp3:
+    input: tones_32k_1_256.mp3
+    reference: tones_32k_1_256_ref.pcm
+    codec: MP3
+    sample_rate: 32000
+    channels: 1
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 216
+      - 216
+      - 216
+      - 216
+      - 216
+      - 216
+      - 216
+      - 216
+      - 216
+      - 216
+
+  tones_32k_2_256_mp3:
+    input: tones_32k_2_256.mp3
+    reference: tones_32k_2_256_ref.pcm
+    codec: MP3
+    sample_rate: 32000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+      - 1152
+
+  tones_44.1k_1_128_mp3:
+    input: tones_44.1k_1_128.mp3
+    reference: tones_44.1k_1_128_ref.pcm
+    codec: MP3
+    sample_rate: 44100
+    channels: 1
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 208
+      - 209
+      - 209
+      - 209
+      - 209
+      - 209
+      - 209
+      - 209
+      - 209
+      - 209
+
+  tones_44.1k_2_128_mp3:
+    input: tones_44.1k_2_128.mp3
+    reference: tones_44.1k_2_128_ref.pcm
+    codec: MP3
+    sample_rate: 44100
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 417
+      - 418
+      - 418
+      - 418
+      - 418
+      - 418
+      - 418
+      - 418
+      - 418
+      - 418
+
+  tones_48k_1_256_mp3:
+    input: tones_48k_1_256.mp3
+    reference: tones_48k_1_256_ref.pcm
+    codec: MP3
+    sample_rate: 48000
+    channels: 1
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 192
+      - 192
+      - 192
+      - 192
+      - 192
+      - 192
+      - 192
+      - 192
+      - 192
+      - 192
+
+  tones_48k_2_256_mp3:
+    input: tones_48k_2_256.mp3
+    reference: tones_48k_2_256_ref.pcm
+    codec: MP3
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+
+  # Error Streams
+  tones_48k_2_256_sync_mp3:
+    input: tones_48k_2_256_sync.mp3
+    reference: tones_48k_2_256_sync_ref.pcm
+    codec: MP3
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+    error_frames:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+    error_info: invalid syncword
+
+  tones_48k_2_256_zero_mp3:
+    input: tones_48k_2_256_zero.mp3
+    reference: tones_48k_2_256_zero_ref.pcm
+    codec: MP3
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 3
+    frame_size:
+      - 384
+      - 384
+      - 384
+    error_frames:
+      - 0
+      - 1
+      - 2
+    error_info: frame contains valid sync word with data replaced with zero
+
+  tones_48k_2_256_randombits_mp3:
+    input: tones_48k_2_256_randombits.mp3
+    reference: tones_48k_2_256_randombits_ref.pcm
+    codec: MP3
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 3
+    frame_size:
+      - 384
+      - 384
+      - 384
+    error_frames:
+      - 0
+      - 1
+      - 2
+    error_info: frame contains valid sync word with data replaced with ff
+
+  tones_48k_2_256_incomplete_mp3:
+    input: tones_48k_2_256_incomplete.mp3
+    reference: tones_48k_2_256_incomplete_ref.pcm
+    codec: MP3
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 383
+      - 369
+      - 383
+      - 352
+      - 369
+      - 369
+      - 374
+      - 372
+      - 380
+      - 382
+    error_frames:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+    error_info: incomplete frames

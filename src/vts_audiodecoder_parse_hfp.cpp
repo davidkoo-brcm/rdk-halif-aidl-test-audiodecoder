@@ -62,24 +62,38 @@
  *
  */
 
+#include "ut_kvp_profile.h"
 #include "vts_audiodecoder_helper_functions.h"
 #include "vts_audiodecoder_parse_hfp.h"
 
-std::vector<decoder> gAudiodecoders_hfp;
+using namespace std;
+
+vector<decoder> gAudiodecoders_hfp;
 
 UT_status_t vts_audiodecoder_parseAudioDecoderHFP()
 {
     std::map<std::string , int32_t> componentMap;
     std::string audiodecoderpath = AUDIODECODERMGR_IAUDIODECODER;
-    int32_t number_of_audiodecoders;
+    std::string availableDecodersPath = AUDIODECODERMGR_AVAILABLEDECODERS;
+    int32_t number_of_audiodecoders, available_decoders;
     int32_t supportedcodec_count;
     decoder temporary;
+    vector<int32_t> availableIds;
 
     number_of_audiodecoders = UT_KVP_PROFILE_GET_LIST_COUNT(audiodecoderpath.c_str());
     if(number_of_audiodecoders <= 0)
     {
         UT_LOG_ERROR("No audiodecoders found in the HFP");
         return UT_STATUS_FAILURE;
+    }
+
+    available_decoders = UT_KVP_PROFILE_GET_LIST_COUNT(availableDecodersPath.c_str());
+
+    for(int32_t i = 0; i < available_decoders; i++)
+    {
+        std::string decoderIdPath = availableDecodersPath + "." + std::to_string(i);
+        int32_t id = UT_KVP_PROFILE_GET_UINT32(decoderIdPath.c_str());
+        availableIds.push_back(id);
     }
 
     for(int32_t i = 0; i < number_of_audiodecoders; ++i)
@@ -91,6 +105,13 @@ UT_status_t vts_audiodecoder_parseAudioDecoderHFP()
         temporary.id = UT_KVP_PROFILE_GET_UINT32(audiodecoderidpath.c_str());
         temporary.supportsSecure = UT_KVP_PROFILE_GET_BOOL(supportsSecurepath.c_str());
         supportedcodec_count = UT_KVP_PROFILE_GET_LIST_COUNT(supportedcodecpath.c_str());
+
+        auto it = find(availableIds.begin(), availableIds.end(), temporary.id);
+        temporary.isAvailable = false;
+        if (it != availableIds.end())
+        {
+            temporary.isAvailable = true;
+        }
 
         for(int32_t j = 0; j < supportedcodec_count; ++j)
         {

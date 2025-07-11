@@ -22,6 +22,19 @@ TARGET ?= linux
 VARIANT := CPP
 
 TARGET_EXEC := vts_audiodecoder_hal_test
+VERSION := $(shell git describe --tags | head -n1 || echo "undefine")
+ifeq ($(VERSION),undefine)
+$(warning No tags found in repository. Using VERSION=unknown)
+endif
+$(info VERSION: $(VERSION))
+
+# Read RDK_HALIF_AIDL_VERSION from environment, default to 'main' if not set
+RDK_HALIF_AIDL_VERSION ?= main
+$(info RDK_HALIF_AIDL_VERSION: $(RDK_HALIF_AIDL_VERSION))
+
+# Assign VERSION and RDK_HALIF_AIDL_VERSION to CXXFLAGS
+CXXFLAGS := -DHALIF_TEST_TAG_VERSION=\"$(VERSION)\" -DRDK_HALIF_AIDL_VERSION=\"$(RDK_HALIF_AIDL_VERSION)\"
+$(info CXXFLAGS: $(CXXFLAGS))
 
 VERSION := $(shell git describe --tags | head -n1 || echo "undefine")
 ifeq ($(VERSION),undefine)
@@ -44,19 +57,29 @@ BIN_DIR := $(ROOT_DIR)/build/bin
 LIB_DIR := $(ROOT_DIR)/build/$(TARGET)/lib
 BUILD_DIR := $(ROOT_DIR)/build/$(TARGET)/obj
 
-INC_DIRS := $(ROOT_DIR)/build/audiodecoder_gen/current/h
+INC_DIRS := $(ROOT_DIR)/build/avbuffer_gen/current/h
+INC_DIRS += $(ROOT_DIR)/build/videodecoder_gen/current/h
+INC_DIRS += $(ROOT_DIR)/build/audiodecoder_gen/current/h
+INC_DIRS += $(ROOT_DIR)/rdk-halif-aidl/avbuffer/current
 INC_DIRS += $(ROOT_DIR)/build/usr/include
+INC_DIRS += $(ROOT_DIR)/mockservice/avbufferhelper
 INC_DIRS += $(ROOT_DIR)/src/
 
 XLDFLAGS := -L$(ROOT_DIR)/build/usr/lib
-XLDFLAGS += -Wl,-rpath-link=$(ROOT_DIR)/build/usr/lib
+XLDFLAGS += -Wl,-rpath-link=$(ROOT_DIR)/build/usr/lib -Wl,--export-dynamic
 XLDFLAGS += -lbinder -lutils
-XLDFLAGS += -laudiodecoderaidl
+XLDFLAGS += -laudiodecoderaidl -lavbufferaidl -lvideodecoderaidl
+XLDFLAGS += -lhal_logger -lavbufferhelper
 
 # required for std::optional
 CXXFLAGS += -std=c++17
 
-UT_CORE_DIR := $(CURDIR)/ut/ut-core
+# TODO: remove this once the ut-core implements runtime logging configuration
+ifeq ($(DISABLE_UT_INFO_LOGGING),1)
+CXXFLAGS += -DDISABLE_UT_INFO_LOGGING
+endif
+
+UT_CORE_DIR := $(CURDIR)/ut-core
 
 export BIN_DIR
 export LIB_DIR
