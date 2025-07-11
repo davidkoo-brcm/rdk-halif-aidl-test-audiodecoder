@@ -47,8 +47,7 @@ if [ ! -w $DEV_BINDER ]; then
     exit 1
 fi
 
-export LD_LIBRARY_PATH=$RUN_DIR:$LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=/usr/lib:/lib:/home/root:./
+export LD_LIBRARY_PATH=/usr/lib:/lib:/home/root:./:$RUN_DIR
 
 # Check and start servicemanager (must run if not running)
 if check_process "servicemanager"; then
@@ -62,19 +61,19 @@ else
 	sleep 2
 fi
 
-# Check if either EmulateAudioDecoderService or AudioDecoderService is running
-if check_process "EmulateAudioDecoderService" || check_process "AudioDecoderService"; then
+# Check if either MockAudioDecoderService or AudioDecoderService is running
+if check_process "MockAudioDecoderService" || check_process "AudioDecoderService"; then
     echo "Audio decoder service is already running"
-    if check_process "EmulateAudioDecoderService"; then
-        AudioDecoderService_pid=$(pgrep -f "EmulateAudioDecoderService")
+    if check_process "MockAudioDecoderService"; then
+        AudioDecoderService_pid=$(pgrep -f "MockAudioDecoderService")
     else
         AudioDecoderService_pid=$(pgrep -f "AudioDecoderService")
     fi
 else
-    # Prompt user to start EmulateAudioDecoderService
-    if prompt_yes_no "Do you want to start EmulateAudioDecoderService?"; then
-        echo "Execute [EmulateAudioDecoderService]"
-        ${RUN_DIR}/EmulateAudioDecoderService &
+    # Prompt user to start MockAudioDecoderService
+    if prompt_yes_no "Do you want to start MockAudioDecoderService?"; then
+        echo "Execute [MockAudioDecoderService]"
+        ${RUN_DIR}/MockAudioDecoderService &
         AudioDecoderService_pid=$!
         # Wait for service to be ready
         sleep 2
@@ -97,4 +96,6 @@ else
     fi
 fi
 echo "Eexecute [vts_audiodecoder_hal_test]"
-${RUN_DIR}/vts_audiodecoder_hal_test $@
+pushd "$(dirname "$0")" > /dev/null
+./vts_audiodecoder_hal_test $@
+popd > /dev/null

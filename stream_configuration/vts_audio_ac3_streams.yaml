@@ -1,0 +1,381 @@
+AudioStreams:
+  tones_32k_1_64_ac3:
+    input: tones_32k_1_64.ac3
+    reference: tones_32k_1_64_ref.pcm
+    codec: DOLBY_AC3
+    sample_rate: 32000
+    channels: 1
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+
+  tones_32k_2_64_ac3:
+    input: tones_32k_2_64.ac3
+    reference: tones_32k_2_64_ref.pcm
+    codec: DOLBY_AC3
+    sample_rate: 32000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+      - 384
+
+  tones_44_1k_1_64_ac3:
+    input: tones_44.1k_1_64.ac3
+    reference: tones_44.1k_1_64_ref.pcm
+    codec: DOLBY_AC3
+    sample_rate: 44100
+    channels: 1
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 278
+      - 280
+      - 278
+      - 278
+      - 280
+      - 278
+      - 278
+      - 280
+      - 278
+      - 278
+
+  tones_44_1k_2_96_ac3:
+    input: tones_44.1k_2_96.ac3
+    reference: tones_44.1k_2_96_ref.pcm
+    codec: DOLBY_AC3
+    sample_rate: 44100
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 416
+      - 418
+      - 418
+      - 418
+      - 418
+      - 418
+      - 418
+      - 418
+      - 418
+      - 418
+
+  tones_48k_1_128_ac3:
+    input: tones_48k_1_128.ac3
+    reference: tones_48k_1_128_ref.pcm
+    codec: DOLBY_AC3
+    sample_rate: 48000
+    channels: 1
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+
+  tones_48k_2_192_ac3:
+    input: tones_48k_2_192.ac3
+    reference: tones_48k_2_192_ref.pcm
+    codec: DOLBY_AC3
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+
+  tones_48k_2_1_256_ac3:
+    input: tones_48k_2.1_256.ac3
+    reference: tones_48k_2.1_256_ref.pcm
+    codec: DOLBY_AC3
+    sample_rate: 48000
+    channels: 3
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+
+  tones_48k_3_0_256_ac3:
+    input: tones_48k_3.0_256.ac3
+    reference: tones_48k_3.0_256_ref.pcm
+    codec: DOLBY_AC3
+    sample_rate: 48000
+    channels: 3
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+
+  tones_48k_4_0_256_ac3:
+    input: tones_48k_4.0_256.ac3
+    reference: tones_48k_4.0_256_ref.pcm
+    codec: DOLBY_AC3
+    sample_rate: 48000
+    channels: 4
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+
+  tones_48k_5_0_384_ac3:
+    input: tones_48k_5.0_384.ac3
+    reference: tones_48k_5.0_384_ref.pcm
+    codec: DOLBY_AC3
+    sample_rate: 48000
+    channels: 5
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 1536
+      - 1536
+      - 1536
+      - 1536
+      - 1536
+      - 1536
+      - 1536
+      - 1536
+      - 1536
+      - 1536
+
+  tones_48k_5_1_640_ac3:
+    input: tones_48k_5.1_640.ac3
+    reference: tones_48k_5.1_640_ref.pcm
+    codec: DOLBY_AC3
+    sample_rate: 48000
+    channels: 6
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 2560
+      - 2560
+      - 2560
+      - 2560
+      - 2560
+      - 2560
+      - 2560
+      - 2560
+      - 2560
+      - 2560
+
+  # Error Streams
+  tones_48k_2_192_header_ac3:
+    input: tones_48k_2_192_header.ac3
+    reference: tones_48k_2_192_header_ref.pcm
+    codec: DOLBY_AC3
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+    error_frames:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+    error_info: below fields are corrupted in each frame, FSCOD, FRMSIZECOD, BSID, ACMOD, CRC1
+
+  tones_48k_2_192_sync_ac3:
+    input: tones_48k_2_192_sync.ac3
+    reference: tones_48k_2_192_sync_ref.pcm
+    codec: DOLBY_AC3
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+    error_frames:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+    error_info: syncword corruption
+
+  tones_48k_2_192_zero_ac3:
+    input: tones_48k_2_192_zero.ac3
+    reference: tones_48k_2_192_zero_ref.pcm
+    codec: DOLBY_AC3
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+    error_frames:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+    error_info: frame contains valid sync word with data replaced with ff and  00
+
+  tones_48k_2_192_random_ac3:
+    input: tones_48k_2_192_random.ac3
+    reference: tones_48k_2_192_random_ref.pcm
+    codec: DOLBY_AC3
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+    error_frames:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+    error_info: random bit corrupted
+
+  tones_48k_2_192_incomplete_ac3:
+    input: tones_48k_2_192_incomplete.ac3
+    reference: tones_48k_2_192_incomplete_ref.pcm
+    codec: DOLBY_AC3
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 10
+    frame_size:
+      - 767
+      - 728
+      - 763
+      - 668
+      - 716
+      - 8
+      - 668
+      - 767
+      - 752
+      - 645
+    error_frames:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+    error_info: Frames of incomple data

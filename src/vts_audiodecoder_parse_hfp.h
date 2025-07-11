@@ -77,11 +77,14 @@ struct decoder
     int id;
     ::std::vector<Codec> supportedCodecs;
     bool supportsSecure;
+    bool isAvailable;
 };
 
 extern std::vector<decoder> gAudiodecoders_hfp;
 
+#define AUDIODECODERMGR_AVAILABLEDECODERS "IAudioDecoderManager.availableDecoders"
 #define AUDIODECODERMGR_IAUDIODECODER "IAudioDecoderManager.IAudioDecoder"
+
 
 UT_status_t vts_audiodecoder_parseAudioDecoderHFP();
 

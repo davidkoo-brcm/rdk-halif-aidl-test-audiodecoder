@@ -66,6 +66,7 @@
 #define __VTS_AUDIODECODER_INIT_H__
 
 UT_status_t VTS_AudioDecoder_init();
+void VTS_AudioDecoder_destroy();
 
 #endif //__VTS_AUDIODECODER_INIT_H__
 

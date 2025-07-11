@@ -1,0 +1,21 @@
+include_0: stream_configuration/vts_audio_aac_streams.yaml
+include_3: stream_configuration/vts_audio_ac3_streams.yaml
+#include_4: stream_configuration/vts_audio_mp3_streams.yaml
+#include_5: stream_configuration/vts_audio_mp2_streams.yaml
+#include_1: stream_configuration/vts_audio_heaac_streams.yaml
+#include_2: stream_configuration/vts_audio_heaac2_streams.yaml
+
+include_6: test_configuration/vts_l3_Decode.yaml
+include_7: test_configuration/vts_l3_Decode_Error.yaml
+include_8: test_configuration/vts_l3_Decode_Trim.yaml
+include_9: test_configuration/vts_l3_Decode_Discontinuity.yaml
+include_10: test_configuration/vts_l3_Decode_Flush.yaml
+include_11: test_configuration/vts_l3_Decode_FlushReset.yaml
+include_12: test_configuration/vts_l3_Decode_EOS.yaml
+include_13: test_configuration/vts_l3_Decode_Stop_Start.yaml
+
+
+IAudioDecoderManager:
+  stream_download_path: "http://<>/streams" #`URL` path to download the audio test streams
+  input_streams_path: "assets/streams/input" #Target path where input streams are stored
+  reference_streams_path: "assets/streams/reference/" #Target path for reference PCM streams
