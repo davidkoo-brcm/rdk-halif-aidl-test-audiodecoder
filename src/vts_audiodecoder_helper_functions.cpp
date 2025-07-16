@@ -62,13 +62,7 @@
  *
  */
 
-#include <cmath>
-#include <cstdint>
-#include <cstring>
-#include <stdexcept>
-
-#include "vts_audiodecoder_helper_functions.h"
-#include "vts_audiodecoder_parse_hfp.h"
+#include "vts_audiodecoder.h"
 
 /*currently HAL FEATURE PROFILE contain string value for codec instead of enum. so the helper required to convert*/
 Codec  vts_audiodecoder_helper_StringTocodec(const std::string& format)

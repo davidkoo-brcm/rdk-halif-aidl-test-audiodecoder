@@ -70,14 +70,52 @@
 #include <deque>
 #include <queue>
 #include <condition_variable>
+#include <cmath>
+#include <cstdint>
+#include <cstring>
+#include <stdexcept>
+#include <ut.h>
+#include <ut_kvp_profile.h>
+#include <ut_log.h>
+#include <ut_control_plane.h>
+#include <binder/IServiceManager.h>
+#include <binder/ProcessState.h>
+#include <binder/IPCThreadState.h>
+#include <binder/Status.h>
+#include <utils/String16.h>
+#include <stdio.h>
+#include <vector>
+#include <optional>
+#include <algorithm>
+#include <unordered_set>
+#include <map>
+#include <fstream>
+#include <tuple>
+#include <chrono>
+#include <filesystem>
+
 
 #include "com/rdk/hal/audiodecoder/IAudioDecoderManager.h"
 #include "com/rdk/hal/audiodecoder/BnAudioDecoderControllerListener.h"
 #include "com/rdk/hal/audiodecoder/BnAudioDecoderEventListener.h"
-
 #include "com/rdk/hal/avbuffer/IAVBuffer.h"
 #include "com/rdk/hal/avbuffer/BnAVBufferSpaceListener.h"
+#include "com/rdk/hal/audiodecoder/IAudioDecoderManager.h"
+#include "com/rdk/hal/audiodecoder/BnAudioDecoderControllerListener.h"
+#include "com/rdk/hal/audiodecoder/BnAudioDecoderEventListener.h"
+
 #include "IAVBufferHelper.h"
+
+
+#define AUDIODECODERMGR_AVAILABLEDECODERS "IAudioDecoderManager.availableDecoders"
+#define AUDIODECODERMGR_IAUDIODECODER "IAudioDecoderManager.IAudioDecoder"
+
+#define VTS_TEST_CONFIG_PATH "./test_configuration/vts_l3_test_config.yaml"
+#define VTS_STREAM_CONFIG_PATH "./test_configuration/vts_stream_list.yaml"
+#define STREAM_DOWNLOAD_PATH "IAudioDecoderManager.stream_download_path"
+#define STREAM_INPUT_PATH "IAudioDecoderManager.input_streams_path"
+#define STREAM_REF_PATH "IAudioDecoderManager.reference_streams_path"
+
 
 using android::sp;
 using android::String16;
@@ -89,6 +127,58 @@ using namespace std::chrono;
 using namespace com::rdk::hal;
 using namespace com::rdk::hal::audiodecoder;
 using namespace com::rdk::hal::avbuffer;
+
+bool vts_audiodecoder_helper_validatePropertyValue(int decoder_id, const std::optional<PropertyValue>& propertyValue, const Property property);
+bool vts_audiodecoder_helper_areElementsUnique(const std::vector<int>& values);
+void vts_audiodecoder_helper_validateCapabilities(int decoder_id, const Capabilities& capabilities);
+Codec vts_audiodecoder_helper_StringTocodec(const std::string& format);
+PCMFormat vts_audiodecoder_helper_StringToFormat(const std::string& format);
+size_t vts_bytesPerSample(PCMFormat format);
+double vts_computeRMSDiff(const void* ref_buf, const void* act_buf, size_t size, PCMFormat format);
+UT_status_t VTS_AudioDecoder_init();
+void VTS_AudioDecoder_destroy();
+
+
+typedef struct audioTestConfiguration
+{
+    std::string input;
+    std::string reference;
+    Codec codec;
+    int32_t sampleRate;
+    int32_t numChannels;
+    PCMFormat format;
+    int32_t numOfFrames;
+    double rms_diff_threashold;
+    int64_t decodeTime;
+    int64_t trimStartNs;
+    int64_t trimEndNs;
+    int32_t decoderDelay;
+    int64_t stopPts;
+    int64_t discontinuityPts;
+    int64_t flushPts;
+    int64_t flushRestPts;
+    int64_t eosPts;
+    /* Frame size, PTS, error frame */
+    std::vector<std::tuple<int32_t, int64_t, bool>> frameDetails;
+}audioTestConfiguration_t;
+
+void* vts_kvp_create_instance(char *fileName);
+UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *module, const char *testGroup, const char *testName, std::vector<audioTestConfiguration_t>& streamDetails);
+void vts_kvp_destroy_instance(void *instance);
+
+
+struct audioDecoder_cap
+{
+    int id;
+    ::std::vector<Codec> supportedCodecs;
+    bool supportsSecure;
+    bool isAvailable;
+};
+
+extern std::vector<audioDecoder_cap> gAudiodecoders_hfp;
+
+
+UT_status_t vts_audiodecoder_parseAudioDecoderHFP();
 
 extern sp<IAudioDecoderManager> gAudioDecoderManager;
 extern void *gAudioDecoderTestConfiguration;
@@ -868,7 +958,7 @@ public:
                 sp<AudioDecoderControllerListener> controlListener,
                 sp<AudioDecoderEventListener> eventListener,
                 sp<IAVBuffer> AVBufferManager, IAVBufferHelper* avbufferHelper,
-                bool secureDecode, testConfiguration_t config)
+                bool secureDecode, audioTestConfiguration_t config)
     {
         mDecoderId = decoderId;
         mDecoderHandle = decoderHandle;
@@ -891,7 +981,7 @@ private:
     sp<AudioDecoderEventListener> mEventListener;
     sp<IAVBuffer> mAVBufferManager;
     bool mSecureDecode;
-    testConfiguration_t mTestConfiguration;
+    audioTestConfiguration_t mTestConfiguration;
     deque<InputAudioFrame_t> mInputFrame;
     IAVBufferHelper* mAVbufferHelper;
 

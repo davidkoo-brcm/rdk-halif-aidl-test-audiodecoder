@@ -61,9 +61,7 @@
  *
  */
 
-#include <ut.h>
-#include <ut_log.h>
-#include "vts_audiodecoder_init.h"
+#include "vts_audiodecoder.h"
 
 int main(int argc, char **argv)
 {

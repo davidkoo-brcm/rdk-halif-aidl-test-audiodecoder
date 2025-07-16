@@ -57,38 +57,7 @@
  *
  */
 
-#include <fstream>
-#include <ut.h>
-#include <ut_log.h>
-#include <ut_kvp_profile.h>
-#include <ut_control_plane.h>
-#include <binder/IServiceManager.h>
-#include <binder/ProcessState.h>
-#include <binder/IPCThreadState.h>
-#include <binder/Status.h>
-#include <sys/syscall.h>
-#include <utils/String16.h>
-#include <stdio.h>
-#include <vector>
-#include <optional>
-#include <algorithm>
-#include <unordered_set>
-#include <tuple>
-#include <map>
-#include <chrono>
-
-
-#include "com/rdk/hal/avbuffer/IAVBuffer.h"
-#include "com/rdk/hal/avbuffer/BnAVBufferSpaceListener.h"
-
-#include "vts_audiodecoder_helper_functions.h"
-#include "vts_audiodecoder_parse_hfp.h"
-#include "vts_audiodecoder_parse_testconfig.h"
-#include "IAVBufferHelper.h"
 #include "vts_audiodecoder.h"
-
-using namespace std::chrono;
-using namespace std;
 
 /* Test class registration with UT_Core */
 UT_ADD_TEST_TO_GROUP(VTS_L3_AudioDecoder, UT_TESTS_L3)
@@ -166,9 +135,9 @@ public:
     }
 
     bool isDecoderUsable(const IAudioDecoder::Id& decoderId, audiodecoder::Capabilities* capabilities,
-                        const testConfiguration_t& testConfig, bool secureDecode)
+                        const audioTestConfiguration_t& testConfig, bool secureDecode)
     {
-        auto it = std::find_if(gAudiodecoders_hfp.begin(), gAudiodecoders_hfp.end(), [decoderId](const decoder& item) {
+        auto it = std::find_if(gAudiodecoders_hfp.begin(), gAudiodecoders_hfp.end(), [decoderId](const audioDecoder_cap& item) {
             return item.id == decoderId.value;
         });
         if(it == gAudiodecoders_hfp.end() || !it->isAvailable)
@@ -181,7 +150,7 @@ public:
         return true;
     }
 
-    void runSequentialDecode(testConfiguration_t& testConfig, bool secureDecode)
+    void runSequentialDecode(audioTestConfiguration_t& testConfig, bool secureDecode)
     {
         for (const auto& [_decoderId, decoderHandle, controlListener, eventListener, capabilities] : mAudioDecoderList)
         {
@@ -213,7 +182,7 @@ public:
         }
     }
 
-    void runConcurrentDecode(testConfiguration_t& testConfig, bool secureDecode)
+    void runConcurrentDecode(audioTestConfiguration_t& testConfig, bool secureDecode)
     {
         try {
             vector<thread> threads;
@@ -264,7 +233,7 @@ public:
 
     void runSingleProcessTest(const char *testName, bool secureMode, bool concurrentMode)
     {
-        vector<testConfiguration_t> testConfiguration;
+        vector<audioTestConfiguration_t> testConfiguration;
 
         vts_audiodecoder_parse_testconfig(gAudioDecoderTestConfiguration, gModuleName, gTestGroup, testName, testConfiguration);
 

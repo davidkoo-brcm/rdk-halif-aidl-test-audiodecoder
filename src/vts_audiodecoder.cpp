@@ -62,33 +62,9 @@
  *
  */
 
-#include <fstream>
-#include <ut.h>
-#include <ut_log.h>
-#include <ut_kvp_profile.h>
-#include <ut_control_plane.h>
-#include <binder/IServiceManager.h>
-#include <binder/ProcessState.h>
-#include <binder/IPCThreadState.h>
-#include <binder/Status.h>
-#include <sys/syscall.h>
-#include <utils/String16.h>
-#include <stdio.h>
-#include <vector>
-#include <optional>
-#include <algorithm>
-#include <unordered_set>
-#include <tuple>
-#include <map>
-#include <chrono>
-
-
 #include "com/rdk/hal/avbuffer/IAVBuffer.h"
 #include "com/rdk/hal/avbuffer/BnAVBufferSpaceListener.h"
 
-#include "vts_audiodecoder_helper_functions.h"
-#include "vts_audiodecoder_parse_hfp.h"
-#include "vts_audiodecoder_parse_testconfig.h"
 #include "vts_audiodecoder.h"
 
 #include "IAVBufferHelper.h"

@@ -62,12 +62,7 @@
  *
  */
 
-#include <ut.h>
-#include <ut_log.h>
-#include "vts_audiodecoder_helper_functions.h"
-#include "vts_audiodecoder_parse_hfp.h"
-#include "vts_audiodecoder_init.h"
-#include "vts_audiodecoder_parse_testconfig.h"
+#include "vts_audiodecoder.h"
 
 UT_status_t vts_audiodecoder_getAudioDecoderService();
 sp<IAudioDecoderManager> gAudioDecoderManager;

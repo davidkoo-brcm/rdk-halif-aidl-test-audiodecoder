@@ -62,8 +62,7 @@
  *
  */
 
-#include <filesystem>
-#include "vts_audiodecoder_parse_testconfig.h"
+#include "vts_audiodecoder.h"
 
 using namespace std;
 
@@ -101,7 +100,7 @@ void vts_kvp_destroy_instance(void *instance)
     ut_kvp_destroyInstance((ut_kvp_instance_t*)instance);
 }
 
-UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *module, const char *testGroup, const char *testName, vector<testConfiguration_t>& testConfiguration)
+UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *module, const char *testGroup, const char *testName, vector<audioTestConfiguration_t>& testConfiguration)
 {
     ut_kvp_status_t status;
     ut_kvp_instance_t* kvpTestInstance = (ut_kvp_instance_t*)pTestInstance;
@@ -125,7 +124,7 @@ UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *m
     {
         char resultKVP[UT_KVP_MAX_ELEMENT_SIZE] = {0};
         uint32_t streamId;
-        testConfiguration_t testDetails;
+        audioTestConfiguration_t testDetails;
         vector<int32_t> errorFrameNum;
 
         string streamName = streamList + "." + to_string(i) + "Name";
