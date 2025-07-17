@@ -59,6 +59,11 @@
 
 #include "vts_audiodecoder.h"
 
+using namespace com;
+using namespace rdk;
+using namespace hal;
+using namespace audiodecoder;
+
 /* Test class registration with UT_Core */
 UT_ADD_TEST_TO_GROUP(VTS_L2_AudioDecoder, UT_TESTS_L2)
 
@@ -136,44 +141,44 @@ VTS_L2_AudioDecoder() : UTCore() {}
     }
 };
 
-std::multimap<Property, int32_t> validIntProperties =
+std::multimap<audiodecoder::Property, int32_t> validIntProperties =
 {
-    {Property::LOW_LATENCY_MODE, 0},
-    {Property::LOW_LATENCY_MODE, 1},
-    {Property::AV_SOURCE , int32_t(static_cast<int32_t>(AVSource::AUTO))},
-    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::UNKNOWN))},
-    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::IP))},
-    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::TUNER))},
-    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::SYSTEM))},
-    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::HDMI_1))},
-    {Property::AC4_PRESENTATION_GROUP_INDEX , -1},
-    {Property::AC4_PRESENTATION_GROUP_INDEX , 0},
-    {Property::AC4_ASSOCIATED_TYPE, -1},
-    {Property::AC4_ASSOCIATED_TYPE, 0},
-    {Property::AC4_ASSOCIATED_TYPE, 1},
-    {Property::AC4_ASSOCIATED_TYPE, 2},
-    {Property::AC4_AUTO_SELECTION_PRIORITY, -1},
-    {Property::AC4_AUTO_SELECTION_PRIORITY, 0},
-    {Property::AC4_AUTO_SELECTION_PRIORITY, 1},
-    {Property::AC4_MIXER_BALANCE, 255},
-    {Property::AC4_MIXER_BALANCE, -32},
-    {Property::AC4_MIXER_BALANCE, -12},
-    {Property::AC4_MIXER_BALANCE, 0},
-    {Property::AC4_MIXER_BALANCE, 12},
-    {Property::AC4_MIXER_BALANCE, 32},
-    {Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, -1},
-    {Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, 0},
-    {Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, 1}
+    {audiodecoder::Property::LOW_LATENCY_MODE, 0},
+    {audiodecoder::Property::LOW_LATENCY_MODE, 1},
+    {audiodecoder::Property::AV_SOURCE , int32_t(static_cast<int32_t>(AVSource::AUTO))},
+    {audiodecoder::Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::UNKNOWN))},
+    {audiodecoder::Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::IP))},
+    {audiodecoder::Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::TUNER))},
+    {audiodecoder::Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::SYSTEM))},
+    {audiodecoder::Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::HDMI_1))},
+    {audiodecoder::Property::AC4_PRESENTATION_GROUP_INDEX , -1},
+    {audiodecoder::Property::AC4_PRESENTATION_GROUP_INDEX , 0},
+    {audiodecoder::Property::AC4_ASSOCIATED_TYPE, -1},
+    {audiodecoder::Property::AC4_ASSOCIATED_TYPE, 0},
+    {audiodecoder::Property::AC4_ASSOCIATED_TYPE, 1},
+    {audiodecoder::Property::AC4_ASSOCIATED_TYPE, 2},
+    {audiodecoder::Property::AC4_AUTO_SELECTION_PRIORITY, -1},
+    {audiodecoder::Property::AC4_AUTO_SELECTION_PRIORITY, 0},
+    {audiodecoder::Property::AC4_AUTO_SELECTION_PRIORITY, 1},
+    {audiodecoder::Property::AC4_MIXER_BALANCE, 255},
+    {audiodecoder::Property::AC4_MIXER_BALANCE, -32},
+    {audiodecoder::Property::AC4_MIXER_BALANCE, -12},
+    {audiodecoder::Property::AC4_MIXER_BALANCE, 0},
+    {audiodecoder::Property::AC4_MIXER_BALANCE, 12},
+    {audiodecoder::Property::AC4_MIXER_BALANCE, 32},
+    {audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, -1},
+    {audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, 0},
+    {audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, 1}
 };
 
-std::multimap<Property, android::String16> validStringProperties =
+std::multimap<audiodecoder::Property, android::String16> validStringProperties =
 {
-    {Property::AC4_PREFERRED_LANG1, android::String16("")},
-    {Property::AC4_PREFERRED_LANG1, android::String16("eng")},
-    {Property::AC4_PREFERRED_LANG1, android::String16("fra")},
-    {Property::AC4_PREFERRED_LANG2, android::String16("")},
-    {Property::AC4_PREFERRED_LANG2, android::String16("eng")},
-    {Property::AC4_PREFERRED_LANG1, android::String16("fra")}
+    {audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("")},
+    {audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("eng")},
+    {audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("fra")},
+    {audiodecoder::Property::AC4_PREFERRED_LANG2, android::String16("")},
+    {audiodecoder::Property::AC4_PREFERRED_LANG2, android::String16("eng")},
+    {audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("fra")}
 };
 
 /**
@@ -274,7 +279,7 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, SetandGetProperties_multipleInstance)
     {
         for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
         {
-            Codec _codec = capabilities->supportedCodecs[0];
+            com::rdk::hal::audiodecoder::Codec _codec = capabilities->supportedCodecs[0];
             sp<IAudioDecoderController> audioDecoderController;
 
             //Skip if the plafrom doesn't support secure decode
@@ -440,7 +445,7 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, StateTransitions_mutipleInstance)
     {
         for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
         {
-            Codec _codec = capabilities->supportedCodecs[0];
+            com::rdk::hal::audiodecoder::Codec _codec = capabilities->supportedCodecs[0];
             sp<IAudioDecoderController> audioDecoderController;
 
             //Skip if the plafrom doesn't support secure decode

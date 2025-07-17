@@ -64,32 +64,37 @@
 
 #include "vts_audiodecoder.h"
 
+using namespace com;
+using namespace rdk;
+using namespace hal;
+using namespace audiodecoder;
+
 /*currently HAL FEATURE PROFILE contain string value for codec instead of enum. so the helper required to convert*/
-Codec  vts_audiodecoder_helper_StringTocodec(const std::string& format)
+com::rdk::hal::audiodecoder::Codec  vts_audiodecoder_helper_StringTocodec(const std::string& format)
 {
-    static const std::unordered_map<std::string, Codec> formatMap = {
-    {"PCM", Codec::PCM},
-    {"AAC_LC", Codec::AAC_LC},
-    {"HE_AAC", Codec::HE_AAC},
-    {"HE_AAC2", Codec::HE_AAC2},
-    {"AAC_ELD", Codec::AAC_ELD},
-    {"DOLBY_AC3", Codec::DOLBY_AC3},
-    {"DOLBY_AC3_PLUS", Codec::DOLBY_AC3_PLUS},
-    {"DOLBY_AC3_PLUS_JOC", Codec::DOLBY_AC3_PLUS_JOC},
-    {"DOLBY_AC4", Codec::DOLBY_AC4},
-    {"DOLBY_MAT", Codec::DOLBY_MAT},
-    {"DOLBY_MAT2", Codec::DOLBY_MAT2},
-    {"DOLBY_TRUEHD", Codec::DOLBY_TRUEHD},
-    {"MPEG2", Codec::MPEG2},
-    {"MP3", Codec::MP3},
-    {"FLAC", Codec::FLAC},
-    {"VORBIS", Codec::VORBIS},
-    {"DTS", Codec::DTS},
-    {"OPUS", Codec::OPUS},
-    {"WMA", Codec::WMA},
-    {"REALAUDIO", Codec::REALAUDIO},
-    {"USAC", Codec::USAC},
-    {"X_HE_AAC", Codec::X_HE_AAC}
+    static const std::unordered_map<std::string, audiodecoder::Codec> formatMap = {
+    {"PCM", com::rdk::hal::audiodecoder::Codec::PCM},
+    {"AAC_LC", com::rdk::hal::audiodecoder::Codec::AAC_LC},
+    {"HE_AAC", com::rdk::hal::audiodecoder::Codec::HE_AAC},
+    {"HE_AAC2", com::rdk::hal::audiodecoder::Codec::HE_AAC2},
+    {"AAC_ELD", com::rdk::hal::audiodecoder::Codec::AAC_ELD},
+    {"DOLBY_AC3", com::rdk::hal::audiodecoder::Codec::DOLBY_AC3},
+    {"DOLBY_AC3_PLUS", com::rdk::hal::audiodecoder::Codec::DOLBY_AC3_PLUS},
+    {"DOLBY_AC3_PLUS_JOC", com::rdk::hal::audiodecoder::Codec::DOLBY_AC3_PLUS_JOC},
+    {"DOLBY_AC4", com::rdk::hal::audiodecoder::Codec::DOLBY_AC4},
+    {"DOLBY_MAT", com::rdk::hal::audiodecoder::Codec::DOLBY_MAT},
+    {"DOLBY_MAT2", com::rdk::hal::audiodecoder::Codec::DOLBY_MAT2},
+    {"DOLBY_TRUEHD", com::rdk::hal::audiodecoder::Codec::DOLBY_TRUEHD},
+    {"MPEG2", com::rdk::hal::audiodecoder::Codec::MPEG2},
+    {"MP3", com::rdk::hal::audiodecoder::Codec::MP3},
+    {"FLAC", com::rdk::hal::audiodecoder::Codec::FLAC},
+    {"VORBIS", com::rdk::hal::audiodecoder::Codec::VORBIS},
+    {"DTS", com::rdk::hal::audiodecoder::Codec::DTS},
+    {"OPUS", com::rdk::hal::audiodecoder::Codec::OPUS},
+    {"WMA", com::rdk::hal::audiodecoder::Codec::WMA},
+    {"REALAUDIO", com::rdk::hal::audiodecoder::Codec::REALAUDIO},
+    {"USAC", com::rdk::hal::audiodecoder::Codec::USAC},
+    {"X_HE_AAC", com::rdk::hal::audiodecoder::Codec::X_HE_AAC}
     };
 
     auto it = formatMap.find(format);
@@ -97,10 +102,10 @@ Codec  vts_audiodecoder_helper_StringTocodec(const std::string& format)
     {
         return it->second;
     }
-    return static_cast<Codec>(-1);
+    return static_cast<audiodecoder::Codec>(-1);
 }
 
-PCMFormat vts_audiodecoder_helper_StringToFormat(const std::string& format)
+com::rdk::hal::audiodecoder::PCMFormat vts_audiodecoder_helper_StringToFormat(const std::string& format)
 {
     static const std::unordered_map<std::string, PCMFormat> formatMap = {
         {"F64LE", PCMFormat::F64LE},
@@ -143,7 +148,7 @@ PCMFormat vts_audiodecoder_helper_StringToFormat(const std::string& format)
     return static_cast<PCMFormat>(-1);
 }
 
-void vts_audiodecoder_helper_validateCapabilities(int decoder_id, const Capabilities& capabilities)
+void vts_audiodecoder_helper_validateCapabilities(int decoder_id, const com::rdk::hal::audiodecoder::Capabilities& capabilities)
 {
     bool decoderID = false;
 
@@ -198,7 +203,7 @@ bool vts_audiodecoder_helper_areElementsUnique(const std::vector<int>& values)
     return true;
 }
 
-bool vts_audiodecoder_helper_validatePropertyValue(int decoder_id, const std::optional<PropertyValue>& propertyValue, const Property property)
+bool vts_audiodecoder_helper_validatePropertyValue(int decoder_id, const std::optional<PropertyValue>& propertyValue, const com::rdk::hal::audiodecoder::Property property)
 {
     if (!propertyValue.has_value() || !propertyValue->value.has_value())
     {
@@ -233,7 +238,7 @@ bool vts_audiodecoder_helper_validatePropertyValue(int decoder_id, const std::op
 
     switch (property)
     {
-        case Property::RESOURCE_ID:
+        case audiodecoder::Property::RESOURCE_ID:
              if(std::holds_alternative<int>(val) && std::get<int>(val) == decoder_id)
              {
                 return true;
@@ -243,11 +248,11 @@ bool vts_audiodecoder_helper_validatePropertyValue(int decoder_id, const std::op
                 return false;
              }
 
-        case Property::LOW_LATENCY_MODE:
+        case audiodecoder::Property::LOW_LATENCY_MODE:
             return std::holds_alternative<int32_t>(val) &&
                    (std::get<int32_t>(val) == 0 || std::get<int32_t>(val) == 1);
 
-        case Property::AV_SOURCE:
+        case audiodecoder::Property::AV_SOURCE:
             return std::holds_alternative<int32_t>(val) &&
                    (std::get<int32_t>(val) == static_cast<int32_t>(AVSource::AUTO) ||
                     std::get<int32_t>(val) == static_cast<int32_t>(AVSource::UNKNOWN) ||
@@ -258,31 +263,31 @@ bool vts_audiodecoder_helper_validatePropertyValue(int decoder_id, const std::op
                     (std::get<int32_t>(val) >= static_cast<int32_t>(AVSource::COMPOSITE_1) &&
                      std::get<int32_t>(val) <= static_cast<int32_t>(AVSource::COMPOSITE_5)));
 
-        case Property::SECURE_AUDIO:
+        case audiodecoder::Property::SECURE_AUDIO:
             return std::holds_alternative<int32_t>(val) &&
                    (std::get<int32_t>(val) == 0 || std::get<int32_t>(val) == 1);
 
-        case Property::AC4_PRESENTATION_GROUP_INDEX:
+        case audiodecoder::Property::AC4_PRESENTATION_GROUP_INDEX:
             return std::holds_alternative<int32_t>(val) && std::get<int32_t>(val) >= -1;
 
-        case Property::AC4_PREFERRED_LANG1:
-        case Property::AC4_PREFERRED_LANG2:
+        case audiodecoder::Property::AC4_PREFERRED_LANG1:
+        case audiodecoder::Property::AC4_PREFERRED_LANG2:
             return std::holds_alternative<std::string>(val) &&
                    (std::get<std::string>(val).empty() || std::get<std::string>(val).size() == 3);
 
-        case Property::AC4_ASSOCIATED_TYPE:
+        case audiodecoder::Property::AC4_ASSOCIATED_TYPE:
             return std::holds_alternative<int32_t>(val) &&
                    (std::get<int32_t>(val) >= -1 && std::get<int32_t>(val) <= 2);
 
-        case Property::AC4_AUTO_SELECTION_PRIORITY:
+        case audiodecoder::Property::AC4_AUTO_SELECTION_PRIORITY:
             return std::holds_alternative<int32_t>(val) &&
                    (std::get<int32_t>(val) >= -1 && std::get<int32_t>(val) <= 1);
 
-        case Property::AC4_MIXER_BALANCE:
+        case audiodecoder::Property::AC4_MIXER_BALANCE:
             return std::holds_alternative<int32_t>(val) &&
                    ((std::get<int32_t>(val) >= -32 && std::get<int32_t>(val) <= 32) || std::get<int32_t>(val) == 255);
 
-        case Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE:
+        case audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE:
             return std::holds_alternative<int32_t>(val) &&
                    (std::get<int32_t>(val) >= -1 && std::get<int32_t>(val) <= 1);
 
@@ -305,7 +310,7 @@ static inline uint32_t readBE(const uint8_t* data, size_t bytes)
     return val;
 }
 
-static inline double bytesToDouble(const uint8_t* data, PCMFormat format)
+static inline double bytesToDouble(const uint8_t* data, com::rdk::hal::audiodecoder::PCMFormat format)
 {
     switch (format)
     {
@@ -352,7 +357,7 @@ static inline double bytesToDouble(const uint8_t* data, PCMFormat format)
     }
 }
 
-size_t vts_bytesPerSample(PCMFormat format)
+size_t vts_bytesPerSample(com::rdk::hal::audiodecoder::PCMFormat format)
 {
     switch (format) {
         case PCMFormat::F64LE: case PCMFormat::F64BE: return 8;

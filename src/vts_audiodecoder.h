@@ -105,16 +105,17 @@
 #include "com/rdk/hal/audiodecoder/BnAudioDecoderEventListener.h"
 
 #include "IAVBufferHelper.h"
+#include "vts_avbuffer.h"
 
 
 #define AUDIODECODERMGR_AVAILABLEDECODERS "IAudioDecoderManager.availableDecoders"
 #define AUDIODECODERMGR_IAUDIODECODER "IAudioDecoderManager.IAudioDecoder"
 
-#define VTS_TEST_CONFIG_PATH "./test_configuration/vts_l3_test_config.yaml"
-#define VTS_STREAM_CONFIG_PATH "./test_configuration/vts_stream_list.yaml"
-#define STREAM_DOWNLOAD_PATH "IAudioDecoderManager.stream_download_path"
-#define STREAM_INPUT_PATH "IAudioDecoderManager.input_streams_path"
-#define STREAM_REF_PATH "IAudioDecoderManager.reference_streams_path"
+#define AUDIO_DECODER_TEST_CONFIG_PATH "./test_configuration/vts_l3_test_config.yaml"
+#define AUDIO_DECODER_STREAM_CONFIG_PATH "./test_configuration/vts_stream_list.yaml"
+#define AUDIO_DECODER_STREAM_DOWNLOAD_PATH "IAudioDecoderManager.stream_download_path"
+#define AUDIO_DECODER_STREAM_INPUT_PATH "IAudioDecoderManager.input_streams_path"
+#define AUDIO_DECODER_STREAM_REF_PATH "IAudioDecoderManager.reference_streams_path"
 
 
 using android::sp;
@@ -128,13 +129,13 @@ using namespace com::rdk::hal;
 using namespace com::rdk::hal::audiodecoder;
 using namespace com::rdk::hal::avbuffer;
 
-bool vts_audiodecoder_helper_validatePropertyValue(int decoder_id, const std::optional<PropertyValue>& propertyValue, const Property property);
+bool vts_audiodecoder_helper_validatePropertyValue(int decoder_id, const std::optional<PropertyValue>& propertyValue, const com::rdk::hal::audiodecoder::Property property);
 bool vts_audiodecoder_helper_areElementsUnique(const std::vector<int>& values);
-void vts_audiodecoder_helper_validateCapabilities(int decoder_id, const Capabilities& capabilities);
-Codec vts_audiodecoder_helper_StringTocodec(const std::string& format);
-PCMFormat vts_audiodecoder_helper_StringToFormat(const std::string& format);
-size_t vts_bytesPerSample(PCMFormat format);
-double vts_computeRMSDiff(const void* ref_buf, const void* act_buf, size_t size, PCMFormat format);
+void vts_audiodecoder_helper_validateCapabilities(int decoder_id, const com::rdk::hal::audiodecoder::Capabilities& capabilities);
+com::rdk::hal::audiodecoder::Codec vts_audiodecoder_helper_StringTocodec(const std::string& format);
+com::rdk::hal::audiodecoder::PCMFormat vts_audiodecoder_helper_StringToFormat(const std::string& format);
+size_t vts_bytesPerSample(com::rdk::hal::audiodecoder::PCMFormat format);
+double vts_computeRMSDiff(const void* ref_buf, const void* act_buf, size_t size, com::rdk::hal::audiodecoder::PCMFormat format);
 UT_status_t VTS_AudioDecoder_init();
 void VTS_AudioDecoder_destroy();
 
@@ -143,10 +144,10 @@ typedef struct audioTestConfiguration
 {
     std::string input;
     std::string reference;
-    Codec codec;
+    audiodecoder::Codec codec;
     int32_t sampleRate;
     int32_t numChannels;
-    PCMFormat format;
+    audiodecoder::PCMFormat format;
     int32_t numOfFrames;
     double rms_diff_threashold;
     int64_t decodeTime;
@@ -158,19 +159,18 @@ typedef struct audioTestConfiguration
     int64_t flushPts;
     int64_t flushRestPts;
     int64_t eosPts;
+    int64_t sinkEosPts;
+    int64_t sinkFlushPts;
     /* Frame size, PTS, error frame */
     std::vector<std::tuple<int32_t, int64_t, bool>> frameDetails;
 }audioTestConfiguration_t;
 
-void* vts_kvp_create_instance(char *fileName);
 UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *module, const char *testGroup, const char *testName, std::vector<audioTestConfiguration_t>& streamDetails);
-void vts_kvp_destroy_instance(void *instance);
-
 
 struct audioDecoder_cap
 {
     int id;
-    ::std::vector<Codec> supportedCodecs;
+    ::std::vector<audiodecoder::Codec> supportedCodecs;
     bool supportsSecure;
     bool isAvailable;
 };
@@ -182,32 +182,6 @@ UT_status_t vts_audiodecoder_parseAudioDecoderHFP();
 
 extern sp<IAudioDecoderManager> gAudioDecoderManager;
 extern void *gAudioDecoderTestConfiguration;
-
-/* Status::Exception */
-const static ut_control_keyStringMapping_t statusException_mapTable[] =
-{
-    {"EX_NONE",                  (int32_t) Status::EX_NONE},
-    {"EX_SECURITY",              (int32_t) Status::EX_SECURITY},
-    {"EX_BAD_PARCELABLE",        (int32_t) Status::EX_BAD_PARCELABLE},
-    {"EX_ILLEGAL_ARGUMENT",      (int32_t) Status::EX_ILLEGAL_ARGUMENT},
-    {"EX_NULL_POINTER",          (int32_t) Status::EX_NULL_POINTER},
-    {"EX_ILLEGAL_STATE",         (int32_t) Status::EX_ILLEGAL_STATE},
-    {"EX_NETWORK_MAIN_THREAD",   (int32_t) Status::EX_NETWORK_MAIN_THREAD},
-    {"EX_UNSUPPORTED_OPERATION", (int32_t) Status::EX_UNSUPPORTED_OPERATION},
-    {"EX_SERVICE_SPECIFIC",      (int32_t) Status::EX_SERVICE_SPECIFIC},
-    {"EX_PARCELABLE",            (int32_t) Status::EX_PARCELABLE},
-    {"EX_HAS_REPLY_HEADER",      (int32_t) Status::EX_HAS_REPLY_HEADER},
-    {"EX_TRANSACTION_FAILED",    (int32_t) Status::EX_TRANSACTION_FAILED},
-    {NULL, -1}
-};
-
-/* bool */
-const static ut_control_keyStringMapping_t bool_mapTable[] =
-{
-    {"false", (int32_t) false},
-    {"true",  (int32_t) true},
-    {NULL, -1}
-};
 
 #define MAX_TRANSITORY_STATE_WAIT_MS  5
 #define MAX_FINAL_STATE_WAIT_MS  500
@@ -773,84 +747,14 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         } \
     } while (0)
 
-#define AVBUFFER_CREATE_AUDIOPOOL_SUCCESS(avBufferManager, secureHeap, audioDecoderId, listener, audioPool) \
-    do { \
-        UT_LOG_INFO("Calling createAudioPool(IN:secureHeap:[%d], IN:audioDecoderId:[%d], IN:listener:[%p], OUT:audioPool)", \
-                    secureHeap, audioDecoderId.value, listener.get()); \
-        Status status = avBufferManager->createAudioPool(secureHeap, audioDecoderId, listener, &audioPool); \
-        UT_LOG_INFO("Result createAudioPool(IN:secureHeap:[%d], IN:audioDecoderId:[%d], IN:listener:[%p], OUT:audioPool.handle:[%d]), status:[isOK:%s, exception:%s]", \
-                    secureHeap, audioDecoderId.value, listener.get(), audioPool.handle, \
-                    UT_Control_GetMapString(bool_mapTable, status.isOk()), UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_NOT_EQUAL(audioPool.handle, Pool::INVALID); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
-    } while (0)
-
-#define AVBUFFER_DESTROY_POOL_SUCCESS(avBufferManager, pool) \
-    do { \
-        bool _aidl_return = false; \
-        Status status; \
-        UT_LOG_INFO("Calling destroyPool(IN:poolHandle:[%d], OUT:_aidl_return:[])", pool); \
-        status = avBufferManager->destroyPool(pool, &_aidl_return); \
-        UT_LOG_INFO("Result destroyPool with (IN:poolHandle:[%d], OUT:_aidl_return:[%s]), status:[isOK:%s, exception:%s]", \
-                    pool.handle, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
-                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
-                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_TRUE(_aidl_return); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
-    } while (0)
-
-#define AVBUFFER_ALLOC_SUCCESS(avBufferManager, pool, size, bufferHandle) \
-    do { \
-        UT_LOG_INFO("Calling alloc(IN:poolHandle:[%d], IN:size:[%d], OUT:bufferHandle)", pool.handle, size); \
-        Status status = avBufferManager->alloc(pool, size, &bufferHandle); \
-        UT_LOG_INFO("Result alloc(IN:poolHandle:[%d], IN:size:[%d], OUT:bufferHandle:[0x%X]), status:[isOK:%s, exception:%s]", \
-                    pool.handle, size, bufferHandle, UT_Control_GetMapString(bool_mapTable, status.isOk()), \
-                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_NOT_EQUAL(bufferHandle, IAVBuffer::INVALID_HANDLE); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
-    } while (0)
-
-#define AVBUFFER_FREE_SUCCESS(avBufferManager, bufferHandle) \
-    do { \
-        bool _aidl_return = false; \
-        UT_LOG_INFO("Calling free(IN:bufferHandle:[0x%X], OUT:_aidl_return)", bufferHandle); \
-        Status status = avBufferManager->free(bufferHandle, &_aidl_return); \
-        UT_LOG_INFO("Result free(IN:bufferHandle:[0x%X], OUT:_aidl_return:[%s]), status:[isOK:%s, exception:%s]", \
-                    bufferHandle, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
-                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
-                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
-        UT_ASSERT_TRUE(_aidl_return); \
-    } while (0)
-
-#define AVBUFFER_GETMETRICS(avBufferManager, secureHeap, heapMetrics) \
-    do { \
-        UT_LOG_INFO("Calling getHeapMetrics(IN:secureHeap:[%s], OUT:heapMetrics[])", \
-                    UT_Control_GetMapString(bool_mapTable, secureHeap)); \
-        Status status = avBufferManager->getHeapMetrics(secureHeap, &heapMetrics); \
-        UT_LOG_INFO("Result getHeapMetrics(IN:secureHeap:[%s], OUT:heapMetrics[secure:%s, bytesUsed:%d, bytesTotal:%d]), status:[isOK:%s, exception:%s]", \
-                    UT_Control_GetMapString(bool_mapTable, secureHeap), \
-                    UT_Control_GetMapString(bool_mapTable, heapMetrics.secure), \
-                    heapMetrics.bytesUsed, \
-                    heapMetrics.bytesTotal, \
-                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
-                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
-    } while (0)
-
 /* Stream metadata */
 struct AudioMetatData
 {
-    Codec sourceCodec;
+    com::rdk::hal::audiodecoder::Codec sourceCodec;
     bool isDolbyAtmos;
     int32_t numChannels;
     int32_t sampleRate;
-    PCMFormat format;
+    com::rdk::hal::audiodecoder::PCMFormat format;
     bool planarFormat;
     int32_t trimStartNs;
     int32_t trimEndNs;
@@ -868,6 +772,7 @@ typedef struct DecodedAudioFrame
     int64_t framePTS;
     bool isMetaAvailable;
     bool isTunnel;
+    int64_t frameBufferHandle;
     struct AudioMetatData metadata;
     chrono::steady_clock::time_point receiveTime;
 }DecodedAudioFrame_t;
@@ -883,7 +788,7 @@ typedef struct InputAudioFrame
 /* Error frame details */
 typedef struct ErrorDetails
 {
-    ErrorCode vendorErrorCode;
+    com::rdk::hal::audiodecoder::ErrorCode vendorErrorCode;
     int32_t errorCode;
     chrono::steady_clock::time_point receiveTime;
 }ErrorDetails_t;
@@ -897,7 +802,7 @@ public:
 
     string formatChannelVector(const std::vector<ChannelType>& channels);
 
-    Status onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::optional<FrameMetadata>& metadata) override;
+    Status onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::optional<com::rdk::hal::audiodecoder::FrameMetadata>& metadata) override;
 
     bool getNextFrame(DecodedAudioFrame_t &frameInfo, bool popFrame);
 
@@ -918,7 +823,7 @@ public:
     AudioDecoderEventListener(): mCurrentState(State::CLOSED) {}
     virtual ~AudioDecoderEventListener() = default;
 
-    Status onDecodeError(ErrorCode vendorErrorCode, int32_t errorCode) override;
+    Status onDecodeError(com::rdk::hal::audiodecoder::ErrorCode vendorErrorCode, int32_t errorCode) override;
 
     Status onStateChanged(State oldState,State newState) override;
 
@@ -951,10 +856,10 @@ private:
     int32_t mDecoderID;
 };
 
-class DecoderTest
+class audioDecoderTest
 {
 public:
-    DecoderTest(IAudioDecoder::Id decoderId, sp<IAudioDecoder> decoderHandle,
+    audioDecoderTest(IAudioDecoder::Id decoderId, sp<IAudioDecoder> decoderHandle,
                 sp<AudioDecoderControllerListener> controlListener,
                 sp<AudioDecoderEventListener> eventListener,
                 sp<IAVBuffer> AVBufferManager, IAVBufferHelper* avbufferHelper,

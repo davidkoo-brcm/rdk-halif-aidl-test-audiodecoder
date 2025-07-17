@@ -64,6 +64,10 @@
 
 #include "vts_audiodecoder.h"
 
+using namespace com::rdk::hal;
+using namespace com::rdk::hal::audiodecoder;
+using namespace com::rdk::hal::avbuffer;
+
 UT_status_t vts_audiodecoder_getAudioDecoderService();
 sp<IAudioDecoderManager> gAudioDecoderManager;
 void *gAudioDecoderTestConfiguration;
@@ -79,7 +83,7 @@ UT_status_t VTS_AudioDecoder_init()
         UT_LOG_ERROR("Failed to process the HFP file");
         return UT_STATUS_FAILURE;
     }
-    gAudioDecoderTestConfiguration = vts_kvp_create_instance(VTS_TEST_CONFIG_PATH);
+    gAudioDecoderTestConfiguration = vts_kvp_create_instance(AUDIO_DECODER_TEST_CONFIG_PATH);
 
     return UT_STATUS_OK;
 }

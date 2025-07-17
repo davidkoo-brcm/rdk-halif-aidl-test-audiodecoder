@@ -59,6 +59,10 @@
 
 #include "vts_audiodecoder.h"
 
+using namespace com::rdk::hal;
+using namespace com::rdk::hal::audiodecoder;
+using namespace com::rdk::hal::avbuffer;
+
 /* Test class registration with UT_Core */
 UT_ADD_TEST_TO_GROUP(VTS_L1_AudioDecoder, UT_TESTS_L1)
 
@@ -190,7 +194,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, getAudioDecoder_pos)
     std::optional<PropertyValue> resource_id_1;
     std::optional<PropertyValue> resource_id_2;
     std::vector<IAudioDecoder::Id> decoderIds;
-    Property property = Property::RESOURCE_ID;
+    com::rdk::hal::audiodecoder::Property property = com::rdk::hal::audiodecoder::Property::RESOURCE_ID;
 
     /* Get the Audio decoder IDs */
     AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
@@ -285,7 +289,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, getAudioDecoder_neg)
 */
 UT_ADD_TEST(VTS_L1_AudioDecoder, getCapabilities_pos)
 {
-    Capabilities capabilities;
+    audiodecoder::Capabilities capabilities;
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
 
@@ -329,11 +333,11 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, getProperty_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
-    std::vector<Property> testProperties = {Property::RESOURCE_ID, Property::LOW_LATENCY_MODE, Property::AV_SOURCE, Property::SECURE_AUDIO,
-                                            Property::AC4_PRESENTATION_GROUP_INDEX, Property::AC4_PREFERRED_LANG1, Property::AC4_PREFERRED_LANG2,
-                                            Property::AC4_ASSOCIATED_TYPE, Property::AC4_AUTO_SELECTION_PRIORITY, Property::AC4_MIXER_BALANCE,
-                                            Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, Property::METRIC_FRAMES_DECODED,
-                                            Property::METRIC_DECODE_ERRORS, Property::METRIC_FRAMES_DROPPED};
+    std::vector<com::rdk::hal::audiodecoder::Property> testProperties = {com::rdk::hal::audiodecoder::Property::RESOURCE_ID, com::rdk::hal::audiodecoder::Property::LOW_LATENCY_MODE, com::rdk::hal::audiodecoder::Property::AV_SOURCE, com::rdk::hal::audiodecoder::Property::SECURE_AUDIO,
+                                            com::rdk::hal::audiodecoder::Property::AC4_PRESENTATION_GROUP_INDEX, com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG1, com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG2,
+                                            com::rdk::hal::audiodecoder::Property::AC4_ASSOCIATED_TYPE, com::rdk::hal::audiodecoder::Property::AC4_AUTO_SELECTION_PRIORITY, com::rdk::hal::audiodecoder::Property::AC4_MIXER_BALANCE,
+                                            com::rdk::hal::audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, com::rdk::hal::audiodecoder::Property::METRIC_FRAMES_DECODED,
+                                            com::rdk::hal::audiodecoder::Property::METRIC_DECODE_ERRORS, com::rdk::hal::audiodecoder::Property::METRIC_FRAMES_DROPPED};
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
@@ -379,8 +383,8 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, getProperty_neg)
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
     std::optional<PropertyValue> propertyValue;
-    int32_t firstValue = static_cast<int32_t>(Property::RESOURCE_ID);
-    Property Invalidproperty = static_cast<Property>(firstValue - 1);
+    int32_t firstValue = static_cast<int32_t>(com::rdk::hal::audiodecoder::Property::RESOURCE_ID);
+    com::rdk::hal::audiodecoder::Property Invalidproperty = static_cast<audiodecoder::Property>(firstValue - 1);
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
@@ -418,7 +422,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, getState_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
-    Capabilities capabilities;
+    audiodecoder::Capabilities capabilities;
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
@@ -472,7 +476,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, open_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
-    Capabilities capabilities;
+    audiodecoder::Capabilities capabilities;
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
@@ -531,8 +535,8 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, open_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
-    Codec invalidCodec;
-    Capabilities capabilities;
+    com::rdk::hal::audiodecoder::Codec invalidCodec;
+    audiodecoder::Capabilities capabilities;
     ::android::binder::Status status;
     sp<IAudioDecoderController> audioDecoderController = nullptr;
     sp<IAudioDecoderController> audioDecoderController_nullptr = nullptr;
@@ -554,7 +558,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, open_neg)
         if(capabilities.supportedCodecs.size() > 1)
             std::sort(capabilities.supportedCodecs.begin(), capabilities.supportedCodecs.end());
 
-        invalidCodec = static_cast<Codec>(static_cast<int32_t>(capabilities.supportedCodecs.front()) - 1);
+        invalidCodec = static_cast<audiodecoder::Codec>(static_cast<int32_t>(capabilities.supportedCodecs.front()) - 1);
 
         /* Send invalid audio codec value */
         AUDIODECODER_OPEN_FAILURE(audioDecoder, invalidCodec, capabilities.supportsSecure, controllerListener, audioDecoderController_nullptr, Status::EX_ILLEGAL_ARGUMENT);
@@ -604,7 +608,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, close_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
-    Capabilities capabilities;
+    audiodecoder::Capabilities capabilities;
     ::android::binder::Status status;
     bool _aidl_return;
 
@@ -662,7 +666,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, close_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
-    Capabilities capabilities;
+    audiodecoder::Capabilities capabilities;
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
@@ -999,7 +1003,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, start_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
-    Capabilities capabilities;
+    audiodecoder::Capabilities capabilities;
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
@@ -1136,7 +1140,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, stop_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
-    Capabilities capabilities;
+    audiodecoder::Capabilities capabilities;
     ::com::rdk::hal::State state;
     ::android::binder::Status status;
 
@@ -1772,9 +1776,9 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, parseCodecSpecificData_pos)
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
-            if (_codec == Codec::AAC_LC ||
-                _codec == Codec::HE_AAC ||
-                _codec == Codec::HE_AAC2)
+            if (_codec == com::rdk::hal::audiodecoder::Codec::AAC_LC ||
+                _codec == com::rdk::hal::audiodecoder::Codec::HE_AAC ||
+                _codec == com::rdk::hal::audiodecoder::Codec::HE_AAC2)
             {
                 CSDAudioFormat csdAudioFormat = CSDAudioFormat::MP4_AUDIO_SPECIFIC_CONFIG;
 
@@ -1857,9 +1861,9 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, parseCodecSpecificData_neg)
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
-            if (_codec == Codec::AAC_LC ||
-                _codec == Codec::HE_AAC ||
-                _codec == Codec::HE_AAC2)
+            if (_codec == com::rdk::hal::audiodecoder::Codec::AAC_LC ||
+                _codec == com::rdk::hal::audiodecoder::Codec::HE_AAC ||
+                _codec == com::rdk::hal::audiodecoder::Codec::HE_AAC2)
             {
                 CSDAudioFormat csdAudioFormat = CSDAudioFormat::MP4_AUDIO_SPECIFIC_CONFIG;
 
@@ -1898,77 +1902,77 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, parseCodecSpecificData_neg)
     }
 }
 
-std::multimap<Property, int32_t> validIntPropertyReady =
+std::multimap<audiodecoder::Property, int32_t> validIntPropertyReady =
 {
-    {Property::LOW_LATENCY_MODE, 0},
-    {Property::LOW_LATENCY_MODE, 1},
-    {Property::AV_SOURCE , int32_t(static_cast<int32_t>(AVSource::AUTO))},
-    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::UNKNOWN))},
-    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::IP))},
-    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::TUNER))},
-    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::SYSTEM))},
-    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::HDMI_1))}
+    {com::rdk::hal::audiodecoder::Property::LOW_LATENCY_MODE, 0},
+    {com::rdk::hal::audiodecoder::Property::LOW_LATENCY_MODE, 1},
+    {com::rdk::hal::audiodecoder::Property::AV_SOURCE , int32_t(static_cast<int32_t>(AVSource::AUTO))},
+    {com::rdk::hal::audiodecoder::Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::UNKNOWN))},
+    {com::rdk::hal::audiodecoder::Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::IP))},
+    {com::rdk::hal::audiodecoder::Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::TUNER))},
+    {com::rdk::hal::audiodecoder::Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::SYSTEM))},
+    {com::rdk::hal::audiodecoder::Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::HDMI_1))}
 };
 
-std::multimap<Property, int32_t> validIntPropertyAll =
+std::multimap<audiodecoder::Property, int32_t> validIntPropertyAll =
 {
-    {Property::AC4_PRESENTATION_GROUP_INDEX , -1},
-    {Property::AC4_PRESENTATION_GROUP_INDEX , 0},
-    {Property::AC4_ASSOCIATED_TYPE, -1},
-    {Property::AC4_ASSOCIATED_TYPE, 0},
-    {Property::AC4_ASSOCIATED_TYPE, 1},
-    {Property::AC4_ASSOCIATED_TYPE, 2},
-    {Property::AC4_AUTO_SELECTION_PRIORITY, -1},
-    {Property::AC4_AUTO_SELECTION_PRIORITY, 0},
-    {Property::AC4_AUTO_SELECTION_PRIORITY, 1},
-    {Property::AC4_MIXER_BALANCE, 255},
-    {Property::AC4_MIXER_BALANCE, -32},
-    {Property::AC4_MIXER_BALANCE, 32},
-    {Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, -1},
-    {Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, 0},
-    {Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, 1}
+    {com::rdk::hal::audiodecoder::Property::AC4_PRESENTATION_GROUP_INDEX , -1},
+    {com::rdk::hal::audiodecoder::Property::AC4_PRESENTATION_GROUP_INDEX , 0},
+    {com::rdk::hal::audiodecoder::Property::AC4_ASSOCIATED_TYPE, -1},
+    {com::rdk::hal::audiodecoder::Property::AC4_ASSOCIATED_TYPE, 0},
+    {com::rdk::hal::audiodecoder::Property::AC4_ASSOCIATED_TYPE, 1},
+    {com::rdk::hal::audiodecoder::Property::AC4_ASSOCIATED_TYPE, 2},
+    {com::rdk::hal::audiodecoder::Property::AC4_AUTO_SELECTION_PRIORITY, -1},
+    {com::rdk::hal::audiodecoder::Property::AC4_AUTO_SELECTION_PRIORITY, 0},
+    {com::rdk::hal::audiodecoder::Property::AC4_AUTO_SELECTION_PRIORITY, 1},
+    {com::rdk::hal::audiodecoder::Property::AC4_MIXER_BALANCE, 255},
+    {com::rdk::hal::audiodecoder::Property::AC4_MIXER_BALANCE, -32},
+    {com::rdk::hal::audiodecoder::Property::AC4_MIXER_BALANCE, 32},
+    {com::rdk::hal::audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, -1},
+    {com::rdk::hal::audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, 0},
+    {com::rdk::hal::audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, 1}
 };
 
-std::multimap<Property, android::String16> validStringPropertyAll =
+std::multimap<audiodecoder::Property, android::String16> validStringPropertyAll =
 {
-    {Property::AC4_PREFERRED_LANG1, android::String16("")},
-    {Property::AC4_PREFERRED_LANG1, android::String16("eng")},
-    {Property::AC4_PREFERRED_LANG1, android::String16("fra")},
-    {Property::AC4_PREFERRED_LANG2, android::String16("")},
-    {Property::AC4_PREFERRED_LANG2, android::String16("eng")},
-    {Property::AC4_PREFERRED_LANG1, android::String16("fra")}
+    {com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("")},
+    {com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("eng")},
+    {com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("fra")},
+    {com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG2, android::String16("")},
+    {com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG2, android::String16("eng")},
+    {com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("fra")}
 };
 
-std::multimap<Property, int32_t> invalidIntPropertyReady =
+std::multimap<audiodecoder::Property, int32_t> invalidIntPropertyReady =
 {
-    {Property::LOW_LATENCY_MODE, -1},
-    {Property::LOW_LATENCY_MODE, 2},
-    {Property::AV_SOURCE , int32_t(static_cast<int32_t>(AVSource::AUTO))-1},
-    {Property::AV_SOURCE , int32_t(static_cast<int32_t>(AVSource::COMPOSITE_5 ))+1}
+    {com::rdk::hal::audiodecoder::Property::LOW_LATENCY_MODE, -1},
+    {com::rdk::hal::audiodecoder::Property::LOW_LATENCY_MODE, 2},
+    {com::rdk::hal::audiodecoder::Property::AV_SOURCE , int32_t(static_cast<int32_t>(AVSource::AUTO))-1},
+    {com::rdk::hal::audiodecoder::Property::AV_SOURCE , int32_t(static_cast<int32_t>(AVSource::COMPOSITE_5 ))+1}
 };
 
-std::multimap<Property, int32_t> invalidIntPropertyAll =
+std::multimap<audiodecoder::Property, int32_t> invalidIntPropertyAll =
 {
-    {Property::AC4_PRESENTATION_GROUP_INDEX , -2},
-    {Property::AC4_ASSOCIATED_TYPE, -2},
-    {Property::AC4_ASSOCIATED_TYPE, 3},
-    {Property::AC4_AUTO_SELECTION_PRIORITY, -2},
-    {Property::AC4_AUTO_SELECTION_PRIORITY, 2},
-    {Property::AC4_MIXER_BALANCE, 256},
-    {Property::AC4_MIXER_BALANCE, -33},
-    {Property::AC4_MIXER_BALANCE, 33},
-    {Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, -2},
-    {Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, 2}
+    {com::rdk::hal::audiodecoder::Property::AC4_PRESENTATION_GROUP_INDEX , -2},
+    {com::rdk::hal::audiodecoder::Property::AC4_ASSOCIATED_TYPE, -2},
+    {com::rdk::hal::audiodecoder::Property::AC4_ASSOCIATED_TYPE, 3},
+    {com::rdk::hal::audiodecoder::Property::AC4_AUTO_SELECTION_PRIORITY, -2},
+    {com::rdk::hal::audiodecoder::Property::AC4_AUTO_SELECTION_PRIORITY, 2},
+    {com::rdk::hal::audiodecoder::Property::AC4_MIXER_BALANCE, 256},
+    {com::rdk::hal::audiodecoder::Property::AC4_MIXER_BALANCE, -33},
+    {com::rdk::hal::audiodecoder::Property::AC4_MIXER_BALANCE, 33},
+    {com::rdk::hal::audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, -2},
+    {com::rdk::hal::audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, 2}
 };
 
-std::multimap<Property, android::String16> invalidStringPropertyAll =
+std::multimap<audiodecoder::Property, android::String16> invalidStringPropertyAll =
 {
-    {Property::AC4_PREFERRED_LANG1, android::String16("en£")},
-    {Property::AC4_PREFERRED_LANG1, android::String16("111")},
-    {Property::AC4_PREFERRED_LANG1, android::String16("a11")},
-    {Property::AC4_PREFERRED_LANG2, android::String16("en&")},
-    {Property::AC4_PREFERRED_LANG2, android::String16("111")},
-    {Property::AC4_PREFERRED_LANG2, android::String16("a11")}
+    {com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("en£")},
+    {com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("111")},
+    {com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("a11")},
+    {com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG2, android::String16("en&")},
+    {com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG2, android::String16("111")},
+    {com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG2, android::String16("a11")}
 };
 
 /**

@@ -72,6 +72,10 @@
 using namespace std::chrono;
 using namespace std;
 
+using namespace com::rdk::hal;
+using namespace com::rdk::hal::audiodecoder;
+using namespace com::rdk::hal::avbuffer;
+
 #define MAX_WAIT_TIME 200
 
 /* Controller listener Class Functions */
@@ -100,7 +104,7 @@ string AudioDecoderControllerListener::formatChannelVector(const std::vector<Cha
  * @param metadata stream metadata
  * @return Status
  */
-Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::optional<FrameMetadata>& metadata)
+Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::optional<com::rdk::hal::audiodecoder::FrameMetadata>& metadata)
 {
     UT_LOG_INFO("[DecoderID: %d] onFrameOutput: Received frameoutput [PTS:%lld, handle: %llX]", mDecoderID, nsPresentationTime, frameBufferHandle);
 
@@ -214,7 +218,7 @@ void AudioDecoderControllerListener::setDecoderID(int32_t id)
  * @param errorCode General error code
  * @return Status
  */
-Status AudioDecoderEventListener::onDecodeError(ErrorCode vendorErrorCode, int32_t errorCode)
+Status AudioDecoderEventListener::onDecodeError(com::rdk::hal::audiodecoder::ErrorCode vendorErrorCode, int32_t errorCode)
 {
     ErrorDetails_t errorDetails;
     errorDetails.receiveTime = chrono::steady_clock::now();
@@ -356,30 +360,30 @@ void AudioDecoderEventListener::setDecoderID(int32_t id)
 
 
 
-void DecoderTest::run(bool validateMetrics)
+void audioDecoderTest::run(bool validateMetrics)
 {
     decodeAndConsumeAudioStreams(validateMetrics);
 }
 
-bool DecoderTest::getDecoderMetrics(int32_t &framesDecoded, int32_t &decodeErrors, int32_t &framesDropped)
+bool audioDecoderTest::getDecoderMetrics(int32_t &framesDecoded, int32_t &decodeErrors, int32_t &framesDropped)
 {
     optional<PropertyValue> propertyValue;
 
-    AUDIODECODER_GET_PROPERTY_SUCCESS(mDecoderHandle, Property::METRIC_FRAMES_DECODED, propertyValue);
+    AUDIODECODER_GET_PROPERTY_SUCCESS(mDecoderHandle, audiodecoder::Property::METRIC_FRAMES_DECODED, propertyValue);
     if (!propertyValue.has_value() || !propertyValue->value.has_value())
     {
         return false;
     }
     framesDecoded = propertyValue->value->get<PropertyValue::Value::Tag::intValue>();
 
-    AUDIODECODER_GET_PROPERTY_SUCCESS(mDecoderHandle, Property::METRIC_DECODE_ERRORS, propertyValue);
+    AUDIODECODER_GET_PROPERTY_SUCCESS(mDecoderHandle, audiodecoder::Property::METRIC_DECODE_ERRORS, propertyValue);
     if (!propertyValue.has_value() || !propertyValue->value.has_value())
     {
         return false;
     }
     decodeErrors = propertyValue->value->get<PropertyValue::Value::Tag::intValue>();
 
-    AUDIODECODER_GET_PROPERTY_SUCCESS(mDecoderHandle, Property::METRIC_FRAMES_DROPPED, propertyValue);
+    AUDIODECODER_GET_PROPERTY_SUCCESS(mDecoderHandle, audiodecoder::Property::METRIC_FRAMES_DROPPED, propertyValue);
     if (!propertyValue.has_value() || !propertyValue->value.has_value())
     {
         return false;
@@ -402,7 +406,7 @@ public:
     }
 };
 
-void DecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
+void audioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
 {
     try {
         sp<IAudioDecoderController> audioDecoderController;
@@ -434,7 +438,7 @@ void DecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
         AUDIODECODER_OPEN_SUCCESS(mDecoderHandle, mTestConfiguration.codec, mSecureDecode, mControlListener, audioDecoderController, true);
 
         /* Set AV Source */
-        AUDIODECODER_SETPROPERTY_SUCCESS(audioDecoderController, Property::AV_SOURCE, avSourcePropertyValue);
+        AUDIODECODER_SETPROPERTY_SUCCESS(audioDecoderController, audiodecoder::Property::AV_SOURCE, avSourcePropertyValue);
 
         /* Start the decoder */
         AUDIODECODER_START_SUCCESS(mDecoderHandle, audioDecoderController, true);

@@ -65,40 +65,10 @@
 #include "vts_audiodecoder.h"
 
 using namespace std;
-
-void* vts_kvp_create_instance(char *fileName)
-{
-    ut_kvp_instance_t* instance;
-    ut_kvp_status_t result;
-
-    UT_LOG("In %s", __FUNCTION__);
-
-    instance = ut_kvp_createInstance();
-
-    if(!instance)
-    {
-        UT_LOG_ERROR("Failed to create ut kvp instance");
-        return nullptr;
-    }
-
-    result = ut_kvp_open(instance, fileName);
-
-    if(result != UT_KVP_STATUS_SUCCESS)
-    {
-        UT_LOG_ERROR("Failed to open test configuration file");
-        ut_kvp_destroyInstance(instance);
-        return nullptr;
-    }
-
-    UT_LOG("Out  %s", __FUNCTION__);
-
-    return (ut_kvp_instance_t*)instance;
-}
-
-void vts_kvp_destroy_instance(void *instance)
-{
-    ut_kvp_destroyInstance((ut_kvp_instance_t*)instance);
-}
+using namespace com;
+using namespace rdk;
+using namespace hal;
+using namespace audiodecoder;
 
 UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *module, const char *testGroup, const char *testName, vector<audioTestConfiguration_t>& testConfiguration)
 {
@@ -115,8 +85,8 @@ UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *m
     const string streamList = testList + "." + "Inputs" + "." + string("Streams");
     const string streamsDetails = string("AudioStreams");
 
-    status = ut_kvp_getStringField(kvpTestInstance, STREAM_INPUT_PATH, streamInputPath, UT_KVP_MAX_ELEMENT_SIZE);
-    status = ut_kvp_getStringField(kvpTestInstance, STREAM_REF_PATH, streamRefPath, UT_KVP_MAX_ELEMENT_SIZE);
+    status = ut_kvp_getStringField(kvpTestInstance, AUDIO_DECODER_STREAM_INPUT_PATH, streamInputPath, UT_KVP_MAX_ELEMENT_SIZE);
+    status = ut_kvp_getStringField(kvpTestInstance, AUDIO_DECODER_STREAM_REF_PATH, streamRefPath, UT_KVP_MAX_ELEMENT_SIZE);
 
     streamCount = ut_kvp_getListCount(kvpTestInstance, streamList.c_str());
 

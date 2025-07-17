@@ -64,6 +64,11 @@
 
 #include "vts_audiodecoder.h"
 
+using namespace com;
+using namespace rdk;
+using namespace hal;
+using namespace audiodecoder;
+
 using namespace std;
 
 vector<audioDecoder_cap> gAudiodecoders_hfp;
