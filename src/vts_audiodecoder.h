@@ -111,7 +111,7 @@
 #define AUDIODECODERMGR_AVAILABLEDECODERS "IAudioDecoderManager.availableDecoders"
 #define AUDIODECODERMGR_IAUDIODECODER "IAudioDecoderManager.IAudioDecoder"
 
-#define AUDIO_DECODER_TEST_CONFIG_PATH "./test_configuration/vts_l3_test_config.yaml"
+#define AUDIO_DECODER_TEST_CONFIG_PATH "./test_configuration/vts_l3_AudioDecoder_test_config.yaml"
 #define AUDIO_DECODER_STREAM_CONFIG_PATH "./test_configuration/vts_stream_list.yaml"
 #define AUDIO_DECODER_STREAM_DOWNLOAD_PATH "IAudioDecoderManager.stream_download_path"
 #define AUDIO_DECODER_STREAM_INPUT_PATH "IAudioDecoderManager.input_streams_path"

@@ -5,14 +5,14 @@ include_3: stream_configuration/vts_audio_ac3_streams.yaml
 #include_1: stream_configuration/vts_audio_heaac_streams.yaml
 #include_2: stream_configuration/vts_audio_heaac2_streams.yaml
 
-include_6: test_configuration/vts_l3_Decode.yaml
-include_7: test_configuration/vts_l3_Decode_Error.yaml
-include_8: test_configuration/vts_l3_Decode_Trim.yaml
-include_9: test_configuration/vts_l3_Decode_Discontinuity.yaml
-include_10: test_configuration/vts_l3_Decode_Flush.yaml
-include_11: test_configuration/vts_l3_Decode_FlushReset.yaml
-include_12: test_configuration/vts_l3_Decode_EOS.yaml
-include_13: test_configuration/vts_l3_Decode_Stop_Start.yaml
+include_6: test_configuration/vts_l3_AudioDecode.yaml
+include_7: test_configuration/vts_l3_AudioDecode_Error.yaml
+include_8: test_configuration/vts_l3_AudioDecode_Trim.yaml
+include_9: test_configuration/vts_l3_AudioDecode_Discontinuity.yaml
+include_10: test_configuration/vts_l3_AudioDecode_Flush.yaml
+include_11: test_configuration/vts_l3_AudioDecode_FlushReset.yaml
+include_12: test_configuration/vts_l3_AudioDecode_EOS.yaml
+include_13: test_configuration/vts_l3_AudioDecode_Stop_Start.yaml
 
 
 IAudioDecoderManager:
