@@ -57,38 +57,8 @@
  *
  */
 
-#include <fstream>
-#include <ut.h>
-#include <ut_log.h>
-#include <ut_kvp_profile.h>
-#include <ut_control_plane.h>
-#include <binder/IServiceManager.h>
-#include <binder/ProcessState.h>
-#include <binder/IPCThreadState.h>
-#include <binder/Status.h>
-#include <sys/syscall.h>
-#include <utils/String16.h>
-#include <stdio.h>
-#include <vector>
-#include <optional>
-#include <algorithm>
-#include <unordered_set>
-#include <tuple>
-#include <map>
-#include <chrono>
-
-
-#include "com/rdk/hal/avbuffer/IAVBuffer.h"
-#include "com/rdk/hal/avbuffer/BnAVBufferSpaceListener.h"
-
-#include "vts_audiodecoder_helper_functions.h"
-#include "vts_audiodecoder_parse_hfp.h"
-#include "vts_audiodecoder_parse_testconfig.h"
-#include "IAVBufferHelper.h"
 #include "vts_audiodecoder.h"
-
-using namespace std::chrono;
-using namespace std;
+#include "vts_avbuffer.h"
 
 /* Test class registration with UT_Core */
 UT_ADD_TEST_TO_GROUP(VTS_L3_AudioDecoder, UT_TESTS_L3)
@@ -96,7 +66,7 @@ UT_ADD_TEST_TO_GROUP(VTS_L3_AudioDecoder, UT_TESTS_L3)
 static const char *gModuleName = "IAudioDecoderManager";
 static const char *gTestGroup = "L3";
 
-sp<IAVBuffer> vts_avbuffer_getService()
+static sp<IAVBuffer> vts_avbuffer_getService()
 {
     return
         android::interface_cast<IAVBuffer>(
@@ -123,7 +93,6 @@ public:
             vector<IAudioDecoder::Id> decoderIds;
 
             mAVBufferManager = vts_avbuffer_getService();
-            gAudioDecoderTestConfiguration = vts_kvp_create_instance(VTS_TEST_CONFIG_PATH);
 
             mAVbufferHelper = getAVBufferHelperInstance();
 
@@ -195,7 +164,7 @@ public:
             /* Get heap metrics */
             AVBUFFER_GETMETRICS(mAVBufferManager, secureDecode, beforeHeapMetrics);
 
-            DecoderTest decodeTest(_decoderId, decoderHandle, controlListener,
+            AudioDecoderTest decodeTest(_decoderId, decoderHandle, controlListener,
                                     eventListener, mAVBufferManager, mAVbufferHelper, secureDecode, testConfig);
 
             decodeTest.run(true);
@@ -217,14 +186,14 @@ public:
     {
         try {
             vector<thread> threads;
-            vector<DecoderTest> decoderTestList;
+            vector<AudioDecoderTest> decoderTestList;
             HeapMetrics beforeHeapMetrics, afterHeapMetrics;
 
             //TODO: add check of decoder metrics
             /* Get heap metrics */
             AVBUFFER_GETMETRICS(mAVBufferManager, secureDecode, beforeHeapMetrics);
 
-            std::vector<std::unique_ptr<DecoderTest>> decoderTests;
+            std::vector<std::unique_ptr<AudioDecoderTest>> decoderTests;
             for (const auto& [_decoderId, decoderHandle, controlListener, eventListener, capabilities] : mAudioDecoderList)
             {
                 if (!isDecoderUsable(_decoderId, capabilities, testConfig, secureDecode))
@@ -232,11 +201,11 @@ public:
                     continue;
                 }
 
-                auto decoderTest = std::make_unique<DecoderTest>(_decoderId, decoderHandle,
+                auto decoderTest = std::make_unique<AudioDecoderTest>(_decoderId, decoderHandle,
                                                                 controlListener, eventListener,
                                                                 mAVBufferManager, mAVbufferHelper,
                                                                 secureDecode, testConfig);
-                threads.emplace_back(&DecoderTest::run, decoderTest.get(), true);
+                threads.emplace_back(&AudioDecoderTest::run, decoderTest.get(), true);
 
                 decoderTests.push_back(std::move(decoderTest));
             }

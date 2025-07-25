@@ -62,39 +62,8 @@
  *
  */
 
-#include <fstream>
-#include <ut.h>
-#include <ut_log.h>
-#include <ut_kvp_profile.h>
-#include <ut_control_plane.h>
-#include <binder/IServiceManager.h>
-#include <binder/ProcessState.h>
-#include <binder/IPCThreadState.h>
-#include <binder/Status.h>
-#include <sys/syscall.h>
-#include <utils/String16.h>
-#include <stdio.h>
-#include <vector>
-#include <optional>
-#include <algorithm>
-#include <unordered_set>
-#include <tuple>
-#include <map>
-#include <chrono>
-
-
-#include "com/rdk/hal/avbuffer/IAVBuffer.h"
-#include "com/rdk/hal/avbuffer/BnAVBufferSpaceListener.h"
-
-#include "vts_audiodecoder_helper_functions.h"
-#include "vts_audiodecoder_parse_hfp.h"
-#include "vts_audiodecoder_parse_testconfig.h"
 #include "vts_audiodecoder.h"
-
-#include "IAVBufferHelper.h"
-
-using namespace std::chrono;
-using namespace std;
+#include "vts_avbuffer.h"
 
 #define MAX_WAIT_TIME 200
 
@@ -124,7 +93,7 @@ string AudioDecoderControllerListener::formatChannelVector(const std::vector<Cha
  * @param metadata stream metadata
  * @return Status
  */
-Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::optional<FrameMetadata>& metadata)
+Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::optional<audiodecoder::FrameMetadata>& metadata)
 {
     UT_LOG_INFO("[DecoderID: %d] onFrameOutput: Received frameoutput [PTS:%lld, handle: %llX]", mDecoderID, nsPresentationTime, frameBufferHandle);
 
@@ -137,6 +106,7 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
     {
         frame.isTunnel = true;
     }
+    frame.frameBufferHandle = frameBufferHandle;
     frame.isMetaAvailable = false;
     if (metadata.has_value())
     {
@@ -181,20 +151,20 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
  *                 otherwise function just reads the frame info
  * @return True: if frame reads successfull, False: if frame is not available
  */
-bool AudioDecoderControllerListener::getNextFrame(DecodedAudioFrame_t &frameInfo, bool popFrame)
+bool AudioDecoderControllerListener::getNextFrame(DecodedAudioFrame_t &frameInfo, int32_t waitTime, bool popFrame)
 {
     std::unique_lock<std::mutex> lock(mQueueMutex);
 
     // Wait until queue is not empty or timeout occurs
     bool gotFrame = mFrameAvailable.wait_for(
         lock,
-        std::chrono::milliseconds(MAX_WAIT_TIME),
+        std::chrono::milliseconds(waitTime),
         [this]() { return !mFrameQueue.empty(); }
     );
 
     if (!gotFrame)
     {
-        UT_LOG_ERROR("Decoded frame not received after %d msec", MAX_WAIT_TIME);
+        UT_LOG_WARNING("[DecoderID: %d] Decoded frame not received after %d msec", mDecoderID, waitTime);
         return false;
     }
 
@@ -238,7 +208,7 @@ void AudioDecoderControllerListener::setDecoderID(int32_t id)
  * @param errorCode General error code
  * @return Status
  */
-Status AudioDecoderEventListener::onDecodeError(ErrorCode vendorErrorCode, int32_t errorCode)
+Status AudioDecoderEventListener::onDecodeError(audiodecoder::ErrorCode vendorErrorCode, int32_t errorCode)
 {
     ErrorDetails_t errorDetails;
     errorDetails.receiveTime = chrono::steady_clock::now();
@@ -380,30 +350,30 @@ void AudioDecoderEventListener::setDecoderID(int32_t id)
 
 
 
-void DecoderTest::run(bool validateMetrics)
+void AudioDecoderTest::run(bool validateMetrics)
 {
     decodeAndConsumeAudioStreams(validateMetrics);
 }
 
-bool DecoderTest::getDecoderMetrics(int32_t &framesDecoded, int32_t &decodeErrors, int32_t &framesDropped)
+bool AudioDecoderTest::getDecoderMetrics(int32_t &framesDecoded, int32_t &decodeErrors, int32_t &framesDropped)
 {
     optional<PropertyValue> propertyValue;
 
-    AUDIODECODER_GET_PROPERTY_SUCCESS(mDecoderHandle, Property::METRIC_FRAMES_DECODED, propertyValue);
+    AUDIODECODER_GET_PROPERTY_SUCCESS(mDecoderHandle, audiodecoder::Property::METRIC_FRAMES_DECODED, propertyValue);
     if (!propertyValue.has_value() || !propertyValue->value.has_value())
     {
         return false;
     }
     framesDecoded = propertyValue->value->get<PropertyValue::Value::Tag::intValue>();
 
-    AUDIODECODER_GET_PROPERTY_SUCCESS(mDecoderHandle, Property::METRIC_DECODE_ERRORS, propertyValue);
+    AUDIODECODER_GET_PROPERTY_SUCCESS(mDecoderHandle, audiodecoder::Property::METRIC_DECODE_ERRORS, propertyValue);
     if (!propertyValue.has_value() || !propertyValue->value.has_value())
     {
         return false;
     }
     decodeErrors = propertyValue->value->get<PropertyValue::Value::Tag::intValue>();
 
-    AUDIODECODER_GET_PROPERTY_SUCCESS(mDecoderHandle, Property::METRIC_FRAMES_DROPPED, propertyValue);
+    AUDIODECODER_GET_PROPERTY_SUCCESS(mDecoderHandle, audiodecoder::Property::METRIC_FRAMES_DROPPED, propertyValue);
     if (!propertyValue.has_value() || !propertyValue->value.has_value())
     {
         return false;
@@ -426,7 +396,7 @@ public:
     }
 };
 
-void DecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
+void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
 {
     try {
         sp<IAudioDecoderController> audioDecoderController;
@@ -442,7 +412,7 @@ void DecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
 
         avSourcePropertyValue.value = PropertyValue::Value::make<PropertyValue::Value::Tag::intValue>(int32_t(static_cast<int32_t>(AVSource::IP)));
 
-        UT_LOG_INFO("[DecoderID: %d] Start of Testing Stream: %s", mDecoderId.value, mTestConfiguration.input.c_str());
+        UT_LOG_WARNING("[DecoderID: %d] Start of Testing Stream: %s", mDecoderId.value, mTestConfiguration.input.c_str());
 
         /* Create Audio Pool */
         AVBUFFER_CREATE_AUDIOPOOL_SUCCESS(mAVBufferManager, mSecureDecode, mDecoderId, bufferListener, audioPool);
@@ -458,7 +428,7 @@ void DecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
         AUDIODECODER_OPEN_SUCCESS(mDecoderHandle, mTestConfiguration.codec, mSecureDecode, mControlListener, audioDecoderController, true);
 
         /* Set AV Source */
-        AUDIODECODER_SETPROPERTY_SUCCESS(audioDecoderController, Property::AV_SOURCE, avSourcePropertyValue);
+        AUDIODECODER_SETPROPERTY_SUCCESS(audioDecoderController, audiodecoder::Property::AV_SOURCE, avSourcePropertyValue);
 
         /* Start the decoder */
         AUDIODECODER_START_SUCCESS(mDecoderHandle, audioDecoderController, true);
@@ -480,6 +450,12 @@ void DecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
 
             inputBuffer.resize(frameSize);
             inputFile.read(reinterpret_cast<char*>(inputBuffer.data()), frameSize);
+            if (inputFile.eof() || inputFile.gcount() < frameSize) {
+                // Reached end of file or not enough data, reopen from start
+                inputFile.clear(); // Clear EOF flag
+                inputFile.seekg(0, std::ios::beg);
+                inputFile.read(reinterpret_cast<char*>(inputBuffer.data()), frameSize);
+            }
 
             if(mSecureDecode)
             {
@@ -577,7 +553,7 @@ void DecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
                     continue;
                 }
 
-                if(!mControlListener->getNextFrame(decodedFrame, false))
+                if(!mControlListener->getNextFrame(decodedFrame, MAX_WAIT_TIME, false))
                 {
                     UT_LOG_ERROR("[DecoderID: %d] onFrameOutput callback not received...", mDecoderId.value);
                     UT_ASSERT_TRUE(false);
@@ -642,7 +618,7 @@ void DecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
                 }
 
                 framesDecoded++;
-                mControlListener->getNextFrame(decodedFrame, true);
+                mControlListener->getNextFrame(decodedFrame, MAX_WAIT_TIME, true);
 
                 if(inputFrame.framePTS != decodedFrame.framePTS)
                 {

@@ -8,6 +8,8 @@ IAudioDecoderManager:
         flush_pts: -1 #`pts` value in nano seconds that determine when the test should flush the decoder. -1 indicates that test should not flush
         flush_reset_pts: -1 #`pts` value in nano seconds that determine when the test should flush with reset the decoder. -1 indicates that test should not flush
         eos_pts: -1 #`pts` value in nano seconds that determine when the test should sent `eos` signal to decoder. -1 indicates that test should not signal `eos`
+        sink_eos_pts: -1
+        sink_flush_pts: -1
       Inputs:
         Streams:
 ####### AAC Streams ##############
