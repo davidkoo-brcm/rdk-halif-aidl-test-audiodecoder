@@ -79,6 +79,9 @@ int main(int argc, char **argv)
     result = VTS_AudioDecoder_init();
 
     result = UT_run_tests();
+
+    VTS_AudioDecoder_destroy();
+
     return result;
 }
 
