@@ -149,7 +149,7 @@ PCMFormat vts_audiodecoder_helper_StringToFormat(const std::string& format)
     return static_cast<PCMFormat>(-1);
 }
 
-void vts_audiodecoder_helper_validateCapabilities(int decoder_id, const Capabilities& capabilities)
+void vts_audiodecoder_helper_validateCapabilities(int decoder_id, const audiodecoder::Capabilities& capabilities)
 {
     bool decoderID = false;
 
@@ -204,7 +204,7 @@ bool vts_audiodecoder_helper_areElementsUnique(const std::vector<int>& values)
     return true;
 }
 
-bool vts_audiodecoder_helper_validatePropertyValue(int decoder_id, const std::optional<PropertyValue>& propertyValue, const Property property)
+bool vts_audiodecoder_helper_validatePropertyValue(int decoder_id, const std::optional<PropertyValue>& propertyValue, const audiodecoder::Property property)
 {
     if (!propertyValue.has_value() || !propertyValue->value.has_value())
     {
@@ -239,7 +239,7 @@ bool vts_audiodecoder_helper_validatePropertyValue(int decoder_id, const std::op
 
     switch (property)
     {
-        case Property::RESOURCE_ID:
+        case audiodecoder::Property::RESOURCE_ID:
              if(std::holds_alternative<int>(val) && std::get<int>(val) == decoder_id)
              {
                 return true;
@@ -249,11 +249,11 @@ bool vts_audiodecoder_helper_validatePropertyValue(int decoder_id, const std::op
                 return false;
              }
 
-        case Property::LOW_LATENCY_MODE:
+        case audiodecoder::Property::LOW_LATENCY_MODE:
             return std::holds_alternative<int32_t>(val) &&
                    (std::get<int32_t>(val) == 0 || std::get<int32_t>(val) == 1);
 
-        case Property::AV_SOURCE:
+        case audiodecoder::Property::AV_SOURCE:
             return std::holds_alternative<int32_t>(val) &&
                    (std::get<int32_t>(val) == static_cast<int32_t>(AVSource::AUTO) ||
                     std::get<int32_t>(val) == static_cast<int32_t>(AVSource::UNKNOWN) ||
@@ -264,31 +264,31 @@ bool vts_audiodecoder_helper_validatePropertyValue(int decoder_id, const std::op
                     (std::get<int32_t>(val) >= static_cast<int32_t>(AVSource::COMPOSITE_1) &&
                      std::get<int32_t>(val) <= static_cast<int32_t>(AVSource::COMPOSITE_5)));
 
-        case Property::SECURE_AUDIO:
+        case audiodecoder::Property::SECURE_AUDIO:
             return std::holds_alternative<int32_t>(val) &&
                    (std::get<int32_t>(val) == 0 || std::get<int32_t>(val) == 1);
 
-        case Property::AC4_PRESENTATION_GROUP_INDEX:
+        case audiodecoder::Property::AC4_PRESENTATION_GROUP_INDEX:
             return std::holds_alternative<int32_t>(val) && std::get<int32_t>(val) >= -1;
 
-        case Property::AC4_PREFERRED_LANG1:
-        case Property::AC4_PREFERRED_LANG2:
+        case audiodecoder::Property::AC4_PREFERRED_LANG1:
+        case audiodecoder::Property::AC4_PREFERRED_LANG2:
             return std::holds_alternative<std::string>(val) &&
                    (std::get<std::string>(val).empty() || std::get<std::string>(val).size() == 3);
 
-        case Property::AC4_ASSOCIATED_TYPE:
+        case audiodecoder::Property::AC4_ASSOCIATED_TYPE:
             return std::holds_alternative<int32_t>(val) &&
                    (std::get<int32_t>(val) >= -1 && std::get<int32_t>(val) <= 2);
 
-        case Property::AC4_AUTO_SELECTION_PRIORITY:
+        case audiodecoder::Property::AC4_AUTO_SELECTION_PRIORITY:
             return std::holds_alternative<int32_t>(val) &&
                    (std::get<int32_t>(val) >= -1 && std::get<int32_t>(val) <= 1);
 
-        case Property::AC4_MIXER_BALANCE:
+        case audiodecoder::Property::AC4_MIXER_BALANCE:
             return std::holds_alternative<int32_t>(val) &&
                    ((std::get<int32_t>(val) >= -32 && std::get<int32_t>(val) <= 32) || std::get<int32_t>(val) == 255);
 
-        case Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE:
+        case audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE:
             return std::holds_alternative<int32_t>(val) &&
                    (std::get<int32_t>(val) >= -1 && std::get<int32_t>(val) <= 1);
 
@@ -355,21 +355,6 @@ static inline double bytesToDouble(const uint8_t* data, PCMFormat format)
         case PCMFormat::U16BE: return (readBE(data, 2) - 32768) / 32768.0;
         case PCMFormat::S8:    return static_cast<int8_t>(*data) / 128.0;
         case PCMFormat::U8:    return (*data - 128) / 128.0;
-    }
-}
-
-size_t vts_bytesPerSample(PCMFormat format)
-{
-    switch (format) {
-        case PCMFormat::F64LE: case PCMFormat::F64BE: return 8;
-        case PCMFormat::F32LE: case PCMFormat::F32BE: return 4;
-        case PCMFormat::S32LE: case PCMFormat::S32BE: case PCMFormat::U32LE: case PCMFormat::U32BE: return 4;
-        case PCMFormat::S24_32LE: case PCMFormat::S24_32BE: case PCMFormat::U24_32LE: case PCMFormat::U24_32BE: return 4;
-        case PCMFormat::S24LE: case PCMFormat::S24BE: case PCMFormat::U24LE: case PCMFormat::U24BE:
-        case PCMFormat::S20LE: case PCMFormat::S20BE: case PCMFormat::U20LE: case PCMFormat::U20BE:
-        case PCMFormat::S18LE: case PCMFormat::S18BE: case PCMFormat::U18LE: case PCMFormat::U18BE: return 3;
-        case PCMFormat::S16LE: case PCMFormat::S16BE: case PCMFormat::U16LE: case PCMFormat::U16BE: return 2;
-        case PCMFormat::S8: case PCMFormat::U8: return 1;
     }
 }
 

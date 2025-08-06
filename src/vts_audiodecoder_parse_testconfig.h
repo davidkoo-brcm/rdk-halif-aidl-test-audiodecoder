@@ -68,23 +68,28 @@
 #include <ut.h>
 #include <ut_log.h>
 #include "ut_kvp_profile.h"
-#include "vts_audiodecoder_helper_functions.h"
-#include "vts_audiodecoder_parse_hfp.h"
+#include "vts_helper_functions.h"
+#include "com/rdk/hal/audiodecoder/IAudioDecoderManager.h"
+#include "com/rdk/hal/audiodecoder/BnAudioDecoderControllerListener.h"
+#include "com/rdk/hal/audiodecoder/BnAudioDecoderEventListener.h"
 
-#define VTS_TEST_CONFIG_PATH "./test_configuration/vts_l3_test_config.yaml"
-#define VTS_STREAM_CONFIG_PATH "./test_configuration/vts_stream_list.yaml"
+#define VTS_TEST_CONFIG_PATH "./audiodecoder_test_configuration/vts_l3_test_config.yaml"
+#define VTS_AUDIOSINK_TEST_CONFIG_PATH "./audiosink_test_configuration/vts_l3_test_config.yaml"
 #define STREAM_DOWNLOAD_PATH "IAudioDecoderManager.stream_download_path"
 #define STREAM_INPUT_PATH "IAudioDecoderManager.input_streams_path"
 #define STREAM_REF_PATH "IAudioDecoderManager.reference_streams_path"
+
+using namespace std;
+using namespace com::rdk::hal;
 
 typedef struct testConfiguration
 {
     std::string input;
     std::string reference;
-    Codec codec;
+    audiodecoder::Codec codec;
     int32_t sampleRate;
     int32_t numChannels;
-    PCMFormat format;
+    audiodecoder::PCMFormat format;
     int32_t numOfFrames;
     double rms_diff_threashold;
     int64_t decodeTime;
@@ -96,13 +101,13 @@ typedef struct testConfiguration
     int64_t flushPts;
     int64_t flushRestPts;
     int64_t eosPts;
+    int64_t sinkEosPts;
+    int64_t sinkFlushPts;
     /* Frame size, PTS, error frame */
     std::vector<std::tuple<int32_t, int64_t, bool>> frameDetails;
 }testConfiguration_t;
 
-void* vts_kvp_create_instance(char *fileName);
 UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *module, const char *testGroup, const char *testName, std::vector<testConfiguration_t>& streamDetails);
-void vts_kvp_destroy_instance(void *instance);
 
 #endif //__VTS_AUDIODECODER_PARSE_TESTCONFIG_H__
 

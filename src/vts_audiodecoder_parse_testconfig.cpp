@@ -64,42 +64,7 @@
 
 #include <filesystem>
 #include "vts_audiodecoder_parse_testconfig.h"
-
-using namespace std;
-
-void* vts_kvp_create_instance(char *fileName)
-{
-    ut_kvp_instance_t* instance;
-    ut_kvp_status_t result;
-
-    UT_LOG("In %s", __FUNCTION__);
-
-    instance = ut_kvp_createInstance();
-
-    if(!instance)
-    {
-        UT_LOG_ERROR("Failed to create ut kvp instance");
-        return nullptr;
-    }
-
-    result = ut_kvp_open(instance, fileName);
-
-    if(result != UT_KVP_STATUS_SUCCESS)
-    {
-        UT_LOG_ERROR("Failed to open test configuration file");
-        ut_kvp_destroyInstance(instance);
-        return nullptr;
-    }
-
-    UT_LOG("Out  %s", __FUNCTION__);
-
-    return (ut_kvp_instance_t*)instance;
-}
-
-void vts_kvp_destroy_instance(void *instance)
-{
-    ut_kvp_destroyInstance((ut_kvp_instance_t*)instance);
-}
+#include "vts_audiodecoder_helper_functions.h"
 
 UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *module, const char *testGroup, const char *testName, vector<testConfiguration_t>& testConfiguration)
 {
@@ -151,6 +116,8 @@ UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *m
         string flushPts     = controlList + "." + "flush_pts";
         string flushRestPts = controlList + "." + "flush_reset_pts";
         string eosPts       = controlList + "." + "eos_pts";
+        string sinkEosPts       = controlList + "." + "sink_eos_pts";
+        string sinkFlushPts       = controlList + "." + "sink_flush_pts";
 
         ut_kvp_getStringField(kvpTestInstance, input.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
         fullPath = currentPath;
@@ -214,6 +181,8 @@ UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *m
         testDetails.flushPts     = ut_kvp_getUInt64Field(kvpTestInstance, flushPts.c_str());
         testDetails.flushRestPts = ut_kvp_getUInt64Field(kvpTestInstance, flushRestPts.c_str());
         testDetails.eosPts       = ut_kvp_getUInt64Field(kvpTestInstance, eosPts.c_str());
+        testDetails.sinkEosPts   = ut_kvp_getUInt64Field(kvpTestInstance, sinkEosPts.c_str());
+        testDetails.sinkFlushPts = ut_kvp_getUInt64Field(kvpTestInstance, sinkFlushPts.c_str());
 
         testConfiguration.push_back(testDetails);
     }

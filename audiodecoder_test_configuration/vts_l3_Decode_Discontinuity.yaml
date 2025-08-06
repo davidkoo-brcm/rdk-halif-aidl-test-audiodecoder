@@ -1,13 +1,15 @@
 IAudioDecoderManager:
   L3:
-    Decode_EOS:
+    Decode_Discontinuity:
       Controls:
         delay_between_decode_calls: 5
         stop_start_pts: -1
-        signal_discontinuity_pts: -1
+        signal_discontinuity_pts: 106666665
         flush_pts: -1
         flush_reset_pts: -1
-        eos_pts: 127999998
+        eos_pts: -1
+        sink_eos_pts: -1
+        sink_flush_pts: -1
       Inputs:
         Streams:
           - Name: tones_48k_2_256_aac

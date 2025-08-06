@@ -65,11 +65,30 @@
 #ifndef __VTS_AUDIODECODER_H__
 #define __VTS_AUDIODECODER_H__
 
+#include <stdio.h>
+#include <vector>
+#include <optional>
+#include <algorithm>
+#include <unordered_set>
+#include <map>
 #include <thread>
 #include <chrono>
 #include <deque>
 #include <queue>
 #include <condition_variable>
+#include <tuple>
+#include <fstream>
+
+#include <binder/IServiceManager.h>
+#include <binder/ProcessState.h>
+#include <binder/IPCThreadState.h>
+#include <binder/Status.h>
+#include <utils/String16.h>
+
+#include <ut.h>
+#include <ut_log.h>
+#include <ut_kvp_profile.h>
+#include <ut_control_plane.h>
 
 #include "com/rdk/hal/audiodecoder/IAudioDecoderManager.h"
 #include "com/rdk/hal/audiodecoder/BnAudioDecoderControllerListener.h"
@@ -78,6 +97,10 @@
 #include "com/rdk/hal/avbuffer/IAVBuffer.h"
 #include "com/rdk/hal/avbuffer/BnAVBufferSpaceListener.h"
 #include "IAVBufferHelper.h"
+
+#include "vts_audiodecoder_helper_functions.h"
+#include "vts_audiodecoder_parse_hfp.h"
+#include "vts_audiodecoder_parse_testconfig.h"
 
 using android::sp;
 using android::String16;
@@ -92,6 +115,15 @@ using namespace com::rdk::hal::avbuffer;
 
 extern sp<IAudioDecoderManager> gAudioDecoderManager;
 extern void *gAudioDecoderTestConfiguration;
+extern sp<IAudioDecoderManager> gAudioDecoderManager;
+
+#define MAX_TRANSITORY_STATE_WAIT_MS  5
+#define MAX_FINAL_STATE_WAIT_MS  500
+
+#ifdef DISABLE_UT_DEBUG_LOGGING
+#define UT_LOG_DEBUG(...)
+#define UT_LOG_INFO(...)
+#endif
 
 /* Status::Exception */
 const static ut_control_keyStringMapping_t statusException_mapTable[] =
@@ -119,19 +151,12 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     {NULL, -1}
 };
 
-#define MAX_TRANSITORY_STATE_WAIT_MS  5
-#define MAX_FINAL_STATE_WAIT_MS  500
-
-#ifdef DISABLE_UT_INFO_LOGGING
-#define UT_LOG_INFO(...)
-#endif
-
 #define AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds) \
     do { \
         ::android::binder::Status status; \
-        UT_LOG_INFO("Calling getAudioDecoderIds(OUT:decoderIds:[])"); \
+        UT_LOG_DEBUG("Calling getAudioDecoderIds(OUT:decoderIds:[])"); \
         status = gAudioDecoderManager->getAudioDecoderIds(&decoderIds); \
-        UT_LOG_INFO("Result getAudioDecoderIds(OUT:decoderIds:[size: %d]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result getAudioDecoderIds(OUT:decoderIds:[size: %d]), status:[isOK:%s, exception:%s]", \
                                 decoderIds.size(), UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                                 UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE_FATAL(status.isOk()); \
@@ -142,9 +167,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder) \
     do { \
         ::android::binder::Status status; \
-        UT_LOG_INFO("Calling getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[])", _decoderId.value); \
+        UT_LOG_DEBUG("Calling getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[])", _decoderId.value); \
         status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder); \
-        UT_LOG_INFO("Result getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[0x%X]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[0x%X]), status:[isOK:%s, exception:%s]", \
                                 _decoderId.value, audioDecoder.get(), UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                                 UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE_FATAL(status.isOk()); \
@@ -155,9 +180,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(_decoderId, audioDecoder) \
     do { \
         ::android::binder::Status status; \
-        UT_LOG_INFO("Calling getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[])", _decoderId.value); \
+        UT_LOG_DEBUG("Calling getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[])", _decoderId.value); \
         status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder); \
-        UT_LOG_INFO("Result getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[0x%X]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[0x%X]), status:[isOK:%s, exception:%s]", \
                                 _decoderId.value, audioDecoder.get(), UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                                 UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
@@ -167,9 +192,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities) \
     do { \
         ::android::binder::Status status; \
-        UT_LOG_INFO("Calling getCapabilities(OUT:capabilities)"); \
+        UT_LOG_DEBUG("Calling getCapabilities(OUT:capabilities)"); \
         audioDecoder->getCapabilities(capabilities); \
-        UT_LOG_INFO("Result getCapabilities(OUT:capabilities), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result getCapabilities(OUT:capabilities), status:[isOK:%s, exception:%s]", \
                                 UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                                 UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
@@ -180,20 +205,20 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         ::com::rdk::hal::State state; \
-        UT_LOG_INFO("Calling getProperty(IN:property[%s], OUT:propertyValue[]", audiodecoder::toString(property).c_str()); \
+        UT_LOG_DEBUG("Calling getProperty(IN:property[%s], OUT:propertyValue[]", audiodecoder::toString(property).c_str()); \
         status = (audioDecoder)->getProperty(property, &propertyValue); \
         if(propertyValue.has_value()) \
         { \
             switch (propertyValue->value.value().getTag()) \
             { \
                 case PropertyValue::Value::Tag::intValue: \
-                    UT_LOG_INFO("Result getProperty(IN:property[%s], OUT:propertyValue[%d]), status:[isOK:%s, exception:%s]", audiodecoder::toString(property).c_str(), \
+                    UT_LOG_DEBUG("Result getProperty(IN:property[%s], OUT:propertyValue[%d]), status:[isOK:%s, exception:%s]", audiodecoder::toString(property).c_str(), \
                     propertyValue->value->get<PropertyValue::Value::Tag::intValue>(), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
                     break; \
                 case PropertyValue::Value::Tag::stringValue: \
-                    UT_LOG_INFO("Result getProperty(IN:property[%s], OUT:propertyValue[%s]), status:[isOK:%s, exception:%s]", audiodecoder::toString(property).c_str(), \
+                    UT_LOG_DEBUG("Result getProperty(IN:property[%s], OUT:propertyValue[%s]), status:[isOK:%s, exception:%s]", audiodecoder::toString(property).c_str(), \
                     propertyValue->value->get<PropertyValue::Value::Tag::stringValue>().string(), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -202,7 +227,7 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         } \
         else \
         { \
-            UT_LOG_INFO("Result getProperty(IN:property[%s], OUT:propertyValue[]), status:[isOK:%s, exception:%s]", audiodecoder::toString(property).c_str(), \
+            UT_LOG_DEBUG("Result getProperty(IN:property[%s], OUT:propertyValue[]), status:[isOK:%s, exception:%s]", audiodecoder::toString(property).c_str(), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
             UT_ASSERT_TRUE(false); \
@@ -215,9 +240,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         ::com::rdk::hal::State state; \
-        UT_LOG_INFO("Calling getProperty(IN:property[%s], OUT:propertyValue[]", audiodecoder::toString(property).c_str()); \
+        UT_LOG_DEBUG("Calling getProperty(IN:property[%s], OUT:propertyValue[]", audiodecoder::toString(property).c_str()); \
         status = (audioDecoder)->getProperty(property, &propertyValue); \
-        UT_LOG_INFO("Result getProperty(IN:property[%s], OUT:propertyValue[]), status:[isOK:%s, exception:%s]", audiodecoder::toString(property).c_str(), \
+        UT_LOG_DEBUG("Result getProperty(IN:property[%s], OUT:propertyValue[]), status:[isOK:%s, exception:%s]", audiodecoder::toString(property).c_str(), \
                 UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                 UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
@@ -227,9 +252,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_GET_STATE(audioDecoder, state) \
     do { \
         ::android::binder::Status status; \
-        UT_LOG_INFO("Calling getState(OUT:state[]"); \
+        UT_LOG_DEBUG("Calling getState(OUT:state[]"); \
         status = (audioDecoder)->getState(&state); \
-        UT_LOG_INFO("Result getState(OUT:state[%s]), status:[isOK:%s, exception:%s]", com::rdk::hal::toString(state).c_str(), \
+        UT_LOG_DEBUG("Result getState(OUT:state[%s]), status:[isOK:%s, exception:%s]", com::rdk::hal::toString(state).c_str(), \
                 UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                 UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
@@ -253,10 +278,10 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         ::android::binder::Status status; \
         \
         /* Open the Decoder */ \
-        UT_LOG_INFO("Calling open(IN:codec[%d], IN:secure[%s], IN:controllerListener[%p], OUT:audioDecoderController[])", \
+        UT_LOG_DEBUG("Calling open(IN:codec[%d], IN:secure[%s], IN:controllerListener[%p], OUT:audioDecoderController[])", \
             codec, UT_Control_GetMapString(bool_mapTable, secure), controllerListener); \
         status = (audioDecoder)->open(codec, secure, controllerListener, &audioDecoderController); \
-        UT_LOG_INFO("Result open(IN:codec[%d], IN:secure[%s], IN:controllerListener[%p], OUT:audioDecoderController[0x%X]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result open(IN:codec[%d], IN:secure[%s], IN:controllerListener[%p], OUT:audioDecoderController[0x%X]), status:[isOK:%s, exception:%s]", \
             codec, UT_Control_GetMapString(bool_mapTable, secure), controllerListener, audioDecoderController.get(), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -275,10 +300,10 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_OPEN_FAILURE(audioDecoder, codec, secure, controllerListener, audioDecoderController, exception) \
     do { \
         ::android::binder::Status status; \
-        UT_LOG_INFO("Calling open(IN:codec[%d], IN:secure[%s], IN:controllerListener[%p], OUT:audioDecoderController[])", \
+        UT_LOG_DEBUG("Calling open(IN:codec[%d], IN:secure[%s], IN:controllerListener[%p], OUT:audioDecoderController[])", \
             codec, UT_Control_GetMapString(bool_mapTable, secure), controllerListener); \
         status = audioDecoder->open(codec, secure, controllerListener, &audioDecoderController); \
-        UT_LOG_INFO("Result open(IN:codec[%d], IN:secure[%s], IN:controllerListener[%p], OUT:audioDecoderController[0x%X]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result open(IN:codec[%d], IN:secure[%s], IN:controllerListener[%p], OUT:audioDecoderController[0x%X]), status:[isOK:%s, exception:%s]", \
             codec, UT_Control_GetMapString(bool_mapTable, secure), controllerListener, audioDecoderController.get(), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -291,9 +316,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling close(IN:audioDecoderController[%p], OUT:_aidl_return[])", audioDecoderController.get()); \
+        UT_LOG_DEBUG("Calling close(IN:audioDecoderController[%p], OUT:_aidl_return[])", audioDecoderController.get()); \
         status = audioDecoder->close(audioDecoderController, &_aidl_return); \
-        UT_LOG_INFO("Result close(IN:audioDecoderController[%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result close(IN:audioDecoderController[%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
             audioDecoderController.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -312,9 +337,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling close(IN:audioDecoderController[%p], OUT:_aidl_return[])", audioDecoderController.get()); \
+        UT_LOG_DEBUG("Calling close(IN:audioDecoderController[%p], OUT:_aidl_return[])", audioDecoderController.get()); \
         status = audioDecoder->close(audioDecoderController, &_aidl_return); \
-        UT_LOG_INFO("Result close(IN:audioDecoderController[%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result close(IN:audioDecoderController[%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
             audioDecoderController.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -327,9 +352,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling registerEventListener(IN:eventListener[%p], OUT:_aidl_return[])", eventListener.get()); \
+        UT_LOG_DEBUG("Calling registerEventListener(IN:eventListener[%p], OUT:_aidl_return[])", eventListener.get()); \
         status = audioDecoder->registerEventListener(eventListener, &_aidl_return); \
-        UT_LOG_INFO("Result registerEventListener(IN:eventListener[%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result registerEventListener(IN:eventListener[%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
             eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -342,9 +367,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling registerEventListener(IN:eventListener[%p], OUT:_aidl_return[])", eventListener.get()); \
+        UT_LOG_DEBUG("Calling registerEventListener(IN:eventListener[%p], OUT:_aidl_return[])", eventListener.get()); \
         status = audioDecoder->registerEventListener(eventListener, &_aidl_return); \
-        UT_LOG_INFO("Result registerEventListener(IN:eventListener[%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result registerEventListener(IN:eventListener[%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
             eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -360,9 +385,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling unregisterEventListener(IN:eventListener[%p], OUT:_aidl_return[])", eventListener.get()); \
+        UT_LOG_DEBUG("Calling unregisterEventListener(IN:eventListener[%p], OUT:_aidl_return[])", eventListener.get()); \
         status = audioDecoder->unregisterEventListener(eventListener, &_aidl_return); \
-        UT_LOG_INFO("Result unregisterEventListener(IN:eventListener[%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result unregisterEventListener(IN:eventListener[%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
             eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -375,13 +400,13 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling unregisterEventListener(IN:eventListener[%p], OUT:_aidl_return[])", eventListener.get()); \
+        UT_LOG_DEBUG("Calling unregisterEventListener(IN:eventListener[%p], OUT:_aidl_return[])", eventListener.get()); \
         status = audioDecoder->unregisterEventListener(eventListener, &_aidl_return); \
-        UT_LOG_INFO("Result unregisterEventListener(IN:eventListener[%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result unregisterEventListener(IN:eventListener[%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
             eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_TRUE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
         UT_ASSERT_FALSE(_aidl_return); \
     } while (0)
@@ -389,9 +414,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, stateCheck) \
     do { \
         ::android::binder::Status status; \
-        UT_LOG_INFO("Calling start()"); \
+        UT_LOG_DEBUG("Calling start()"); \
         status = audioDecoderController->start(); \
-        UT_LOG_INFO("Result start(), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result start(), status:[isOK:%s, exception:%s]", \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
@@ -407,9 +432,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_START_FAILURE(audioDecoderController, exception) \
     do { \
         ::android::binder::Status status; \
-        UT_LOG_INFO("Calling start()"); \
+        UT_LOG_DEBUG("Calling start()"); \
         status = audioDecoderController->start(); \
-        UT_LOG_INFO("Result start(), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result start(), status:[isOK:%s, exception:%s]", \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
@@ -419,9 +444,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, stateCheck) \
     do { \
         ::android::binder::Status status; \
-        UT_LOG_INFO("Calling stop()"); \
+        UT_LOG_DEBUG("Calling stop()"); \
         status = audioDecoderController->stop(); \
-        UT_LOG_INFO("Result stop(), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result stop(), status:[isOK:%s, exception:%s]", \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
@@ -437,9 +462,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_STOP_FAILURE(audioDecoderController, exception) \
     do { \
         ::android::binder::Status status; \
-        UT_LOG_INFO("Calling stop()"); \
+        UT_LOG_DEBUG("Calling stop()"); \
         status = audioDecoderController->stop(); \
-        UT_LOG_INFO("Result stop(), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result stop(), status:[isOK:%s, exception:%s]", \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
@@ -450,10 +475,10 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("[DecoderID: %d] Calling decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%X], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[])", \
+        UT_LOG_DEBUG("[DecoderID: %d] Calling decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%X], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[])", \
             decoderID, nsPresentationTime, bufferHandle, trimStartNs, trimEndNs); \
         status = audioDecoderController->decodeBuffer(nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, &_aidl_return); \
-        UT_LOG_INFO("[DecoderID: %d] Result decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%X], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("[DecoderID: %d] Result decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%X], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
             decoderID, nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -465,10 +490,10 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%X], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[])", \
+        UT_LOG_DEBUG("Calling decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%X], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[])", \
             nsPresentationTime, bufferHandle, trimStartNs, trimEndNs); \
         status = audioDecoderController->decodeBuffer(nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, &_aidl_return); \
-        UT_LOG_INFO("Result decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%X], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%X], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
             nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -479,9 +504,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_FLUSH_SUCCESS(audioDecoder, audioDecoderController, reset, stateCheck) \
     do { \
         ::android::binder::Status status; \
-        UT_LOG_INFO("Calling flush(IN: reset[%s])", UT_Control_GetMapString(bool_mapTable, reset)); \
+        UT_LOG_DEBUG("Calling flush(IN: reset[%s])", UT_Control_GetMapString(bool_mapTable, reset)); \
         status = audioDecoderController->flush(reset); \
-        UT_LOG_INFO("Result flush(IN: reset[%s]), status:[isOK:%s, exception:%s]", UT_Control_GetMapString(bool_mapTable, reset), \
+        UT_LOG_DEBUG("Result flush(IN: reset[%s]), status:[isOK:%s, exception:%s]", UT_Control_GetMapString(bool_mapTable, reset), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
@@ -507,9 +532,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_FLUSH_FAILURE(audioDecoderController, reset, exception) \
     do { \
         ::android::binder::Status status; \
-        UT_LOG_INFO("Calling flush(IN: reset[%s])", UT_Control_GetMapString(bool_mapTable, reset)); \
+        UT_LOG_DEBUG("Calling flush(IN: reset[%s])", UT_Control_GetMapString(bool_mapTable, reset)); \
         status = audioDecoderController->flush(reset); \
-        UT_LOG_INFO("Result flush(IN: reset[%s]), status:[isOK:%s, exception:%s]", UT_Control_GetMapString(bool_mapTable, reset), \
+        UT_LOG_DEBUG("Result flush(IN: reset[%s]), status:[isOK:%s, exception:%s]", UT_Control_GetMapString(bool_mapTable, reset), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
@@ -520,9 +545,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         ::com::rdk::hal::State state; \
-        UT_LOG_INFO("Calling signalDiscontinuity()"); \
+        UT_LOG_DEBUG("Calling signalDiscontinuity()"); \
         status = audioDecoderController->signalDiscontinuity(); \
-        UT_LOG_INFO("Result signalDiscontinuity(), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result signalDiscontinuity(), status:[isOK:%s, exception:%s]", \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
@@ -538,9 +563,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_SIGNAL_DISCONTINUITY_FAILURE(audioDecoderController, exception) \
     do { \
         ::android::binder::Status status; \
-        UT_LOG_INFO("Calling signalDiscontinuity()"); \
+        UT_LOG_DEBUG("Calling signalDiscontinuity()"); \
         status = audioDecoderController->signalDiscontinuity(); \
-        UT_LOG_INFO("Result signalDiscontinuity(), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result signalDiscontinuity(), status:[isOK:%s, exception:%s]", \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
@@ -550,9 +575,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_SIGNAL_EOS_SUCCESS(audioDecoder, audioDecoderController, stateCheck) \
     do { \
         ::android::binder::Status status; \
-        UT_LOG_INFO("Calling signalEOS()"); \
+        UT_LOG_DEBUG("Calling signalEOS()"); \
         status = audioDecoderController->signalEOS(); \
-        UT_LOG_INFO("Result signalEOS(), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result signalEOS(), status:[isOK:%s, exception:%s]", \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
@@ -568,9 +593,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, exception) \
     do { \
         ::android::binder::Status status; \
-        UT_LOG_INFO("Calling signalEOS()"); \
+        UT_LOG_DEBUG("Calling signalEOS()"); \
         status = audioDecoderController->signalEOS(); \
-        UT_LOG_INFO("Result signalEOS(), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result signalEOS(), status:[isOK:%s, exception:%s]", \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
@@ -581,9 +606,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling parseCodecSpecificData(IN:csdAudioFormat[%d], IN:codecData[0x%X], OUT:_aidl_return[])", csdAudioFormat, codecData); \
+        UT_LOG_DEBUG("Calling parseCodecSpecificData(IN:csdAudioFormat[%d], IN:codecData[0x%X], OUT:_aidl_return[])", csdAudioFormat, codecData); \
         status = audioDecoderController->parseCodecSpecificData(csdAudioFormat, codecData, &_aidl_return); \
-        UT_LOG_INFO("Result parseCodecSpecificData(IN:csdAudioFormat[%d], IN:codecData[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", csdAudioFormat, codecData, \
+        UT_LOG_DEBUG("Result parseCodecSpecificData(IN:csdAudioFormat[%d], IN:codecData[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", csdAudioFormat, codecData, \
             UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -602,9 +627,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling parseCodecSpecificData(IN:csdAudioFormat[%d], IN:codecData[0x%X], OUT:_aidl_return[])", csdAudioFormat, codecData); \
+        UT_LOG_DEBUG("Calling parseCodecSpecificData(IN:csdAudioFormat[%d], IN:codecData[0x%X], OUT:_aidl_return[])", csdAudioFormat, codecData); \
         status = audioDecoderController->parseCodecSpecificData(csdAudioFormat, codecData, &_aidl_return); \
-        UT_LOG_INFO("Result parseCodecSpecificData(IN:csdAudioFormat[%d], IN:codecData[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", csdAudioFormat, codecData, \
+        UT_LOG_DEBUG("Result parseCodecSpecificData(IN:csdAudioFormat[%d], IN:codecData[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", csdAudioFormat, codecData, \
             UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -617,9 +642,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling setProperty(IN:property[%s], IN:propertyValue[0x%X], OUT:_aidl_return[])", com::rdk::hal::audiodecoder::toString(property).c_str(), propertyValue.value); \
+        UT_LOG_DEBUG("Calling setProperty(IN:property[%s], IN:propertyValue[0x%X], OUT:_aidl_return[])", com::rdk::hal::audiodecoder::toString(property).c_str(), propertyValue.value); \
         status = audioDecoderController->setProperty(property, propertyValue, &_aidl_return); \
-        UT_LOG_INFO("Result setProperty(IN:property[%s], IN:propertyValue[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", com::rdk::hal::audiodecoder::toString(property).c_str(), propertyValue.value, \
+        UT_LOG_DEBUG("Result setProperty(IN:property[%s], IN:propertyValue[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", com::rdk::hal::audiodecoder::toString(property).c_str(), propertyValue.value, \
             UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -632,9 +657,9 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_INFO("Calling setProperty(IN:property[%s], IN:propertyValue[0x%X], OUT:_aidl_return[])", com::rdk::hal::audiodecoder::toString(property).c_str(), propertyValue.value); \
+        UT_LOG_DEBUG("Calling setProperty(IN:property[%s], IN:propertyValue[0x%X], OUT:_aidl_return[])", com::rdk::hal::audiodecoder::toString(property).c_str(), propertyValue.value); \
         status = audioDecoderController->setProperty(property, propertyValue, &_aidl_return); \
-        UT_LOG_INFO("Result setProperty(IN:property[%s], IN:propertyValue[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", com::rdk::hal::audiodecoder::toString(property).c_str(), propertyValue.value, \
+        UT_LOG_DEBUG("Result setProperty(IN:property[%s], IN:propertyValue[0x%X], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", com::rdk::hal::audiodecoder::toString(property).c_str(), propertyValue.value, \
             UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -683,76 +708,6 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
         } \
     } while (0)
 
-#define AVBUFFER_CREATE_AUDIOPOOL_SUCCESS(avBufferManager, secureHeap, audioDecoderId, listener, audioPool) \
-    do { \
-        UT_LOG_INFO("Calling createAudioPool(IN:secureHeap:[%d], IN:audioDecoderId:[%d], IN:listener:[%p], OUT:audioPool)", \
-                    secureHeap, audioDecoderId.value, listener.get()); \
-        Status status = avBufferManager->createAudioPool(secureHeap, audioDecoderId, listener, &audioPool); \
-        UT_LOG_INFO("Result createAudioPool(IN:secureHeap:[%d], IN:audioDecoderId:[%d], IN:listener:[%p], OUT:audioPool.handle:[%d]), status:[isOK:%s, exception:%s]", \
-                    secureHeap, audioDecoderId.value, listener.get(), audioPool.handle, \
-                    UT_Control_GetMapString(bool_mapTable, status.isOk()), UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_NOT_EQUAL(audioPool.handle, Pool::INVALID); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
-    } while (0)
-
-#define AVBUFFER_DESTROY_POOL_SUCCESS(avBufferManager, pool) \
-    do { \
-        bool _aidl_return = false; \
-        Status status; \
-        UT_LOG_INFO("Calling destroyPool(IN:poolHandle:[%d], OUT:_aidl_return:[])", pool); \
-        status = avBufferManager->destroyPool(pool, &_aidl_return); \
-        UT_LOG_INFO("Result destroyPool with (IN:poolHandle:[%d], OUT:_aidl_return:[%s]), status:[isOK:%s, exception:%s]", \
-                    pool.handle, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
-                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
-                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_TRUE(_aidl_return); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
-    } while (0)
-
-#define AVBUFFER_ALLOC_SUCCESS(avBufferManager, pool, size, bufferHandle) \
-    do { \
-        UT_LOG_INFO("Calling alloc(IN:poolHandle:[%d], IN:size:[%d], OUT:bufferHandle)", pool.handle, size); \
-        Status status = avBufferManager->alloc(pool, size, &bufferHandle); \
-        UT_LOG_INFO("Result alloc(IN:poolHandle:[%d], IN:size:[%d], OUT:bufferHandle:[0x%X]), status:[isOK:%s, exception:%s]", \
-                    pool.handle, size, bufferHandle, UT_Control_GetMapString(bool_mapTable, status.isOk()), \
-                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_NOT_EQUAL(bufferHandle, IAVBuffer::INVALID_HANDLE); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
-    } while (0)
-
-#define AVBUFFER_FREE_SUCCESS(avBufferManager, bufferHandle) \
-    do { \
-        bool _aidl_return = false; \
-        UT_LOG_INFO("Calling free(IN:bufferHandle:[0x%X], OUT:_aidl_return)", bufferHandle); \
-        Status status = avBufferManager->free(bufferHandle, &_aidl_return); \
-        UT_LOG_INFO("Result free(IN:bufferHandle:[0x%X], OUT:_aidl_return:[%s]), status:[isOK:%s, exception:%s]", \
-                    bufferHandle, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
-                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
-                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
-        UT_ASSERT_TRUE(_aidl_return); \
-    } while (0)
-
-#define AVBUFFER_GETMETRICS(avBufferManager, secureHeap, heapMetrics) \
-    do { \
-        UT_LOG_INFO("Calling getHeapMetrics(IN:secureHeap:[%s], OUT:heapMetrics[])", \
-                    UT_Control_GetMapString(bool_mapTable, secureHeap)); \
-        Status status = avBufferManager->getHeapMetrics(secureHeap, &heapMetrics); \
-        UT_LOG_INFO("Result getHeapMetrics(IN:secureHeap:[%s], OUT:heapMetrics[secure:%s, bytesUsed:%d, bytesTotal:%d]), status:[isOK:%s, exception:%s]", \
-                    UT_Control_GetMapString(bool_mapTable, secureHeap), \
-                    UT_Control_GetMapString(bool_mapTable, heapMetrics.secure), \
-                    heapMetrics.bytesUsed, \
-                    heapMetrics.bytesTotal, \
-                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
-                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
-    } while (0)
-
 /* Stream metadata */
 struct AudioMetatData
 {
@@ -774,10 +729,10 @@ struct AudioMetatData
 /* Decoded Frame details */
 typedef struct DecodedAudioFrame
 {
-    vector<uint8_t> data;
     int64_t framePTS;
     bool isMetaAvailable;
     bool isTunnel;
+    int64_t frameBufferHandle;
     struct AudioMetatData metadata;
     chrono::steady_clock::time_point receiveTime;
 }DecodedAudioFrame_t;
@@ -809,7 +764,7 @@ public:
 
     Status onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::optional<FrameMetadata>& metadata) override;
 
-    bool getNextFrame(DecodedAudioFrame_t &frameInfo, bool popFrame);
+    bool getNextFrame(DecodedAudioFrame_t &frameInfo, int32_t waitTime, bool popFrame);
 
     void shutdown();
     void setDecoderID(int32_t id);
@@ -861,10 +816,10 @@ private:
     int32_t mDecoderID;
 };
 
-class DecoderTest
+class AudioDecoderTest
 {
 public:
-    DecoderTest(IAudioDecoder::Id decoderId, sp<IAudioDecoder> decoderHandle,
+    AudioDecoderTest(IAudioDecoder::Id decoderId, sp<IAudioDecoder> decoderHandle,
                 sp<AudioDecoderControllerListener> controlListener,
                 sp<AudioDecoderEventListener> eventListener,
                 sp<IAVBuffer> AVBufferManager, IAVBufferHelper* avbufferHelper,
