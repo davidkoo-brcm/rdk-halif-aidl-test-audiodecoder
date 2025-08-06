@@ -11,6 +11,8 @@ IAudioDecoderManager:
         flush_pts: 127999998
         flush_reset_pts: -1
         eos_pts: -1
+        sink_eos_pts: -1
+        sink_flush_pts: -1
       Inputs:
         Streams:
           - Name: tones_48k_2_256_aac

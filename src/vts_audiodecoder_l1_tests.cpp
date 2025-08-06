@@ -82,18 +82,6 @@ public:
     }
 };
 
-UT_status_t vts_audiodecoder_getAudioDecoderService()
-{
-    gAudioDecoderManager = android::interface_cast<IAudioDecoderManager>(
-            defaultServiceManager()->getService(String16(IAudioDecoderManager::serviceName().c_str())));
-    if (gAudioDecoderManager == nullptr)
-    {
-        UT_LOG_ERROR("AudioDecoder Service not available");
-        return UT_STATUS_FAILURE;
-    }
-    return UT_STATUS_OK;
-}
-
 /**
 * @brief Tests the retrieval of audio decoder IDs to ensure the function fetches valid and unique IDs.
 *
@@ -1914,7 +1902,11 @@ std::multimap<audiodecoder::Property, int32_t> validIntPropertyReady =
     {com::rdk::hal::audiodecoder::Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::HDMI_1))}
 };
 
+<<<<<<< HEAD
 std::multimap<audiodecoder::Property, int32_t> validIntPropertyAll =
+=======
+std::multimap<Property, int32_t> validAC4IntPropertyAll =
+>>>>>>> origin/develop
 {
     {com::rdk::hal::audiodecoder::Property::AC4_PRESENTATION_GROUP_INDEX , -1},
     {com::rdk::hal::audiodecoder::Property::AC4_PRESENTATION_GROUP_INDEX , 0},
@@ -1933,7 +1925,11 @@ std::multimap<audiodecoder::Property, int32_t> validIntPropertyAll =
     {com::rdk::hal::audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, 1}
 };
 
+<<<<<<< HEAD
 std::multimap<audiodecoder::Property, android::String16> validStringPropertyAll =
+=======
+std::multimap<Property, android::String16> validAC4StringPropertyAll =
+>>>>>>> origin/develop
 {
     {com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("")},
     {com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("eng")},
@@ -1951,7 +1947,11 @@ std::multimap<audiodecoder::Property, int32_t> invalidIntPropertyReady =
     {com::rdk::hal::audiodecoder::Property::AV_SOURCE , int32_t(static_cast<int32_t>(AVSource::COMPOSITE_5 ))+1}
 };
 
+<<<<<<< HEAD
 std::multimap<audiodecoder::Property, int32_t> invalidIntPropertyAll =
+=======
+std::multimap<Property, int32_t> invalidAC4IntPropertyAll =
+>>>>>>> origin/develop
 {
     {com::rdk::hal::audiodecoder::Property::AC4_PRESENTATION_GROUP_INDEX , -2},
     {com::rdk::hal::audiodecoder::Property::AC4_ASSOCIATED_TYPE, -2},
@@ -1965,7 +1965,11 @@ std::multimap<audiodecoder::Property, int32_t> invalidIntPropertyAll =
     {com::rdk::hal::audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, 2}
 };
 
+<<<<<<< HEAD
 std::multimap<audiodecoder::Property, android::String16> invalidStringPropertyAll =
+=======
+std::multimap<Property, android::String16> invalidAC4StringPropertyAll =
+>>>>>>> origin/develop
 {
     {com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("en£")},
     {com::rdk::hal::audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("111")},
@@ -2030,26 +2034,36 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setProperty_pos)
             /* Open the Decoder */
             AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
 
-            /* set the properties which can be set at any state */
-            AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validIntPropertyAll, intValue);
-            AUDIODECODER_SETPROPERTY_STRING_LIST_SUCCESS(audioDecoderController, validStringPropertyAll);
-
+            /*Set AC4 property only if the decopder support AC4 codec*/
+            if (Codec::DOLBY_AC4 == _codec)
+            {
+                /* set the properties which can be set at any state */
+                AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validAC4IntPropertyAll, intValue);
+                AUDIODECODER_SETPROPERTY_STRING_LIST_SUCCESS(audioDecoderController, validAC4StringPropertyAll);
+            }
             /* set the properties which can be set after Ready */
             AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validIntPropertyReady, intValue);
 
             /* Start the decoder */
             AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
 
-            /* set the properties which can be set at any state */
-            AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validIntPropertyAll, intValue);
-            AUDIODECODER_SETPROPERTY_STRING_LIST_SUCCESS(audioDecoderController, validStringPropertyAll);
-
+            /*Set AC4 property only if the decopder support AC4 codec*/
+            if (Codec::DOLBY_AC4 == _codec)
+            {
+                /* set the properties which can be set at any state */
+                AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validAC4IntPropertyAll, intValue);
+                AUDIODECODER_SETPROPERTY_STRING_LIST_SUCCESS(audioDecoderController, validAC4StringPropertyAll);
+            }
             /* Stop the decoder */
             AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
 
-            /* set the properties which can be set at any state */
-            AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validIntPropertyAll, intValue);
-            AUDIODECODER_SETPROPERTY_STRING_LIST_SUCCESS(audioDecoderController, validStringPropertyAll);
+            /*Set AC4 property only if the decopder support AC4 codec*/
+            if (Codec::DOLBY_AC4 == _codec)
+            {
+                /* set the properties which can be set at any state */
+                AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validAC4IntPropertyAll, intValue);
+                AUDIODECODER_SETPROPERTY_STRING_LIST_SUCCESS(audioDecoderController, validAC4StringPropertyAll);
+            }
 
             /* set the properties which can be set after Ready */
             AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validIntPropertyReady, intValue);
@@ -2057,10 +2071,13 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setProperty_pos)
             /* Close the decoder */
             AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
 
-            /* set the properties which can be set at any state */
-            AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validIntPropertyAll, intValue);
-            AUDIODECODER_SETPROPERTY_STRING_LIST_SUCCESS(audioDecoderController, validStringPropertyAll);
-
+            /*Set AC4 property only if the decopder support AC4 codec*/
+            if (Codec::DOLBY_AC4 == _codec)
+            {
+                /* set the properties which can be set at any state */
+                AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validAC4IntPropertyAll, intValue);
+                AUDIODECODER_SETPROPERTY_STRING_LIST_SUCCESS(audioDecoderController, validAC4StringPropertyAll);
+            }
         }
     }
 }
@@ -2119,9 +2136,13 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setProperty_neg)
             /* Open the Decoder */
             AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
 
-            /* set the invalid properties */
-            AUDIODECODER_SETPROPERTY_LIST_FAILURE(audioDecoderController, invalidIntPropertyAll, intValue, Status::EX_ILLEGAL_ARGUMENT);
-            AUDIODECODER_SETPROPERTY_STRING_LIST_FAILURE(audioDecoderController, invalidStringPropertyAll, Status::EX_ILLEGAL_ARGUMENT);
+            /*Set AC4 property only if the decopder support AC4 codec*/
+            if (Codec::DOLBY_AC4 == _codec)
+            {
+                /* set the invalid properties */
+                AUDIODECODER_SETPROPERTY_LIST_FAILURE(audioDecoderController, invalidAC4IntPropertyAll, intValue, Status::EX_ILLEGAL_ARGUMENT);
+                AUDIODECODER_SETPROPERTY_STRING_LIST_FAILURE(audioDecoderController, invalidAC4StringPropertyAll, Status::EX_ILLEGAL_ARGUMENT);
+            }
             AUDIODECODER_SETPROPERTY_LIST_FAILURE(audioDecoderController, invalidIntPropertyReady, intValue, Status::EX_ILLEGAL_ARGUMENT);
 
             /* Start the decoder */

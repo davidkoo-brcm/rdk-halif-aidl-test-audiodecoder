@@ -148,7 +148,11 @@ com::rdk::hal::audiodecoder::PCMFormat vts_audiodecoder_helper_StringToFormat(co
     return static_cast<PCMFormat>(-1);
 }
 
+<<<<<<< HEAD
 void vts_audiodecoder_helper_validateCapabilities(int decoder_id, const com::rdk::hal::audiodecoder::Capabilities& capabilities)
+=======
+void vts_audiodecoder_helper_validateCapabilities(int decoder_id, const audiodecoder::Capabilities& capabilities)
+>>>>>>> origin/develop
 {
     bool decoderID = false;
 
@@ -203,7 +207,11 @@ bool vts_audiodecoder_helper_areElementsUnique(const std::vector<int>& values)
     return true;
 }
 
+<<<<<<< HEAD
 bool vts_audiodecoder_helper_validatePropertyValue(int decoder_id, const std::optional<PropertyValue>& propertyValue, const com::rdk::hal::audiodecoder::Property property)
+=======
+bool vts_audiodecoder_helper_validatePropertyValue(int decoder_id, const std::optional<PropertyValue>& propertyValue, const audiodecoder::Property property)
+>>>>>>> origin/develop
 {
     if (!propertyValue.has_value() || !propertyValue->value.has_value())
     {
@@ -357,6 +365,7 @@ static inline double bytesToDouble(const uint8_t* data, com::rdk::hal::audiodeco
     }
 }
 
+<<<<<<< HEAD
 size_t vts_bytesPerSample(com::rdk::hal::audiodecoder::PCMFormat format)
 {
     switch (format) {
@@ -372,6 +381,8 @@ size_t vts_bytesPerSample(com::rdk::hal::audiodecoder::PCMFormat format)
     }
 }
 
+=======
+>>>>>>> origin/develop
 double vts_computeRMSDiff(const void* ref_buf, const void* act_buf, size_t size, PCMFormat format)
 {
     const uint8_t* ref = static_cast<const uint8_t*>(ref_buf);
