@@ -74,11 +74,11 @@ XLDFLAGS += -lhal_logger -lavbufferhelper
 # required for std::optional
 CXXFLAGS += -std=c++17
 
-DISABLE_UT_DEBUG_LOGGING ?= 1
+ENABLE_UT_INFO_LOGGING ?= 0
 
 # TODO: remove this once the ut-core implements runtime logging configuration
-ifeq ($(DISABLE_UT_INFO_LOGGING),1)
-CXXFLAGS += -DDISABLE_UT_INFO_LOGGING
+ifeq ($(ENABLE_UT_INFO_LOGGING),1)
+CXXFLAGS += -DENABLE_UT_INFO_LOGGING
 endif
 
 UT_CORE_DIR := $(CURDIR)/ut-core

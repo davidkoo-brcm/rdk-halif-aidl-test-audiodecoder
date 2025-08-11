@@ -120,7 +120,7 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
 #define MAX_TRANSITORY_STATE_WAIT_MS  5
 #define MAX_FINAL_STATE_WAIT_MS  500
 
-#ifdef DISABLE_UT_DEBUG_LOGGING
+#ifndef ENABLE_UT_INFO_LOGGING
 #define UT_LOG_DEBUG(...)
 #define UT_LOG_INFO(...)
 #endif
