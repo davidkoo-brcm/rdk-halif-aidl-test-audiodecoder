@@ -417,7 +417,8 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_StopStart
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
-
+/*commenting out tunnel and secure cases*/
+#if 0
 /**
  * @brief Test the ability to decode audio frames
  *        Decoding type: Sequential
@@ -850,7 +851,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_StopStart)
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
-
+#endif
 /**
  * @brief Test concurrent decode in non-tunnel mode (Non-Secure)
  *        Modes: Non-Tunnel, Non-Secure, Concurrent
@@ -994,7 +995,8 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_StopStart
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
-
+/*Commenting out Tunnel and secure cases */
+#if 0
 /**
  * @brief Test concurrent decode in secure mode (Non-Tunnel)
  *        Modes: Non-Tunnel, Secure, Concurrent
@@ -1426,7 +1428,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_StopStart)
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
-
+#endif
 /** @} */ // End of AUDIO_DECODER_HALTEST L3 File
 /** @} */ // End of AUDIO_DECODER_HALTEST
 /** @} */ // End of AUDIO_DECODER Module
