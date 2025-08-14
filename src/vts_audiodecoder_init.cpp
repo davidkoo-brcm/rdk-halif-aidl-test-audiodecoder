@@ -64,26 +64,39 @@
 
 #include <ut.h>
 #include <ut_log.h>
+#include "vts_helper_functions.h"
 #include "vts_audiodecoder_helper_functions.h"
 #include "vts_audiodecoder_parse_hfp.h"
 #include "vts_audiodecoder_init.h"
 #include "vts_audiodecoder_parse_testconfig.h"
 
-UT_status_t vts_audiodecoder_getAudioDecoderService();
 sp<IAudioDecoderManager> gAudioDecoderManager;
-void *gAudioDecoderTestConfiguration;
+void *gAudioDecoderTestConfiguration = nullptr;
+
+static UT_status_t vts_audiodecoder_getAudioDecoderService()
+{
+    gAudioDecoderManager = android::interface_cast<IAudioDecoderManager>(
+            defaultServiceManager()->getService(String16(IAudioDecoderManager::serviceName().c_str())));
+    if (gAudioDecoderManager == nullptr)
+    {
+        UT_LOG_ERROR("AudioDecoder Service not available");
+        return UT_STATUS_FAILURE;
+    }
+    return UT_STATUS_OK;
+}
 
 UT_status_t VTS_AudioDecoder_init()
 {
     if(vts_audiodecoder_getAudioDecoderService() != UT_STATUS_OK)
     {
+        UT_LOG_ERROR("Failed to get AudioDecoder Service");
         return UT_STATUS_FAILURE;
     }
     if(vts_audiodecoder_parseAudioDecoderHFP() != UT_STATUS_OK)
     {
-        UT_LOG_ERROR("Failed to process the HFP file");
-        return UT_STATUS_FAILURE;
+        UT_LOG_ERROR("Failed to process the AudioDecoder HFP file");
     }
+
     gAudioDecoderTestConfiguration = vts_kvp_create_instance(VTS_TEST_CONFIG_PATH);
 
     return UT_STATUS_OK;
@@ -92,6 +105,7 @@ UT_status_t VTS_AudioDecoder_init()
 void VTS_AudioDecoder_destroy()
 {
     vts_kvp_destroy_instance(gAudioDecoderTestConfiguration);
+    gAudioDecoderTestConfiguration = nullptr;
 }
 
 /** @} */ // End of AUDIO_DECODER_HALTEST_INIT

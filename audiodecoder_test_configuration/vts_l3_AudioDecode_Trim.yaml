@@ -1,13 +1,18 @@
 IAudioDecoderManager:
+  stream_download_path: "http://<>/streams" #`URL` path to download the audio test streams
+  input_streams_path: "assets/streams/input" #Target path where input streams are stored
+  reference_streams_path: "assets/streams/reference/" #Target path for reference PCM streams
   L3:
-    Decode_EOS:
+    Decode_Trim:
       Controls:
         delay_between_decode_calls: 5
         stop_start_pts: -1
         signal_discontinuity_pts: -1
         flush_pts: -1
         flush_reset_pts: -1
-        eos_pts: 127999998
+        eos_pts: -1
+        sink_eos_pts: -1
+        sink_flush_pts: -1
       Inputs:
         Streams:
           - Name: tones_48k_2_256_aac
@@ -23,8 +28,8 @@ IAudioDecoderManager:
               - 170666664
               - 191999997
             trim:
-              - 0
-              - 0
+              - 42666666
+              - 85333332
             rms_diff_threshold: 0.5
             decode_time_threshold: 100000
           - Name: tones_48k_2_192_ac3
@@ -40,7 +45,7 @@ IAudioDecoderManager:
               - 170666664
               - 191999997
             trim:
-              - 0
-              - 0
+              - 127999998
+              - 137999998
             rms_diff_threshold: 0.5
             decode_time_threshold: 100000
