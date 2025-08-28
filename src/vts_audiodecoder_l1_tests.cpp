@@ -2031,6 +2031,9 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setProperty_pos)
                 AUDIODECODER_SETPROPERTY_STRING_LIST_SUCCESS(audioDecoderController, validAC4StringPropertyAll);
             }
 
+            /* set the properties which can be set after Ready */
+            AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validIntPropertyReady, intValue);
+
             /* Start the decoder */
             AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
 
