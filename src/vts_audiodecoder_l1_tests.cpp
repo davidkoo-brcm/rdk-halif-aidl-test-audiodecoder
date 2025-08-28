@@ -1935,6 +1935,15 @@ std::multimap<Property, int32_t> invalidIntPropertyReady =
     {Property::AV_SOURCE , int32_t(static_cast<int32_t>(AVSource::COMPOSITE_5 ))+1}
 };
 
+std::multimap<Property, int32_t> readOnlyProperty =
+{
+    {Property::RESOURCE_ID, 1},
+    {Property::SECURE_AUDIO, 2},
+    {Property::METRIC_FRAMES_DECODED , 100},
+    {Property::METRIC_DECODE_ERRORS , 100},
+    {Property::METRIC_FRAMES_DROPPED , 100}
+};
+
 std::multimap<Property, int32_t> invalidAC4IntPropertyAll =
 {
     {Property::AC4_PRESENTATION_GROUP_INDEX , -2},
@@ -2021,6 +2030,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setProperty_pos)
                 AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validAC4IntPropertyAll, intValue);
                 AUDIODECODER_SETPROPERTY_STRING_LIST_SUCCESS(audioDecoderController, validAC4StringPropertyAll);
             }
+
             /* set the properties which can be set after Ready */
             AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validIntPropertyReady, intValue);
 
@@ -2034,6 +2044,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setProperty_pos)
                 AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validAC4IntPropertyAll, intValue);
                 AUDIODECODER_SETPROPERTY_STRING_LIST_SUCCESS(audioDecoderController, validAC4StringPropertyAll);
             }
+
             /* Stop the decoder */
             AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
 
@@ -2128,8 +2139,14 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setProperty_neg)
             /* Start the decoder */
             AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
 
+            /*Set Read only properties*/
+            AUDIODECODER_SETPROPERTY_LIST_FAILURE(audioDecoderController, readOnlyProperty, intValue, Status::EX_UNSUPPORTED_OPERATION);
+
             /* set the properties in invalid state */
             AUDIODECODER_SETPROPERTY_LIST_FAILURE(audioDecoderController, validIntPropertyReady, intValue, Status::EX_ILLEGAL_STATE);
+
+            /* set the properties which can be set after Ready */
+            AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validIntPropertyReady, intValue);
 
             /* Stop the decoder */
             AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
