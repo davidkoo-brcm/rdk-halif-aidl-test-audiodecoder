@@ -74,6 +74,10 @@ VTS_L2_AudioDecoder() : UTCore() {}
 
     void SetUp() override
     {
+        if (gAudioDecoderManager == nullptr) {
+                UT_FAIL_FATAL("AudioDecoder Service not available");
+        }
+
         std::vector<IAudioDecoder::Id> decoderIds;
         /* Get the Audio decoder IDs */
         AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);

@@ -90,9 +90,17 @@ public:
     void SetUp() override
     {
         try {
-            vector<IAudioDecoder::Id> decoderIds;
-
             mAVBufferManager = vts_avbuffer_getService();
+
+            if (mAVBufferManager == nullptr) {
+                UT_FAIL_FATAL("AVBuffer Service not available");
+            }
+
+            if (gAudioDecoderManager == nullptr) {
+                UT_FAIL_FATAL("AudioDecoder Service not available");
+            }
+
+            vector<IAudioDecoder::Id> decoderIds;
 
             mAVbufferHelper = getAVBufferHelperInstance();
 
