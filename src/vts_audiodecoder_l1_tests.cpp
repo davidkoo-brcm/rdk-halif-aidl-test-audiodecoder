@@ -71,6 +71,9 @@ public:
 
     void SetUp() override
     {
+        if (gAudioDecoderManager == nullptr) {
+                UT_FAIL_FATAL("AudioDecoder Service not available");
+            }
     }
 
     void TearDown() override
