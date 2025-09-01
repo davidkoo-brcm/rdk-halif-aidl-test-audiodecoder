@@ -104,6 +104,10 @@ public:
 
             mAVbufferHelper = getAVBufferHelperInstance();
 
+            if (mAVbufferHelper == nullptr) {
+                UT_FAIL_FATAL("AVBuffer Helper not available");
+            }
+
             /* Get the Audio decoder IDs */
             AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
