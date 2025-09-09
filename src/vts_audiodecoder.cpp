@@ -236,6 +236,10 @@ Status AudioDecoderEventListener::onDecodeError(audiodecoder::ErrorCode vendorEr
 Status AudioDecoderEventListener::onStateChanged(State oldState,State newState)
 {
     UT_LOG_INFO("[Audio DecoderID: %d] State Change received: %s -> %s", mDecoderID, com::rdk::hal::toString(oldState).c_str(), com::rdk::hal::toString(newState).c_str());
+    if(oldState == State::CLOSED && newState == State::OPENING)
+    {
+        mUsedDecoderID = mDecoderID;
+    }
     {
         lock_guard<mutex> lock(mMutex);
         mStateChanges.emplace_back(oldState, newState);
@@ -356,7 +360,7 @@ void AudioDecoderEventListener::setDecoderID(int32_t id)
     mDecoderID = id;
 }
 
-
+int32_t AudioDecoderEventListener::mUsedDecoderID = -1;
 
 void AudioDecoderTest::run(bool validateMetrics)
 {
