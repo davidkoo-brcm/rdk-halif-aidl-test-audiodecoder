@@ -473,7 +473,6 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
 
             if(mSecureDecode)
             {
-                bool status;
                 if(!mAVbufferHelper->writeSecureHandle(audioBufferHandle, inputBuffer.data(), frameSize))
                 {
                     UT_LOG_ERROR("[Audio DecoderID: %d] Failed to copy the data to secure buffer", mDecoderId.value);
@@ -633,7 +632,9 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
                 if(mTestConfiguration.eosPts > 0 && inputFrameIndex > 1)
                 {
                     if(decodedFrame.isMetaAvailable)
+                    {
                         UT_ASSERT_TRUE(decodedFrame.metadata.endOfStream);
+                    }
                 }
 
                 framesDecoded++;
@@ -655,11 +656,17 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
 
             /* Validate decoder metrics */
             if(startFramesDecoded >= 0 && endFramesDecoded >= 0)
+            {
                 UT_ASSERT_TRUE((endFramesDecoded - startFramesDecoded) == framesDecoded);
+            }
             if(startFrameErrors >= 0 && endFrameErrors >= 0)
+            {
                 UT_ASSERT_TRUE((endFrameErrors - startFrameErrors) == errorFrames);
+            }
             if(startFramesDropped >= 0 && endFramesDropped >= 0)
+            {
                 UT_ASSERT_TRUE((endFramesDropped - startFramesDropped) == 0);
+            }
         }
 
         /* Stop the decoder */

@@ -107,7 +107,6 @@ public:
 */
 UT_ADD_TEST(VTS_L1_AudioDecoder, getAudioDecoderIds_pos)
 {
-    int i = 0;
     std::vector<IAudioDecoder::Id> initialDecoderIds;
     std::vector<IAudioDecoder::Id> secondDecoderIds;
     std::vector<int32_t> decoderId;
@@ -529,8 +528,6 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, open_neg)
     sp<IAudioDecoderController> audioDecoderController_nullptr = nullptr;
     sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
 
-    bool _aidl_return;
-
     /* Get the Audio decoder IDs */
     AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
@@ -597,7 +594,6 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, close_pos)
     sp<IAudioDecoder> audioDecoder;
     Capabilities capabilities;
     ::android::binder::Status status;
-    bool _aidl_return;
 
     /* Get the Audio decoder IDs */
     AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
@@ -816,7 +812,6 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, unregisterEventListener_pos)
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
     ::android::binder::Status status;
-    bool _aidl_return;
 
     /* Get the Audio decoder IDs */
     AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
@@ -926,7 +921,6 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, start_pos)
     sp<IAudioDecoder> audioDecoder;
     audiodecoder::Capabilities capabilities;
     ::android::binder::Status status;
-    bool _aidl_return;
 
     /* Get the Audio decoder IDs */
     AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
@@ -1128,7 +1122,6 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, stop_neg)
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
     Capabilities capabilities;
-    ::com::rdk::hal::State state;
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */

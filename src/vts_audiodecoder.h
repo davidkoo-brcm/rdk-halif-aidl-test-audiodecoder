@@ -123,8 +123,14 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
 #define MAX_FINAL_STATE_WAIT_MS  500
 
 #ifndef ENABLE_UT_INFO_LOGGING
+#ifdef UT_LOG_DEBUG
+#undef UT_LOG_DEBUG
 #define UT_LOG_DEBUG(...)
+#endif
+#ifdef UT_LOG_INFO
+#undef UT_LOG_INFO
 #define UT_LOG_INFO(...)
+#endif
 #endif
 
 #define AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds) \
@@ -180,7 +186,6 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
 #define AUDIODECODER_GET_PROPERTY_SUCCESS(audioDecoder, property, propertyValue) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
         UT_LOG_DEBUG("Calling getProperty(IN:property[%s], OUT:propertyValue[]", audiodecoder::toString(property).c_str()); \
         status = (audioDecoder)->getProperty(property, &propertyValue); \
         if(propertyValue.has_value()) \
@@ -199,6 +204,8 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
                     break; \
+                default: \
+                    break; \
             } \
         } \
         else \
@@ -215,7 +222,6 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
 #define AUDIODECODER_GET_PROPERTY_FAILURE(audioDecoder, property, propertyValue, exception) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
         UT_LOG_DEBUG("Calling getProperty(IN:property[%s], OUT:propertyValue[]", audiodecoder::toString(property).c_str()); \
         status = (audioDecoder)->getProperty(property, &propertyValue); \
         UT_LOG_DEBUG("Result getProperty(IN:property[%s], OUT:propertyValue[]), status:[isOK:%s, exception:%s]", audiodecoder::toString(property).c_str(), \
@@ -451,10 +457,10 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_DEBUG("[DecoderID: %d] Calling decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%016"PRIx64"], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[])", \
+        UT_LOG_DEBUG("[DecoderID: %d] Calling decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%016" PRIx64 "], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[])", \
             decoderID, nsPresentationTime, bufferHandle, trimStartNs, trimEndNs); \
         status = audioDecoderController->decodeBuffer(nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, &_aidl_return); \
-        UT_LOG_DEBUG("[DecoderID: %d] Result decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%016"PRIx64"], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("[DecoderID: %d] Result decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%016" PRIx64 "], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
             decoderID, nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -466,10 +472,10 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_DEBUG("Calling decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%016"PRIx64"], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[])", \
+        UT_LOG_DEBUG("Calling decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%016" PRIx64 "], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[])", \
             nsPresentationTime, bufferHandle, trimStartNs, trimEndNs); \
         status = audioDecoderController->decodeBuffer(nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, &_aidl_return); \
-        UT_LOG_DEBUG("Result decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%016"PRIx64"], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%016" PRIx64 "], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
             nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -520,7 +526,6 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
 #define AUDIODECODER_SIGNAL_DISCONTINUITY_SUCCESS(audioDecoder, audioDecoderController, stateCheck) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
         UT_LOG_DEBUG("Calling signalDiscontinuity()"); \
         status = audioDecoderController->signalDiscontinuity(); \
         UT_LOG_DEBUG("Result signalDiscontinuity(), status:[isOK:%s, exception:%s]", \
