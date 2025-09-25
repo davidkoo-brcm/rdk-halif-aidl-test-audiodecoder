@@ -310,8 +310,15 @@ void AudioDecoderEventListener::resetStateChanges()
 
 bool AudioDecoderEventListener::checkStateTransistion(State expOldState, State expNewState)
 {
+    vector<pair<State, State>> stateChange;
     bool foundClosedToOpening = false;
-    for (const auto &[oldState, newState] : mStateChanges)
+
+    {
+        lock_guard<mutex> lock(mMutex);
+        stateChange = mStateChanges;
+    }
+
+    for (const auto &[oldState, newState] : stateChange)
     {
         if (oldState == expOldState && newState == expNewState)
         {
@@ -319,6 +326,7 @@ bool AudioDecoderEventListener::checkStateTransistion(State expOldState, State e
             break;
         }
     }
+
     return foundClosedToOpening;
 }
 
