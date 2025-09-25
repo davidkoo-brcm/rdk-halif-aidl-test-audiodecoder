@@ -113,7 +113,7 @@ VTS_L2_AudioDecoder() : UTCore() {}
     {
         ::com::rdk::hal::State currentState;
 
-        eventListener->waitForState(intermediateState, std::chrono::milliseconds(MAX_FINAL_STATE_WAIT_MS));
+        eventListener->waitForState(intermediateState, std::chrono::milliseconds(MAX_TRANSITORY_STATE_WAIT_MS));
 
         UT_ASSERT_TRUE(eventListener->checkStateTransistion(oldState, intermediateState));
 
