@@ -453,6 +453,7 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
             void *mapBuffer = nullptr;
             uint32_t mapSize = 0;
             InputAudioFrame_t inputFrame;
+            bool isValidBuffer = false;
 
             /* Allocate the audio buffer */
             AVBUFFER_ALLOC_SUCCESS(mAVBufferManager, audioPool, frameSize, audioBufferHandle);
@@ -525,9 +526,13 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
                 AUDIODECODER_START_SUCCESS(mDecoderHandle, audioDecoderController, true);
             }
 
-            /* Free the audio buffer */
-            mAVbufferHelper->unmapHandle(audioBufferHandle);
-            AVBUFFER_FREE_SUCCESS(mAVBufferManager, audioBufferHandle);
+            AVBUFFER_ISVALID_SUCCESS(mAVBufferManager, audioBufferHandle, isValidBuffer);
+            if(isValidBuffer)
+            {
+                UT_LOG_ERROR("output buffer not released by decoder [handle:0x%llx]", audioBufferHandle);
+            } else {
+                UT_LOG_INFO("output buffer released by decoder [handle:0x%llx]", audioBufferHandle);
+            }
 
             /* wait time to next frames */
             if(mTestConfiguration.decoderDelay > 0)
@@ -574,6 +579,7 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
                 {
                     UT_ASSERT_TRUE(decodedFrame.isMetaAvailable);
                 }
+
                 if(decodedFrame.isMetaAvailable)
                 {
                     UT_ASSERT_EQUAL(decodedFrame.metadata.sourceCodec, mTestConfiguration.codec);
