@@ -356,6 +356,8 @@ static inline double bytesToDouble(const uint8_t* data, PCMFormat format)
         case PCMFormat::S8:    return static_cast<int8_t>(*data) / 128.0;
         case PCMFormat::U8:    return (*data - 128) / 128.0;
     }
+
+    return 0.0;
 }
 
 double vts_computeRMSDiff(const void* ref_buf, const void* act_buf, size_t size, PCMFormat format)

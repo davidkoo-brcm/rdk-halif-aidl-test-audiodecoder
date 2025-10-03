@@ -102,6 +102,7 @@
 #include "vts_audiodecoder_helper_functions.h"
 #include "vts_audiodecoder_parse_hfp.h"
 #include "vts_audiodecoder_parse_testconfig.h"
+#include "vts_helper_functions.h"
 
 using android::sp;
 using android::String16;
@@ -122,35 +123,15 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
 #define MAX_FINAL_STATE_WAIT_MS  500
 
 #ifndef ENABLE_UT_INFO_LOGGING
+#ifdef UT_LOG_DEBUG
+#undef UT_LOG_DEBUG
 #define UT_LOG_DEBUG(...)
+#endif
+#ifdef UT_LOG_INFO
+#undef UT_LOG_INFO
 #define UT_LOG_INFO(...)
 #endif
-
-/* Status::Exception */
-const static ut_control_keyStringMapping_t statusException_mapTable[] =
-{
-    {"EX_NONE",                  (int32_t) Status::EX_NONE},
-    {"EX_SECURITY",              (int32_t) Status::EX_SECURITY},
-    {"EX_BAD_PARCELABLE",        (int32_t) Status::EX_BAD_PARCELABLE},
-    {"EX_ILLEGAL_ARGUMENT",      (int32_t) Status::EX_ILLEGAL_ARGUMENT},
-    {"EX_NULL_POINTER",          (int32_t) Status::EX_NULL_POINTER},
-    {"EX_ILLEGAL_STATE",         (int32_t) Status::EX_ILLEGAL_STATE},
-    {"EX_NETWORK_MAIN_THREAD",   (int32_t) Status::EX_NETWORK_MAIN_THREAD},
-    {"EX_UNSUPPORTED_OPERATION", (int32_t) Status::EX_UNSUPPORTED_OPERATION},
-    {"EX_SERVICE_SPECIFIC",      (int32_t) Status::EX_SERVICE_SPECIFIC},
-    {"EX_PARCELABLE",            (int32_t) Status::EX_PARCELABLE},
-    {"EX_HAS_REPLY_HEADER",      (int32_t) Status::EX_HAS_REPLY_HEADER},
-    {"EX_TRANSACTION_FAILED",    (int32_t) Status::EX_TRANSACTION_FAILED},
-    {NULL, -1}
-};
-
-/* bool */
-const static ut_control_keyStringMapping_t bool_mapTable[] =
-{
-    {"false", (int32_t) false},
-    {"true",  (int32_t) true},
-    {NULL, -1}
-};
+#endif
 
 #define AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds) \
     do { \
@@ -205,7 +186,6 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_GET_PROPERTY_SUCCESS(audioDecoder, property, propertyValue) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
         UT_LOG_DEBUG("Calling getProperty(IN:property[%s], OUT:propertyValue[]", audiodecoder::toString(property).c_str()); \
         status = (audioDecoder)->getProperty(property, &propertyValue); \
         if(propertyValue.has_value()) \
@@ -224,6 +204,8 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
                     break; \
+                default: \
+                    break; \
             } \
         } \
         else \
@@ -240,7 +222,6 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_GET_PROPERTY_FAILURE(audioDecoder, property, propertyValue, exception) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
         UT_LOG_DEBUG("Calling getProperty(IN:property[%s], OUT:propertyValue[]", audiodecoder::toString(property).c_str()); \
         status = (audioDecoder)->getProperty(property, &propertyValue); \
         UT_LOG_DEBUG("Result getProperty(IN:property[%s], OUT:propertyValue[]), status:[isOK:%s, exception:%s]", audiodecoder::toString(property).c_str(), \
@@ -476,10 +457,10 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_DEBUG("[DecoderID: %d] Calling decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%016"PRIx64"], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[])", \
+        UT_LOG_DEBUG("[DecoderID: %d] Calling decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%016" PRIx64 "], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[])", \
             decoderID, nsPresentationTime, bufferHandle, trimStartNs, trimEndNs); \
         status = audioDecoderController->decodeBuffer(nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, &_aidl_return); \
-        UT_LOG_DEBUG("[DecoderID: %d] Result decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%016"PRIx64"], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("[DecoderID: %d] Result decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%016" PRIx64 "], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
             decoderID, nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -491,10 +472,10 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
     do { \
         ::android::binder::Status status; \
         bool _aidl_return; \
-        UT_LOG_DEBUG("Calling decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%016"PRIx64"], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[])", \
+        UT_LOG_DEBUG("Calling decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%016" PRIx64 "], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[])", \
             nsPresentationTime, bufferHandle, trimStartNs, trimEndNs); \
         status = audioDecoderController->decodeBuffer(nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, &_aidl_return); \
-        UT_LOG_DEBUG("Result decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%016"PRIx64"], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_DEBUG("Result decodeBuffer(IN:nsPresentationTime[%ld], IN:bufferHandle[0x%016" PRIx64 "], trimStartNs[%d], trimEndNs[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
             nsPresentationTime, bufferHandle, trimStartNs, trimEndNs, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
@@ -545,7 +526,6 @@ const static ut_control_keyStringMapping_t bool_mapTable[] =
 #define AUDIODECODER_SIGNAL_DISCONTINUITY_SUCCESS(audioDecoder, audioDecoderController, stateCheck) \
     do { \
         ::android::binder::Status status; \
-        ::com::rdk::hal::State state; \
         UT_LOG_DEBUG("Calling signalDiscontinuity()"); \
         status = audioDecoderController->signalDiscontinuity(); \
         UT_LOG_DEBUG("Result signalDiscontinuity(), status:[isOK:%s, exception:%s]", \
@@ -781,7 +761,16 @@ private:
 class AudioDecoderEventListener : public BnAudioDecoderEventListener
 {
 public:
-    AudioDecoderEventListener(): mCurrentState(State::CLOSED) {}
+    static int32_t mUsedDecoderID;
+    AudioDecoderEventListener(): mCurrentState(State::CLOSED)
+    {
+        AudioDecoderEventListener::mUsedDecoderID = -1;
+    }
+
+    static int32_t getUsedDecoder()
+    {
+        return AudioDecoderEventListener::mUsedDecoderID;
+    }
     virtual ~AudioDecoderEventListener() = default;
 
     Status onDecodeError(ErrorCode vendorErrorCode, int32_t errorCode) override;
@@ -805,6 +794,7 @@ public:
 
     void resetErrors();
     void setDecoderID(int32_t id);
+
 private:
     mutable mutex mMutex;
     mutable mutex mErrorMutex;
