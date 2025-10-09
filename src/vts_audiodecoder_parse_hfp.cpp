@@ -68,7 +68,7 @@
 
 using namespace std;
 
-vector<decoder> gAudiodecoders_hfp;
+vector<audioDecoder> gAudiodecoders_hfp;
 
 UT_status_t vts_audiodecoder_parseAudioDecoderHFP()
 {
@@ -77,7 +77,7 @@ UT_status_t vts_audiodecoder_parseAudioDecoderHFP()
     std::string availableDecodersPath = AUDIODECODERMGR_AVAILABLEDECODERS;
     int32_t number_of_audiodecoders, available_decoders;
     int32_t supportedcodec_count;
-    decoder temporary;
+    audioDecoder temporary;
     vector<int32_t> availableIds;
 
     number_of_audiodecoders = UT_KVP_PROFILE_GET_LIST_COUNT(audiodecoderpath.c_str());

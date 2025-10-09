@@ -89,7 +89,6 @@ UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *m
     for(int32_t i = 0; i < streamCount; i++)
     {
         char resultKVP[UT_KVP_MAX_ELEMENT_SIZE] = {0};
-        uint32_t streamId;
         testConfiguration_t testDetails;
         vector<int32_t> errorFrameNum;
 

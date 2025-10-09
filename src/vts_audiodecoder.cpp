@@ -95,7 +95,7 @@ string AudioDecoderControllerListener::formatChannelVector(const std::vector<Cha
  */
 Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime, int64_t frameBufferHandle, const ::optional<audiodecoder::FrameMetadata>& metadata)
 {
-    UT_LOG_INFO("[DecoderID: %d] onFrameOutput: Received frameoutput [PTS:%lld, handle: %llX]", mDecoderID, nsPresentationTime, frameBufferHandle);
+    UT_LOG_INFO("[Audio DecoderID: %d] onFrameOutput: Received frameoutput [PTS:%lld, handle: %llX]", mDecoderID, nsPresentationTime, frameBufferHandle);
 
     DecodedAudioFrame_t frame;
     frame.receiveTime = chrono::steady_clock::now();
@@ -110,11 +110,11 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
     frame.isMetaAvailable = false;
     if (metadata.has_value())
     {
-        UT_LOG_INFO("[DecoderID: %d] Stream Details [Codec: %s, SampleRate: %d, Channels: %d, channelType: [%s] format: %s planarFormat: %s, isDolbyAtom: %s]",
+        UT_LOG_INFO("[Audio DecoderID: %d] Stream Details [Codec: %s, SampleRate: %d, Channels: %d, channelType: [%s] format: %s planarFormat: %s, isDolbyAtom: %s]",
                     mDecoderID, audiodecoder::toString(metadata->sourceCodec).c_str(), metadata->sampleRate, metadata->numChannels,
                     formatChannelVector(metadata->channelTypes).c_str(), audiodecoder::toString(metadata->format).c_str(),
                     UT_Control_GetMapString(bool_mapTable, metadata->planarFormat), UT_Control_GetMapString(bool_mapTable, metadata->isDolbyAtmos));
-        UT_LOG_INFO("[DecoderID: %d] Control Parameters [PTS: %lld, discontinuity: %d, EOS: %d, LowLatency: %d, Source: %d, Trim(%lld-%lld)]",
+        UT_LOG_INFO("[Audio DecoderID: %d] Control Parameters [PTS: %lld, discontinuity: %d, EOS: %d, LowLatency: %d, Source: %d, Trim(%lld-%lld)]",
                     mDecoderID, nsPresentationTime, metadata->discontinuity, metadata->endOfStream, metadata->lowLatency,
                     metadata->source, metadata->trimStartNs, metadata->trimEndNs);
 
@@ -164,7 +164,7 @@ bool AudioDecoderControllerListener::getNextFrame(DecodedAudioFrame_t &frameInfo
 
     if (!gotFrame)
     {
-        UT_LOG_WARNING("[DecoderID: %d] Decoded frame not received after %d msec", mDecoderID, waitTime);
+        UT_LOG_WARNING("[Audio DecoderID: %d] Decoded frame not received after %d msec", mDecoderID, waitTime);
         return false;
     }
 
@@ -213,7 +213,7 @@ Status AudioDecoderEventListener::onDecodeError(audiodecoder::ErrorCode vendorEr
     ErrorDetails_t errorDetails;
     errorDetails.receiveTime = chrono::steady_clock::now();
 
-    UT_LOG_INFO("[DecoderID: %d] Error Callback: Vendor Error Code: %s, errorCode: %d", mDecoderID, audiodecoder::toString(vendorErrorCode).c_str(), errorCode);
+    UT_LOG_INFO("[Audio DecoderID: %d] Error Callback: Vendor Error Code: %s, errorCode: %d", mDecoderID, audiodecoder::toString(vendorErrorCode).c_str(), errorCode);
 
     errorDetails.errorCode = errorCode;
     errorDetails.vendorErrorCode = vendorErrorCode;
@@ -235,7 +235,11 @@ Status AudioDecoderEventListener::onDecodeError(audiodecoder::ErrorCode vendorEr
  */
 Status AudioDecoderEventListener::onStateChanged(State oldState,State newState)
 {
-    UT_LOG_INFO("[DecoderID: %d] State Change received: %s -> %s", mDecoderID, com::rdk::hal::toString(oldState).c_str(), com::rdk::hal::toString(newState).c_str());
+    UT_LOG_INFO("[Audio DecoderID: %d] State Change received: %s -> %s", mDecoderID, com::rdk::hal::toString(oldState).c_str(), com::rdk::hal::toString(newState).c_str());
+    if(oldState == State::CLOSED && newState == State::OPENING)
+    {
+        mUsedDecoderID = mDecoderID;
+    }
     {
         lock_guard<mutex> lock(mMutex);
         mStateChanges.emplace_back(oldState, newState);
@@ -310,8 +314,15 @@ void AudioDecoderEventListener::resetStateChanges()
 
 bool AudioDecoderEventListener::checkStateTransistion(State expOldState, State expNewState)
 {
+    vector<pair<State, State>> stateChange;
     bool foundClosedToOpening = false;
-    for (const auto &[oldState, newState] : mStateChanges)
+
+    {
+        lock_guard<mutex> lock(mMutex);
+        stateChange = mStateChanges;
+    }
+
+    for (const auto &[oldState, newState] : stateChange)
     {
         if (oldState == expOldState && newState == expNewState)
         {
@@ -319,6 +330,7 @@ bool AudioDecoderEventListener::checkStateTransistion(State expOldState, State e
             break;
         }
     }
+
     return foundClosedToOpening;
 }
 
@@ -348,7 +360,7 @@ void AudioDecoderEventListener::setDecoderID(int32_t id)
     mDecoderID = id;
 }
 
-
+int32_t AudioDecoderEventListener::mUsedDecoderID = -1;
 
 void AudioDecoderTest::run(bool validateMetrics)
 {
@@ -412,7 +424,7 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
 
         avSourcePropertyValue.value = PropertyValue::Value::make<PropertyValue::Value::Tag::intValue>(int32_t(static_cast<int32_t>(AVSource::IP)));
 
-        UT_LOG_WARNING("[DecoderID: %d] Start of Testing Stream: %s", mDecoderId.value, mTestConfiguration.input.c_str());
+        UT_LOG_WARNING("[Audio DecoderID: %d] Start of Testing Stream: %s", mDecoderId.value, mTestConfiguration.input.c_str());
 
         /* Create Audio Pool */
         AVBUFFER_CREATE_AUDIOPOOL_SUCCESS(mAVBufferManager, mSecureDecode, mDecoderId, bufferListener, audioPool);
@@ -420,7 +432,7 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
         ifstream inputFile(mTestConfiguration.input, ios::binary);
         if (!inputFile)
         {
-            UT_LOG_ERROR("[DecoderID: %d] Failed to open file: %s", mDecoderId.value, mTestConfiguration.input.c_str());
+            UT_LOG_ERROR("[Audio DecoderID: %d] Failed to open file: %s", mDecoderId.value, mTestConfiguration.input.c_str());
             AVBUFFER_DESTROY_POOL_SUCCESS(mAVBufferManager, audioPool);
             return;
         }
@@ -445,6 +457,7 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
             void *mapBuffer = nullptr;
             uint32_t mapSize = 0;
             InputAudioFrame_t inputFrame;
+            bool isValidBuffer = false;
 
             /* Allocate the audio buffer */
             AVBUFFER_ALLOC_SUCCESS(mAVBufferManager, audioPool, frameSize, audioBufferHandle);
@@ -460,10 +473,9 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
 
             if(mSecureDecode)
             {
-                bool status;
                 if(!mAVbufferHelper->writeSecureHandle(audioBufferHandle, inputBuffer.data(), frameSize))
                 {
-                    UT_LOG_ERROR("[DecoderID: %d] Failed to copy the data to secure buffer", mDecoderId.value);
+                    UT_LOG_ERROR("[Audio DecoderID: %d] Failed to copy the data to secure buffer", mDecoderId.value);
                     AVBUFFER_FREE_SUCCESS(mAVBufferManager, audioBufferHandle);
                     continue;
                 }
@@ -517,9 +529,13 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
                 AUDIODECODER_START_SUCCESS(mDecoderHandle, audioDecoderController, true);
             }
 
-            /* Free the audio buffer */
-            mAVbufferHelper->unmapHandle(audioBufferHandle);
-            AVBUFFER_FREE_SUCCESS(mAVBufferManager, audioBufferHandle);
+            AVBUFFER_ISVALID_SUCCESS(mAVBufferManager, audioBufferHandle, isValidBuffer);
+            if(isValidBuffer)
+            {
+                UT_LOG_ERROR("output buffer not released by decoder [handle:0x%llx]", audioBufferHandle);
+            } else {
+                UT_LOG_INFO("output buffer released by decoder [handle:0x%llx]", audioBufferHandle);
+            }
 
             /* wait time to next frames */
             if(mTestConfiguration.decoderDelay > 0)
@@ -550,13 +566,13 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
                         receiveTime = errorDetails.receiveTime;
                     }
                     auto duration = chrono::duration_cast<chrono::microseconds>(receiveTime - inputFrame.sendTime);
-                    UT_LOG_INFO("[DecoderID: %d] Error Frame Decode Time in micro second [PTS: %lld]: %lld", mDecoderId.value, inputFrame.framePTS, duration.count());
+                    UT_LOG_INFO("[Audio DecoderID: %d] Error Frame Decode Time in micro second [PTS: %lld]: %lld", mDecoderId.value, inputFrame.framePTS, duration.count());
                     continue;
                 }
 
                 if(!mControlListener->getNextFrame(decodedFrame, MAX_WAIT_TIME, false))
                 {
-                    UT_LOG_ERROR("[DecoderID: %d] onFrameOutput callback not received...", mDecoderId.value);
+                    UT_LOG_ERROR("[Audio DecoderID: %d] onFrameOutput callback not received...", mDecoderId.value);
                     UT_ASSERT_TRUE(false);
                     break;
                 }
@@ -566,6 +582,7 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
                 {
                     UT_ASSERT_TRUE(decodedFrame.isMetaAvailable);
                 }
+
                 if(decodedFrame.isMetaAvailable)
                 {
                     UT_ASSERT_EQUAL(decodedFrame.metadata.sourceCodec, mTestConfiguration.codec);
@@ -585,7 +602,7 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
                     {
                         if(inputFrame.framePTS < decodedFrame.framePTS)
                         {
-                            UT_LOG_INFO("[DecoderID: %d] Frame [PTS: %lld] is flushed", mDecoderId.value, inputFrame.framePTS);
+                            UT_LOG_INFO("[Audio DecoderID: %d] Frame [PTS: %lld] is flushed", mDecoderId.value, inputFrame.framePTS);
                             continue;
                         }
                     }
@@ -599,7 +616,7 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
                     //TODO: check
                     if(inputFrame.framePTS < decodedFrame.framePTS)
                     {
-                        UT_LOG_INFO("[DecoderID: %d] Frame [PTS: %lld] is Trimmed", mDecoderId.value, inputFrame.framePTS);
+                        UT_LOG_INFO("[Audio DecoderID: %d] Frame [PTS: %lld] is Trimmed", mDecoderId.value, inputFrame.framePTS);
                         continue;
                     }
                     //TODO: Add validation to check whether trim is done or not
@@ -607,7 +624,7 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
 
                 if(inputFrame.framePTS < decodedFrame.framePTS)
                 {
-                    UT_LOG_ERROR("[DecoderID: %d] Frame [PTS: %lld] is Missed", mDecoderId.value, inputFrame.framePTS);
+                    UT_LOG_ERROR("[Audio DecoderID: %d] Frame [PTS: %lld] is Missed", mDecoderId.value, inputFrame.framePTS);
                     UT_ASSERT_TRUE(false);
                     continue;
                 }
@@ -615,7 +632,9 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
                 if(mTestConfiguration.eosPts > 0 && inputFrameIndex > 1)
                 {
                     if(decodedFrame.isMetaAvailable)
+                    {
                         UT_ASSERT_TRUE(decodedFrame.metadata.endOfStream);
+                    }
                 }
 
                 framesDecoded++;
@@ -623,12 +642,12 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
 
                 if(inputFrame.framePTS != decodedFrame.framePTS)
                 {
-                    UT_LOG_ERROR("[DecoderID: %d] Input Frame [PTS: %lld] and Out Frame [PTS: %lld] are not matching", mDecoderId.value, inputFrame.framePTS, decodedFrame.framePTS);
+                    UT_LOG_ERROR("[Audio DecoderID: %d] Input Frame [PTS: %lld] and Out Frame [PTS: %lld] are not matching", mDecoderId.value, inputFrame.framePTS, decodedFrame.framePTS);
                     UT_ASSERT_TRUE(false);
                     continue;
                 }
                 auto duration = chrono::duration_cast<chrono::microseconds>(decodedFrame.receiveTime - inputFrame.sendTime);
-                UT_LOG_INFO("[DecoderID: %d] Decode Time in micro second [PTS: %lld]: %lld", mDecoderId.value, decodedFrame.framePTS, duration.count());
+                UT_LOG_INFO("[Audio DecoderID: %d] Decode Time in micro second [PTS: %lld]: %lld", mDecoderId.value, decodedFrame.framePTS, duration.count());
                 UT_ASSERT_TRUE(duration.count() <= mTestConfiguration.decodeTime);
             }
 
@@ -637,11 +656,17 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
 
             /* Validate decoder metrics */
             if(startFramesDecoded >= 0 && endFramesDecoded >= 0)
+            {
                 UT_ASSERT_TRUE((endFramesDecoded - startFramesDecoded) == framesDecoded);
+            }
             if(startFrameErrors >= 0 && endFrameErrors >= 0)
+            {
                 UT_ASSERT_TRUE((endFrameErrors - startFrameErrors) == errorFrames);
+            }
             if(startFramesDropped >= 0 && endFramesDropped >= 0)
+            {
                 UT_ASSERT_TRUE((endFramesDropped - startFramesDropped) == 0);
+            }
         }
 
         /* Stop the decoder */
@@ -653,12 +678,12 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
         /* Destroy audio pool */
         AVBUFFER_DESTROY_POOL_SUCCESS(mAVBufferManager, audioPool);
 
-        UT_LOG_INFO("[DecoderID: %d] End of Testing Stream: %s", mDecoderId.value, mTestConfiguration.input.c_str());
+        UT_LOG_INFO("[Audio DecoderID: %d] End of Testing Stream: %s", mDecoderId.value, mTestConfiguration.input.c_str());
     } catch (const std::exception& ex) {
-        UT_LOG_ERROR("[DecoderID: %d] Exception in decodeAndConsumeAudioStreams: %s", mDecoderId.value, ex.what());
+        UT_LOG_ERROR("[Audio DecoderID: %d] Exception in decodeAndConsumeAudioStreams: %s", mDecoderId.value, ex.what());
         UT_ASSERT_TRUE(false);
     } catch (...) {
-        UT_LOG_ERROR("[DecoderID: %d] Unknown exception in decodeAndConsumeAudioStreams", mDecoderId.value);
+        UT_LOG_ERROR("[Audio DecoderID: %d] Unknown exception in decodeAndConsumeAudioStreams", mDecoderId.value);
         UT_ASSERT_TRUE(false);
     }
 }

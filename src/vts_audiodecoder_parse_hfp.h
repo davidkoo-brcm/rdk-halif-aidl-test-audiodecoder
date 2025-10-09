@@ -72,7 +72,7 @@
 #include <ut_kvp_profile.h>
 #include <ut_log.h>
 
-struct decoder
+struct audioDecoder
 {
     int id;
     ::std::vector<Codec> supportedCodecs;
@@ -80,7 +80,7 @@ struct decoder
     bool isAvailable;
 };
 
-extern std::vector<decoder> gAudiodecoders_hfp;
+extern std::vector<audioDecoder> gAudiodecoders_hfp;
 
 #define AUDIODECODERMGR_AVAILABLEDECODERS "IAudioDecoderManager.availableDecoders"
 #define AUDIODECODERMGR_IAUDIODECODER "IAudioDecoderManager.IAudioDecoder"
