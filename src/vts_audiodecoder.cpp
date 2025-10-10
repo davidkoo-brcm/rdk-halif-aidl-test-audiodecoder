@@ -233,10 +233,10 @@ Status AudioDecoderEventListener::onDecodeError(audiodecoder::ErrorCode vendorEr
  * @param newState New state
  * @return Status
  */
-Status AudioDecoderEventListener::onStateChanged(State oldState,State newState)
+Status AudioDecoderEventListener::onStateChanged(AudioDecoderState oldState,AudioDecoderState newState)
 {
     UT_LOG_INFO("[Audio DecoderID: %d] State Change received: %s -> %s", mDecoderID, com::rdk::hal::toString(oldState).c_str(), com::rdk::hal::toString(newState).c_str());
-    if(oldState == State::CLOSED && newState == State::OPENING)
+    if(oldState == AudioDecoderState::CLOSED && newState == AudioDecoderState::OPENING)
     {
         mUsedDecoderID = mDecoderID;
     }
@@ -283,7 +283,7 @@ bool AudioDecoderEventListener::getNextError(ErrorDetails_t &errorDetails)
  * @param timeout      How long to wait, e.g. chrono::milliseconds(500).
  * @return true if the state was reached; false if we timed out waiting.
  */
-bool AudioDecoderEventListener::waitForState(State desiredState, chrono::milliseconds timeout)
+bool AudioDecoderEventListener::waitForState(AudioDecoderState desiredState, chrono::milliseconds timeout)
 {
     unique_lock<mutex> lock(mMutex);
     // Wait until mCurrentState == desiredState or until timeout
@@ -312,9 +312,9 @@ void AudioDecoderEventListener::resetStateChanges()
  * @return returns if the expected states received or not
  */
 
-bool AudioDecoderEventListener::checkStateTransistion(State expOldState, State expNewState)
+bool AudioDecoderEventListener::checkStateTransistion(AudioDecoderState expOldState, AudioDecoderState expNewState)
 {
-    vector<pair<State, State>> stateChange;
+    vector<pair<AudioDecoderState, AudioDecoderState>> stateChange;
     bool foundClosedToOpening = false;
 
     {

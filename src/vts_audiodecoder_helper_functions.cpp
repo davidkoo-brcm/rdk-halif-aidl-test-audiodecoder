@@ -95,7 +95,9 @@ Codec  vts_audiodecoder_helper_StringTocodec(const std::string& format)
     {"WMA", Codec::WMA},
     {"REALAUDIO", Codec::REALAUDIO},
     {"USAC", Codec::USAC},
-    {"X_HE_AAC", Codec::X_HE_AAC}
+    {"X_HE_AAC", Codec::X_HE_AAC},
+    {"SBC", Codec::SBC},
+    {"AVS", Codec::AVS}
     };
 
     auto it = formatMap.find(format);
