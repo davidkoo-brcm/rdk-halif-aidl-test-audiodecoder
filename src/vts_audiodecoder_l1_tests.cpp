@@ -244,14 +244,14 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, getAudioDecoder_neg)
 
     invalidID = decoderIds.front();
     invalidID.value -= 1;
-    AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(invalidID, audiodecoder);
+    AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(invalidID, audiodecoder, Status::EX_ILLEGAL_ARGUMENT);
 
     invalidID = decoderIds.back();
     invalidID.value += 1;
-    AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(invalidID, audiodecoder);
+    AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(invalidID, audiodecoder, Status::EX_ILLEGAL_ARGUMENT);
 
     invalidID.value = IAudioDecoder::Id::UNDEFINED;
-    AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(invalidID, audiodecoder);
+    AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(invalidID, audiodecoder, Status::EX_ILLEGAL_ARGUMENT);
 }
 
 /**

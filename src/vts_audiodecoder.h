@@ -97,7 +97,7 @@
 
 #include "com/rdk/hal/avbuffer/IAVBuffer.h"
 #include "com/rdk/hal/avbuffer/BnAVBufferSpaceListener.h"
-#include "IAVBufferHelper.h"
+#include "avbufferhelper.h"
 
 #include "vts_audiodecoder_helper_functions.h"
 #include "vts_audiodecoder_parse_hfp.h"
@@ -162,7 +162,7 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_ASSERT_EQUAL_FATAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
-#define AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(_decoderId, audioDecoder) \
+#define AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(_decoderId, audioDecoder, expectedException) \
     do { \
         ::android::binder::Status status; \
         UT_LOG_DEBUG("Calling getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[])", _decoderId.value); \
@@ -170,20 +170,21 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_LOG_DEBUG("Result getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[0x%X]), status:[isOK:%s, exception:%s]", \
                                 _decoderId.value, audioDecoder.get(), UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                                 UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_FALSE(status.isOk()); \
-        UT_ASSERT_TRUE(audiodecoder.get() == nullptr); \
+        UT_ASSERT_FALSE(status.isOk()) << "getAudioDecoder succeeded unexpectedly"; \
+        UT_ASSERT_EQUAL(status.exceptionCode(), (expectedException)) << "Unexpected exception for getAudioDecoder"; \
+        UT_ASSERT_TRUE(audioDecoder.get() == nullptr) << "audioDecoder should be null on failure"; \
     } while (0)
 
 #define AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities) \
     do { \
         ::android::binder::Status status; \
         UT_LOG_DEBUG("Calling getCapabilities(OUT:capabilities)"); \
-        audioDecoder->getCapabilities(capabilities); \
+        status = audioDecoder->getCapabilities(capabilities); \
         UT_LOG_DEBUG("Result getCapabilities(OUT:capabilities), status:[isOK:%s, exception:%s]", \
                                 UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                                 UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_TRUE(status.isOk()) << "getCapabilities failed unexpectedly"; \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE) << "Unexpected exception for getCapabilities"; \
     } while (0)
 
 #define AUDIODECODER_GET_PROPERTY_SUCCESS(audioDecoder, property, propertyValue) \

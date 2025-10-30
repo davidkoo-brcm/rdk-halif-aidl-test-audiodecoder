@@ -119,7 +119,7 @@ UT_status_t vts_audiodecoder_parseAudioDecoderHFP()
             std::string codecpath = supportedcodecpath+"."+std::to_string(j);
             UT_KVP_PROFILE_GET_STRING(codecpath.c_str(), result_kvp);
             std::string _codec = std::string(result_kvp);
-            temporary.supportedCodecs.push_back(vts_audiodecoder_helper_StringTocodec(_codec));
+            temporary.supportedCodecs.push_back(vts_audioDecoder_helper_StringToCodec(_codec));
         }
         gAudiodecoders_hfp.push_back(temporary);
         temporary.supportedCodecs.clear();
