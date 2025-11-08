@@ -240,7 +240,7 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         ::android::binder::Status status; \
         UT_LOG_DEBUG("Calling getState(OUT:state[]"); \
         status = (audioDecoder)->getState(&state); \
-        UT_LOG_DEBUG("Result getState(OUT:state[%s]), status:[isOK:%s, exception:%s]", com::rdk::hal::toString(state).c_str(), \
+        UT_LOG_DEBUG("Result getState(OUT:state[%s]), status:[isOK:%s, exception:%s]", audiodecoder::toString(state).c_str(), \
                 UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                 UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
