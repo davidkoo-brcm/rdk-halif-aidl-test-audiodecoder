@@ -94,8 +94,7 @@ using namespace com::rdk::hal::audiodecoder;
 bool vts_audiodecoder_helper_validatePropertyValue(int decoder_id, const std::optional<PropertyValue>& propertyValue, const audiodecoder::Property property);
 bool vts_audiodecoder_helper_areElementsUnique(const std::vector<int>& values);
 void vts_audiodecoder_helper_validateCapabilities(int decoder_id, const audiodecoder::Capabilities& capabilities);
-Codec vts_audiodecoder_helper_StringTocodec(const std::string& format);
-PCMFormat vts_audiodecoder_helper_StringToFormat(const std::string& format);
+
 size_t vts_bytesPerSample(PCMFormat format);
 double vts_computeRMSDiff(const void* ref_buf, const void* act_buf, size_t size, PCMFormat format);
 

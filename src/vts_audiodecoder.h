@@ -1,20 +1,20 @@
-/**
- *  If not stated otherwise in this file or this component's LICENSE
- *  file the following copyright and licenses apply:
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
  *
- *  Copyright 2024 RDK Management
+ * Copyright 2025 RDK Management
  *
- *  Licensed under the Apache License, Version 2.0 (the License);
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an AS IS BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
@@ -97,7 +97,7 @@
 
 #include "com/rdk/hal/avbuffer/IAVBuffer.h"
 #include "com/rdk/hal/avbuffer/BnAVBufferSpaceListener.h"
-#include "IAVBufferHelper.h"
+#include "avbufferhelper.h"
 
 #include "vts_audiodecoder_helper_functions.h"
 #include "vts_audiodecoder_parse_hfp.h"
@@ -114,6 +114,9 @@ using namespace std::chrono;
 using namespace com::rdk::hal;
 using namespace com::rdk::hal::audiodecoder;
 using namespace com::rdk::hal::avbuffer;
+
+// Type alias for cleaner code
+using AudioDecoderState = ::com::rdk::hal::audiodecoder::State;
 
 extern sp<IAudioDecoderManager> gAudioDecoderManager;
 extern void *gAudioDecoderTestConfiguration;
@@ -159,7 +162,7 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_ASSERT_EQUAL_FATAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
-#define AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(_decoderId, audioDecoder) \
+#define AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(_decoderId, audioDecoder, expectedException) \
     do { \
         ::android::binder::Status status; \
         UT_LOG_DEBUG("Calling getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[])", _decoderId.value); \
@@ -167,20 +170,21 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_LOG_DEBUG("Result getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[0x%X]), status:[isOK:%s, exception:%s]", \
                                 _decoderId.value, audioDecoder.get(), UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                                 UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_FALSE(status.isOk()); \
-        UT_ASSERT_TRUE(audiodecoder.get() == nullptr); \
+        UT_ASSERT_FALSE(status.isOk()) << "getAudioDecoder succeeded unexpectedly"; \
+        UT_ASSERT_EQUAL(status.exceptionCode(), (expectedException)) << "Unexpected exception for getAudioDecoder"; \
+        UT_ASSERT_TRUE(audioDecoder.get() == nullptr) << "audioDecoder should be null on failure"; \
     } while (0)
 
 #define AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities) \
     do { \
         ::android::binder::Status status; \
         UT_LOG_DEBUG("Calling getCapabilities(OUT:capabilities)"); \
-        audioDecoder->getCapabilities(capabilities); \
+        status = audioDecoder->getCapabilities(capabilities); \
         UT_LOG_DEBUG("Result getCapabilities(OUT:capabilities), status:[isOK:%s, exception:%s]", \
                                 UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                                 UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_TRUE(status.isOk()) << "getCapabilities failed unexpectedly"; \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE) << "Unexpected exception for getCapabilities"; \
     } while (0)
 
 #define AUDIODECODER_GET_PROPERTY_SUCCESS(audioDecoder, property, propertyValue) \
@@ -236,7 +240,7 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         ::android::binder::Status status; \
         UT_LOG_DEBUG("Calling getState(OUT:state[]"); \
         status = (audioDecoder)->getState(&state); \
-        UT_LOG_DEBUG("Result getState(OUT:state[%s]), status:[isOK:%s, exception:%s]", com::rdk::hal::toString(state).c_str(), \
+        UT_LOG_DEBUG("Result getState(OUT:state[%s]), status:[isOK:%s, exception:%s]", audiodecoder::toString(state).c_str(), \
                 UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                 UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
@@ -273,9 +277,9 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         \
         if (stateCheck) \
         { \
-            ::com::rdk::hal::State lastState; \
-            AUDIODECODER_WAIT_FOR_STATE(audioDecoder, State::READY, lastState); \
-            UT_ASSERT_EQUAL_FATAL(lastState, State::READY); \
+            AudioDecoderState lastState; \
+            AUDIODECODER_WAIT_FOR_STATE(audioDecoder, AudioDecoderState::READY, lastState); \
+            UT_ASSERT_EQUAL_FATAL(lastState, AudioDecoderState::READY); \
         } \
     } while (0)
 
@@ -309,9 +313,9 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_ASSERT_EQUAL_FATAL(status.exceptionCode(), Status::EX_NONE); \
         if (stateCheck) \
         { \
-            ::com::rdk::hal::State lastState; \
-            AUDIODECODER_WAIT_FOR_STATE(audioDecoder, State::CLOSED, lastState); \
-            UT_ASSERT_EQUAL_FATAL(lastState, State::CLOSED); \
+            AudioDecoderState lastState; \
+            AUDIODECODER_WAIT_FOR_STATE(audioDecoder, AudioDecoderState::CLOSED, lastState); \
+            UT_ASSERT_EQUAL_FATAL(lastState, AudioDecoderState::CLOSED); \
         } \
     } while (0)
 
@@ -405,9 +409,9 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
         if (stateCheck) \
         { \
-            ::com::rdk::hal::State lastState; \
-            AUDIODECODER_WAIT_FOR_STATE(audioDecoder, State::STARTED, lastState); \
-            UT_ASSERT_EQUAL(lastState, State::STARTED); \
+            AudioDecoderState lastState; \
+            AUDIODECODER_WAIT_FOR_STATE(audioDecoder, AudioDecoderState::STARTED, lastState); \
+            UT_ASSERT_EQUAL(lastState, AudioDecoderState::STARTED); \
         } \
     } while (0)
 
@@ -435,9 +439,9 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
         if (stateCheck) \
         { \
-            ::com::rdk::hal::State lastState; \
-            AUDIODECODER_WAIT_FOR_STATE(audioDecoder, State::READY, lastState); \
-            UT_ASSERT_EQUAL(lastState, State::READY); \
+            AudioDecoderState lastState; \
+            AUDIODECODER_WAIT_FOR_STATE(audioDecoder, AudioDecoderState::READY, lastState); \
+            UT_ASSERT_EQUAL(lastState, AudioDecoderState::READY); \
         } \
     } while (0)
 
@@ -498,15 +502,15 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
             this_thread::sleep_for(chrono::milliseconds(MAX_FINAL_STATE_WAIT_MS)); \
             if (reset) \
             { \
-                ::com::rdk::hal::State lastState; \
-                AUDIODECODER_WAIT_FOR_STATE(audioDecoder, State::READY, lastState); \
-                UT_ASSERT_EQUAL(lastState, State::READY); \
+                AudioDecoderState lastState; \
+                AUDIODECODER_WAIT_FOR_STATE(audioDecoder, AudioDecoderState::READY, lastState); \
+                UT_ASSERT_EQUAL(lastState, AudioDecoderState::READY); \
             } \
             else \
             { \
-                ::com::rdk::hal::State lastState; \
-                AUDIODECODER_WAIT_FOR_STATE(audioDecoder, State::STARTED, lastState); \
-                UT_ASSERT_EQUAL(lastState, State::STARTED); \
+                AudioDecoderState lastState; \
+                AUDIODECODER_WAIT_FOR_STATE(audioDecoder, AudioDecoderState::STARTED, lastState); \
+                UT_ASSERT_EQUAL(lastState, AudioDecoderState::STARTED); \
             } \
         } \
     } while (0)
@@ -535,9 +539,9 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
         if (stateCheck) \
         { \
-            ::com::rdk::hal::State lastState; \
-            AUDIODECODER_WAIT_FOR_STATE(audioDecoder, State::STARTED, lastState); \
-            UT_ASSERT_EQUAL(lastState, State::STARTED); \
+            AudioDecoderState lastState; \
+            AUDIODECODER_WAIT_FOR_STATE(audioDecoder, AudioDecoderState::STARTED, lastState); \
+            UT_ASSERT_EQUAL(lastState, AudioDecoderState::STARTED); \
         } \
     } while (0)
 
@@ -565,9 +569,9 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
         if (stateCheck) \
         { \
-            ::com::rdk::hal::State lastState; \
-            AUDIODECODER_WAIT_FOR_STATE(audioDecoder, State::STARTED, lastState); \
-            UT_ASSERT_EQUAL(lastState, State::STARTED); \
+            AudioDecoderState lastState; \
+            AUDIODECODER_WAIT_FOR_STATE(audioDecoder, AudioDecoderState::STARTED, lastState); \
+            UT_ASSERT_EQUAL(lastState, AudioDecoderState::STARTED); \
         } \
     } while (0)
 
@@ -598,9 +602,9 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
         if (stateCheck) \
         { \
-            ::com::rdk::hal::State lastState; \
-            AUDIODECODER_WAIT_FOR_STATE(audioDecoder, State::STARTED, lastState); \
-            UT_ASSERT_EQUAL(lastState, State::STARTED); \
+            AudioDecoderState lastState; \
+            AUDIODECODER_WAIT_FOR_STATE(audioDecoder, AudioDecoderState::STARTED, lastState); \
+            UT_ASSERT_EQUAL(lastState, AudioDecoderState::STARTED); \
         } \
     } while (0)
 
@@ -762,7 +766,7 @@ class AudioDecoderEventListener : public BnAudioDecoderEventListener
 {
 public:
     static int32_t mUsedDecoderID;
-    AudioDecoderEventListener(): mCurrentState(State::CLOSED)
+    AudioDecoderEventListener(): mCurrentState(AudioDecoderState::CLOSED)
     {
         AudioDecoderEventListener::mUsedDecoderID = -1;
     }
@@ -773,9 +777,9 @@ public:
     }
     virtual ~AudioDecoderEventListener() = default;
 
-    Status onDecodeError(ErrorCode vendorErrorCode, int32_t errorCode) override;
+    Status onDecodeError(::com::rdk::hal::audiodecoder::ErrorCode vendorErrorCode, int32_t errorCode) override;
 
-    Status onStateChanged(State oldState,State newState) override;
+    Status onStateChanged(AudioDecoderState oldState, AudioDecoderState newState) override;
 
     bool getNextError(ErrorDetails_t &errorDetails);
 
@@ -786,11 +790,11 @@ public:
      * @param timeout      How long to wait, e.g. chrono::milliseconds(500).
      * @return true if the state was reached; false if we timed out waiting.
      */
-    bool waitForState(State desiredState, chrono::milliseconds timeout);
+    bool waitForState(AudioDecoderState desiredState, chrono::milliseconds timeout);
 
     void resetStateChanges();
 
-    bool checkStateTransistion(State expOldState, State expNewState);
+    bool checkStateTransistion(AudioDecoderState expOldState, AudioDecoderState expNewState);
 
     void resetErrors();
     void setDecoderID(int32_t id);
@@ -800,8 +804,8 @@ private:
     mutable mutex mErrorMutex;
     condition_variable mCV;
 
-    State mCurrentState;
-    vector<pair<State, State>> mStateChanges;
+    AudioDecoderState mCurrentState;
+    vector<pair<AudioDecoderState, AudioDecoderState>> mStateChanges;
     condition_variable mErrorAvailable;
     queue<ErrorDetails_t> mErrors;
     int32_t mDecoderID;

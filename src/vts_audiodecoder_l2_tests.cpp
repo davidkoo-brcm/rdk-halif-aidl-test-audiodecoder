@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2016 RDK Management
+ * Copyright 2025 RDK Management
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 /**
  * @addtogroup HPK Hardware Porting Kit
@@ -109,9 +109,9 @@ VTS_L2_AudioDecoder() : UTCore() {}
         }
     }
 
-    void checkCompleteStateTransition(sp<IAudioDecoder> decoder, sp<AudioDecoderEventListener> eventListener, State oldState, State intermediateState, State newState)
+    void checkCompleteStateTransition(sp<IAudioDecoder> decoder, sp<AudioDecoderEventListener> eventListener, AudioDecoderState oldState, AudioDecoderState intermediateState, AudioDecoderState newState)
     {
-        ::com::rdk::hal::State currentState;
+        AudioDecoderState currentState;
 
         eventListener->waitForState(intermediateState, std::chrono::milliseconds(MAX_TRANSITORY_STATE_WAIT_MS));
 
@@ -441,31 +441,31 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, StateTransitions)
 
                 /* Open the Decoder */
                 AUDIODECODER_OPEN_SUCCESS(decoder, _codec, secureDecode, controlListener, audioDecoderController, false);
-                checkCompleteStateTransition(decoder, eventListener, State::CLOSED, State::OPENING, State::READY);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::CLOSED, AudioDecoderState::OPENING, AudioDecoderState::READY);
 
                 /* Start the decoder */
                 AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
-                checkCompleteStateTransition(decoder, eventListener, State::READY, State::STARTING, State::STARTED);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::READY, AudioDecoderState::STARTING, AudioDecoderState::STARTED);
 
                 /* Flush the decoder with reset flag false*/
                 AUDIODECODER_FLUSH_SUCCESS(decoder, audioDecoderController, false, false);
-                checkCompleteStateTransition(decoder, eventListener, State::STARTED, State::FLUSHING, State::STARTED);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::STARTED, AudioDecoderState::FLUSHING, AudioDecoderState::STARTED);
 
                 /* Flush the decoder with reset flag true*/
                 AUDIODECODER_FLUSH_SUCCESS(decoder, audioDecoderController, true, false);
-                checkCompleteStateTransition(decoder, eventListener, State::STARTED, State::FLUSHING, State::READY);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::STARTED, AudioDecoderState::FLUSHING, AudioDecoderState::READY);
 
                 /* Start the decoder */
                 AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
-                checkCompleteStateTransition(decoder, eventListener, State::READY, State::STARTING, State::STARTED);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::READY, AudioDecoderState::STARTING, AudioDecoderState::STARTED);
 
                 /* Stop the decoder */
                 AUDIODECODER_STOP_SUCCESS(decoder, audioDecoderController, false);
-                checkCompleteStateTransition(decoder, eventListener, State::STARTED, State::STOPPING, State::READY);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::STARTED, AudioDecoderState::STOPPING, AudioDecoderState::READY);
 
                 /* Close the decoder */
                 AUDIODECODER_CLOSE_SUCCESS(decoder, audioDecoderController, false);
-                checkCompleteStateTransition(decoder, eventListener, State::READY, State::CLOSING, State::CLOSED);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::READY, AudioDecoderState::CLOSING, AudioDecoderState::CLOSED);
             }
         }
     }
@@ -504,7 +504,7 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, StateTransitions_mutipleInstance)
 
             /* Open the Decoder */
             AUDIODECODER_OPEN_SUCCESS(decoder, _codec, secureDecode, controlListener, audioDecoderController, false);
-            checkCompleteStateTransition(decoder, eventListener, State::CLOSED, State::OPENING, State::READY);
+            checkCompleteStateTransition(decoder, eventListener,AudioDecoderState::CLOSED,AudioDecoderState::OPENING,AudioDecoderState::READY);
 
             audioDecoderControllersList.push_back(audioDecoderController);
         }
@@ -522,23 +522,23 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, StateTransitions_mutipleInstance)
 
             /* Start the decoder */
             AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
-            checkCompleteStateTransition(decoder, eventListener, State::READY, State::STARTING, State::STARTED);
+            checkCompleteStateTransition(decoder, eventListener,AudioDecoderState::READY,AudioDecoderState::STARTING,AudioDecoderState::STARTED);
 
             /* Flush the decoder with reset flag false*/
             AUDIODECODER_FLUSH_SUCCESS(decoder, audioDecoderController, false, false);
-            checkCompleteStateTransition(decoder, eventListener, State::STARTED, State::FLUSHING, State::STARTED);
+            checkCompleteStateTransition(decoder, eventListener,AudioDecoderState::STARTED,AudioDecoderState::FLUSHING,AudioDecoderState::STARTED);
 
             /* Flush the decoder with reset flag true*/
             AUDIODECODER_FLUSH_SUCCESS(decoder, audioDecoderController, true, false);
-            checkCompleteStateTransition(decoder, eventListener, State::STARTED, State::FLUSHING, State::READY);
+            checkCompleteStateTransition(decoder, eventListener,AudioDecoderState::STARTED,AudioDecoderState::FLUSHING,AudioDecoderState::READY);
 
             /* Start the decoder */
             AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
-            checkCompleteStateTransition(decoder, eventListener, State::READY, State::STARTING, State::STARTED);
+            checkCompleteStateTransition(decoder, eventListener,AudioDecoderState::READY,AudioDecoderState::STARTING,AudioDecoderState::STARTED);
 
             /* Stop the decoder */
             AUDIODECODER_STOP_SUCCESS(decoder, audioDecoderController, false);
-            checkCompleteStateTransition(decoder, eventListener, State::STARTED, State::STOPPING, State::READY);
+            checkCompleteStateTransition(decoder, eventListener,AudioDecoderState::STARTED,AudioDecoderState::STOPPING,AudioDecoderState::READY);
         }
 
         for (size_t i = 0; i < mAudioDecoderList.size(); ++i)
@@ -554,7 +554,7 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, StateTransitions_mutipleInstance)
 
             /* Close the decoder */
             AUDIODECODER_CLOSE_SUCCESS(decoder, audioDecoderController, false);
-            checkCompleteStateTransition(decoder, eventListener, State::READY, State::CLOSING, State::CLOSED);
+            checkCompleteStateTransition(decoder, eventListener,AudioDecoderState::READY,AudioDecoderState::CLOSING,AudioDecoderState::CLOSED);
         }
 
         audioDecoderControllersList.clear();
