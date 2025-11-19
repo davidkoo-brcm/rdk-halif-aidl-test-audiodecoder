@@ -342,8 +342,10 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, getProperty_pos)
         for(const auto& _codec: capabilities.supportedCodecs)
         {
             if(Codec::DOLBY_AC4 == _codec)
+            {
                 isAC4Supported = true;
                 break;
+            }
         }
         std::optional<PropertyValue> propertyValue;
         for (auto property : testAC4Properties)
@@ -353,7 +355,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, getProperty_pos)
                 UT_ASSERT_TRUE(vts_audiodecoder_helper_validatePropertyValue(_decoderId.value, propertyValue, property));
             }
             else{
-                AUDIODECODER_GET_PROPERTY_FAILURE(audioDecoder, property, propertyValue,Status::EX_UNSUPPORTED_OPERATION);
+                AUDIODECODER_GET_PROPERTY_FAILURE(audioDecoder, property, propertyValue,Status::EX_ILLEGAL_ARGUMENT);
             }
         }
         /* Get RESOURCE_ID */
@@ -2101,8 +2103,8 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setProperty_pos)
             }
             else{
                 /* set the properties which can be set at any state */
-                AUDIODECODER_SETPROPERTY_LIST_FAILURE(audioDecoderController, validAC4IntPropertyAll, intValue,Status::EX_UNSUPPORTED_OPERATION);
-                AUDIODECODER_SETPROPERTY_STRING_LIST_FAILURE(audioDecoderController, validAC4StringPropertyAll,Status::EX_UNSUPPORTED_OPERATION);
+                AUDIODECODER_SETPROPERTY_LIST_FAILURE(audioDecoderController, validAC4IntPropertyAll, intValue,Status::EX_ILLEGAL_ARGUMENT);
+                AUDIODECODER_SETPROPERTY_STRING_LIST_FAILURE(audioDecoderController, validAC4StringPropertyAll,Status::EX_ILLEGAL_ARGUMENT);
             }
 
             /* set the properties which can be set after Ready */
@@ -2120,8 +2122,8 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setProperty_pos)
             }
             else{
                 /* set the properties which can be set at any state */
-                AUDIODECODER_SETPROPERTY_LIST_FAILURE(audioDecoderController, validAC4IntPropertyAll, intValue,Status::EX_UNSUPPORTED_OPERATION);
-                AUDIODECODER_SETPROPERTY_STRING_LIST_FAILURE(audioDecoderController, validAC4StringPropertyAll,Status::EX_UNSUPPORTED_OPERATION);
+                AUDIODECODER_SETPROPERTY_LIST_FAILURE(audioDecoderController, validAC4IntPropertyAll, intValue,Status::EX_ILLEGAL_ARGUMENT);
+                AUDIODECODER_SETPROPERTY_STRING_LIST_FAILURE(audioDecoderController, validAC4StringPropertyAll,Status::EX_ILLEGAL_ARGUMENT);
             }
 
             /* Stop the decoder */
@@ -2136,8 +2138,8 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setProperty_pos)
             }
             else{
                 /* set the properties which can be set at any state */
-                AUDIODECODER_SETPROPERTY_LIST_FAILURE(audioDecoderController, validAC4IntPropertyAll, intValue,Status::EX_UNSUPPORTED_OPERATION);
-                AUDIODECODER_SETPROPERTY_STRING_LIST_FAILURE(audioDecoderController, validAC4StringPropertyAll,Status::EX_UNSUPPORTED_OPERATION);
+                AUDIODECODER_SETPROPERTY_LIST_FAILURE(audioDecoderController, validAC4IntPropertyAll, intValue,Status::EX_ILLEGAL_ARGUMENT);
+                AUDIODECODER_SETPROPERTY_STRING_LIST_FAILURE(audioDecoderController, validAC4StringPropertyAll,Status::EX_ILLEGAL_ARGUMENT);
             }
 
             /* set the properties which can be set after Ready */
@@ -2155,8 +2157,8 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setProperty_pos)
             }
             else{
                 /* set the properties which can be set at any state */
-                AUDIODECODER_SETPROPERTY_LIST_FAILURE(audioDecoderController, validAC4IntPropertyAll, intValue,Status::EX_UNSUPPORTED_OPERATION);
-                AUDIODECODER_SETPROPERTY_STRING_LIST_FAILURE(audioDecoderController, validAC4StringPropertyAll,Status::EX_UNSUPPORTED_OPERATION);
+                AUDIODECODER_SETPROPERTY_LIST_FAILURE(audioDecoderController, validAC4IntPropertyAll, intValue,Status::EX_ILLEGAL_ARGUMENT);
+                AUDIODECODER_SETPROPERTY_STRING_LIST_FAILURE(audioDecoderController, validAC4StringPropertyAll,Status::EX_ILLEGAL_ARGUMENT);
             }
         }
     }
@@ -2222,11 +2224,6 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setProperty_neg)
                 /* set the invalid properties */
                 AUDIODECODER_SETPROPERTY_LIST_FAILURE(audioDecoderController, invalidAC4IntPropertyAll, intValue, Status::EX_ILLEGAL_ARGUMENT);
                 AUDIODECODER_SETPROPERTY_STRING_LIST_FAILURE(audioDecoderController, invalidAC4StringPropertyAll, Status::EX_ILLEGAL_ARGUMENT);
-            }
-            else{
-                /* set the properties which can be set at any state */
-                AUDIODECODER_SETPROPERTY_LIST_FAILURE(audioDecoderController, invalidAC4IntPropertyAll, intValue,Status::EX_UNSUPPORTED_OPERATION);
-                AUDIODECODER_SETPROPERTY_STRING_LIST_FAILURE(audioDecoderController, invalidAC4StringPropertyAll,Status::EX_UNSUPPORTED_OPERATION);
             }
             AUDIODECODER_SETPROPERTY_LIST_FAILURE(audioDecoderController, invalidIntPropertyReady, intValue, Status::EX_ILLEGAL_ARGUMENT);
 
