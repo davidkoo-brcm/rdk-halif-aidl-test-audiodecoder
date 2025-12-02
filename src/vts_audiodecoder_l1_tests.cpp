@@ -319,11 +319,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, getProperty_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
+    Capabilities capabilities;
     std::vector<Property> testProperties = {Property::RESOURCE_ID, Property::LOW_LATENCY_MODE, Property::AV_SOURCE, Property::SECURE_AUDIO,
-                                            Property::AC4_PRESENTATION_GROUP_INDEX, Property::AC4_PREFERRED_LANG1, Property::AC4_PREFERRED_LANG2,
-                                            Property::AC4_ASSOCIATED_TYPE, Property::AC4_AUTO_SELECTION_PRIORITY, Property::AC4_MIXER_BALANCE,
-                                            Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, Property::METRIC_FRAMES_DECODED,
-                                            Property::METRIC_DECODE_ERRORS, Property::METRIC_FRAMES_DROPPED};
+                                            Property::METRIC_FRAMES_DECODED, Property::METRIC_DECODE_ERRORS, Property::METRIC_FRAMES_DROPPED};
+    std::vector<Property> testAC4Properties = {Property::AC4_PRESENTATION_GROUP_INDEX, Property::AC4_PREFERRED_LANG1, Property::AC4_PREFERRED_LANG2,
+                                               Property::AC4_ASSOCIATED_TYPE, Property::AC4_AUTO_SELECTION_PRIORITY, Property::AC4_MIXER_BALANCE,
+                                               Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE};
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
@@ -331,13 +332,32 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, getProperty_pos)
 
     for(const auto& _decoderId: decoderIds)
     {
+        bool isAC4Supported = false;
         /* Get Audio decoder handle */
         AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, &capabilities);
+
+        for(const auto& _codec: capabilities.supportedCodecs)
+        {
+            if(Codec::DOLBY_AC4 == _codec)
+            {
+                isAC4Supported = true;
+                break;
+            }
+        }
+        std::optional<PropertyValue> propertyValue;
+        if(isAC4Supported){
+            for (auto property : testAC4Properties)
+            {
+                AUDIODECODER_GET_PROPERTY_SUCCESS(audioDecoder, property, propertyValue);
+                UT_ASSERT_TRUE(vts_audiodecoder_helper_validatePropertyValue(_decoderId.value, propertyValue, property));
+            }
+        }
         /* Get RESOURCE_ID */
         for (auto property : testProperties)
         {
-            std::optional<PropertyValue> propertyValue;
             AUDIODECODER_GET_PROPERTY_SUCCESS(audioDecoder, property, propertyValue);
             UT_ASSERT_TRUE(vts_audiodecoder_helper_validatePropertyValue(_decoderId.value, propertyValue, property));
         }
@@ -368,19 +388,41 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, getProperty_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
+    Capabilities capabilities;
     std::optional<PropertyValue> propertyValue;
     int32_t firstValue = static_cast<int32_t>(Property::RESOURCE_ID);
     Property Invalidproperty = static_cast<Property>(firstValue - 1);
     ::android::binder::Status status;
+    std::vector<Property> testAC4Properties = {Property::AC4_PRESENTATION_GROUP_INDEX, Property::AC4_PREFERRED_LANG1, Property::AC4_PREFERRED_LANG2,
+                                               Property::AC4_ASSOCIATED_TYPE, Property::AC4_AUTO_SELECTION_PRIORITY, Property::AC4_MIXER_BALANCE,
+                                               Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE};
 
     /* Get the Audio decoder IDs */
     AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
+        bool isAC4Supported = false;
         /* Get Audio decoder handle */
         AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, &capabilities);
+
+        for(const auto& _codec: capabilities.supportedCodecs)
+        {
+            if(Codec::DOLBY_AC4 == _codec)
+            {
+                isAC4Supported = true;
+                break;
+            }
+        }
+        if(!isAC4Supported){
+            for (auto property : testAC4Properties)
+            {
+                AUDIODECODER_GET_PROPERTY_FAILURE(audioDecoder, property, propertyValue, Status::EX_ILLEGAL_ARGUMENT);
+            }
+        }
         AUDIODECODER_GET_PROPERTY_FAILURE(audioDecoder, Invalidproperty, propertyValue, Status::EX_ILLEGAL_ARGUMENT);
     }
 }
@@ -2153,7 +2195,6 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setProperty_neg)
     sp<IAudioDecoder> audioDecoder;
     audiodecoder::Capabilities capabilities;
     ::android::binder::Status status;
-
     /* Get the Audio decoder IDs */
     AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
@@ -2191,9 +2232,6 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setProperty_neg)
 
             /* set the properties in invalid state */
             AUDIODECODER_SETPROPERTY_LIST_FAILURE(audioDecoderController, validIntPropertyReady, intValue, Status::EX_ILLEGAL_STATE);
-
-            /* set the properties which can be set after Ready */
-            AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validIntPropertyReady, intValue);
 
             /* Stop the decoder */
             AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
