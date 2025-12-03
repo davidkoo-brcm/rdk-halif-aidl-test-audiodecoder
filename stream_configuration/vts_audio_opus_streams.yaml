@@ -22,7 +22,7 @@
 
 AudioStreams:
   vts_libopus_48k_1ch_32k_a501_v0_11sec:
-    input:vts_libopus_48k_1ch_32k_a501_v0_11sec.ogg
+    input: vts_libopus_48k_1ch_32k_a501_v0_11sec.ogg
     reference: tones_48k_2_256_ref.pcm
     codec: OPUS
     sample_rate: 48000
@@ -45,11 +45,11 @@ AudioStreams:
     - 183
 
   vts_libopus_48k_2ch_128k_a501_v0_11sec:
-    input:vts_libopus_48k_2ch_128k_a501_v0_11sec.ogg
+    input: vts_libopus_48k_2ch_128k_a501_v0_11sec.ogg
     reference: tones_48k_2_256_ref.pcm
     codec: OPUS
     sample_rate: 48000
-    channels: 2
+    channels: 3
     format: S16LE
     num_of_frames: 13
     frame_size:
