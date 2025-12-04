@@ -823,7 +823,7 @@ public:
                 sp<AudioDecoderControllerListener> controlListener,
                 sp<AudioDecoderEventListener> eventListener,
                 sp<IAVBuffer> AVBufferManager, IAVBufferHelper* avbufferHelper,
-                bool secureDecode, testConfiguration_t config)
+                bool secureDecode, testConfiguration_t config, bool isSinkAvailable)
     {
         mDecoderId = decoderId;
         mDecoderHandle = decoderHandle;
@@ -833,6 +833,7 @@ public:
         mTestConfiguration = config;
         mAVBufferManager = AVBufferManager;
         mAVbufferHelper = avbufferHelper;
+        mIsSinkAvailable = isSinkAvailable;
     }
 
     void run(bool validateMetrics);
@@ -849,6 +850,7 @@ private:
     testConfiguration_t mTestConfiguration;
     deque<InputAudioFrame_t> mInputFrame;
     IAVBufferHelper* mAVbufferHelper;
+    bool mIsSinkAvailable;
 
     void decodeAndConsumeAudioStreams(bool validateMetrics);
 };

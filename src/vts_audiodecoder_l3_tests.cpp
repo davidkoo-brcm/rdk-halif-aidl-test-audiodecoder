@@ -167,6 +167,7 @@ public:
         for (const auto& [_decoderId, decoderHandle, controlListener, eventListener, capabilities] : mAudioDecoderList)
         {
             HeapMetrics beforeHeapMetrics, afterHeapMetrics;
+            bool isSinkAvailable = false;
 
             if (!isDecoderUsable(_decoderId, capabilities, testConfig, secureDecode))
             {
@@ -177,7 +178,7 @@ public:
             AVBUFFER_GETMETRICS(mAVBufferManager, secureDecode, beforeHeapMetrics);
 
             AudioDecoderTest decodeTest(_decoderId, decoderHandle, controlListener,
-                                    eventListener, mAVBufferManager, mAVbufferHelper, secureDecode, testConfig);
+                                    eventListener, mAVBufferManager, mAVbufferHelper, secureDecode, testConfig, isSinkAvailable);
 
             decodeTest.run(true);
 
@@ -200,6 +201,7 @@ public:
             vector<thread> threads;
             vector<AudioDecoderTest> decoderTestList;
             HeapMetrics beforeHeapMetrics, afterHeapMetrics;
+            bool isSinkAvailable = false;
 
             //TODO: add check of decoder metrics
             /* Get heap metrics */
@@ -216,7 +218,7 @@ public:
                 auto decoderTest = std::make_unique<AudioDecoderTest>(_decoderId, decoderHandle,
                                                                 controlListener, eventListener,
                                                                 mAVBufferManager, mAVbufferHelper,
-                                                                secureDecode, testConfig);
+                                                                secureDecode, testConfig, isSinkAvailable);
                 threads.emplace_back(&AudioDecoderTest::run, decoderTest.get(), true);
 
                 decoderTests.push_back(std::move(decoderTest));

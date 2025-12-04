@@ -549,6 +549,7 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
             {
                 DecodedAudioFrame_t decodedFrame;
                 chrono::steady_clock::time_point receiveTime;
+                bool isBufferValid;
 
                 inputFrameIndex++;
 
@@ -649,6 +650,18 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
                 auto duration = chrono::duration_cast<chrono::microseconds>(decodedFrame.receiveTime - inputFrame.sendTime);
                 UT_LOG_INFO("[Audio DecoderID: %d] Decode Time in micro second [PTS: %lld]: %lld", mDecoderId.value, decodedFrame.framePTS, duration.count());
                 UT_ASSERT_TRUE(duration.count() <= mTestConfiguration.decodeTime);
+
+                if(!mIsSinkAvailable)
+                {
+                    if(decodedFrame.frameBufferHandle != -1)
+                    {
+                        AVBUFFER_ISVALID_SUCCESS(mAVBufferManager, decodedFrame.frameBufferHandle, isBufferValid);
+                        if (isBufferValid)
+                        {
+                            AVBUFFER_FREE_SUCCESS(mAVBufferManager, decodedFrame.frameBufferHandle);
+                        }
+                    }
+                }
             }
 
             /* Get decoder metrics after decoding */
