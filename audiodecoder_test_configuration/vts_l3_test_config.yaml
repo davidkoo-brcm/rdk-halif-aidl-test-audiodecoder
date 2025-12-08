@@ -26,6 +26,10 @@ include_3: stream_configuration/vts_audio_ac3_streams.yaml
 #include_5: stream_configuration/vts_audio_mp2_streams.yaml
 #include_1: stream_configuration/vts_audio_heaac_streams.yaml
 #include_2: stream_configuration/vts_audio_heaac2_streams.yaml
+include_14: stream_configuration/vts_audio_eac3_streams.yaml
+include_15: stream_configuration/vts_audio_opus_streams.yaml
+
+
 
 include_6: audiodecoder_test_configuration/vts_l3_AudioDecode.yaml
 include_7: audiodecoder_test_configuration/vts_l3_AudioDecode_Error.yaml

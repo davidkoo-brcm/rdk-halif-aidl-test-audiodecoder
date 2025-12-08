@@ -23,7 +23,7 @@
 AudioStreams:
   vts_ac3_32k_1ch_64k_a209_v0_11sec:
     input: vts_ac3_32k_1ch_64k_a209_v0_11sec.ec3
-    reference: tones_48k_2_256_ref.pcm
+    reference:
     codec: EAC3
     sample_rate: 32000
     channels: 1
@@ -74,7 +74,7 @@ AudioStreams:
 
   vts_ac3_32k_2ch_128k_a209_v0_11sec:
     input: vts_ac3_32k_2ch_128k_a209_v0_11sec.ec3
-    reference: tones_48k_2_256_ref.pcm
+    reference:
     codec: EAC3
     sample_rate: 32000
     channels: 2
@@ -126,7 +126,7 @@ AudioStreams:
 
   vts_ac3_32k_2ch_64k_a209_v0_11sec:
     input: vts_ac3_32k_2ch_64k_a209_v0_11sec.ec3
-    reference: tones_48k_2_256_ref.pcm
+    reference:
     codec: EAC3
     sample_rate: 32000
     channels: 2
@@ -167,7 +167,7 @@ AudioStreams:
 
   vts_ac3_32k_3ch_128k_a209_v0_11sec:
     input: vts_ac3_32k_3ch_128k_a209_v0_11sec.ec3
-    reference: tones_48k_2_256_ref.pcm
+    reference:
     codec: EAC3
     sample_rate: 32000
     channels: 3
@@ -220,7 +220,7 @@ AudioStreams:
 
   vts_ac3_32k_6ch_256k_a209_v0_11sec:
     input: vts_ac3_32k_6ch_256k_a209_v0_11sec.ec3
-    reference: tones_48k_2_256_ref.pcm
+    reference:
     codec: EAC3
     sample_rate: 32000
     channels: 6
@@ -438,7 +438,7 @@ AudioStreams:
 
   vts_ac3_44.1k_1ch_64k_a288_v0_11sec:
     input: vts_ac3_44.1k_1ch_64k_a288_v0_11sec.ec3
-    reference: tones_48k_2_256_ref.pcm
+    reference:
     codec: EAC3
     sample_rate: 44100
     channels: 1
@@ -489,7 +489,7 @@ AudioStreams:
 
   vts_ac3_44.1k_2ch_128k_a288_v0_11sec:
     input: vts_ac3_44.1k_2ch_128k_a288_v0_11sec.ec3
-    reference: tones_48k_2_256_ref.pcm
+    reference:
     codec: EAC3
     sample_rate: 44100
     channels: 2
@@ -571,7 +571,7 @@ AudioStreams:
 
   vts_ac3_44.1k_3ch_256k_a288_v0_11sec:
     input: vts_ac3_44.1k_3ch_256k_a288_v0_11sec.ec3
-    reference: tones_48k_2_256_ref.pcm
+    reference:
     codec: EAC3
     sample_rate: 44100
     channels: 3
@@ -702,7 +702,7 @@ AudioStreams:
 
   vts_ac3_44.1k_6ch_512k_a288_v0_11sec:
     input: vts_ac3_44.1k_6ch_512k_a288_v0_11sec.ec3
-    reference: tones_48k_2_256_ref.pcm
+    reference:
     codec: EAC3
     sample_rate: 44100
     channels: 6
@@ -907,7 +907,7 @@ AudioStreams:
 
   vts_ac3_48k_1ch_64k_a313_v0_11sec:
     input: vts_ac3_48k_1ch_64k_a313_v0_11sec.ec3
-    reference: tones_48k_2_256_ref.pcm
+    reference:
     codec: EAC3
     sample_rate: 48000
     channels: 1
@@ -1030,7 +1030,7 @@ AudioStreams:
 
   vts_ac3_48k_2ch_128k_a313_v0_11sec:
     input: vts_ac3_48k_2ch_128k_a313_v0_11sec.ec3
-    reference: tones_48k_2_256_ref.pcm
+    reference:
     codec: EAC3
     sample_rate: 48000
     channels: 2
@@ -1171,7 +1171,7 @@ AudioStreams:
 
   vts_ac3_48k_3ch_256k_a313_v0_11sec:
     input: vts_ac3_48k_3ch_256k_a313_v0_11sec.ec3
-    reference: tones_48k_2_256_ref.pcm
+    reference:
     codec: EAC3
     sample_rate: 48000
     channels: 3
@@ -1275,7 +1275,7 @@ AudioStreams:
 
   vts_ac3_48k_6ch_256k_a313_v0_11sec:
     input: vts_ac3_48k_6ch_256k_a313_v0_11sec.ec3
-    reference: tones_48k_2_256_ref.pcm
+    reference:
     codec: EAC3
     sample_rate: 48000
     channels: 6
@@ -1433,7 +1433,7 @@ AudioStreams:
 
   vts_ac3_48k_6ch_512k_a313_v0_11sec:
     input: vts_ac3_48k_6ch_512k_a313_v0_11sec.ec3
-    reference: tones_48k_2_256_ref.pcm
+    reference:
     codec: EAC3
     sample_rate: 48000
     channels: 6

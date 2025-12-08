@@ -19,11 +19,486 @@
 # * limitations under the License.
 # *
 #** ******************************************************************************
-
 AudioStreams:
+  vts_libopus_16k_1ch_128k_a501_v0_11sec:
+    input: vts_libopus_16k_1ch_128k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 1
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 19928
+    - 19127
+    - 19127
+    - 19127
+    - 19127
+    - 19127
+    - 19127
+    - 19127
+    - 19127
+    - 19127
+    - 663
+  vts_libopus_16k_1ch_32k_a501_v0_11sec:
+    input: vts_libopus_16k_1ch_32k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 1
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 4773
+    - 6652
+    - 7142
+    - 7395
+    - 7488
+    - 7527
+    - 7527
+    - 7527
+    - 7527
+    - 7527
+    - 181
+  vts_libopus_16k_1ch_64k_a501_v0_11sec:
+    input: vts_libopus_16k_1ch_64k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 1
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 10534
+    - 10298
+    - 11006
+    - 11278
+    - 11372
+    - 11424
+    - 11427
+    - 11427
+    - 11427
+    - 11427
+    - 342
+  vts_libopus_16k_2ch_128k_a501_v0_11sec:
+    input: vts_libopus_16k_2ch_128k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 22216
+    - 20777
+    - 20777
+    - 20777
+    - 20777
+    - 20777
+    - 20777
+    - 20777
+    - 20777
+    - 20777
+    - 661
+  vts_libopus_16k_2ch_32k_a501_v0_11sec:
+    input: vts_libopus_16k_2ch_32k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 5650
+    - 8281
+    - 8471
+    - 8477
+    - 8477
+    - 8477
+    - 8477
+    - 8477
+    - 8477
+    - 8477
+    - 179
+  vts_libopus_16k_2ch_64k_a501_v0_11sec:
+    input: vts_libopus_16k_2ch_64k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 12499
+    - 11653
+    - 12536
+    - 13004
+    - 13157
+    - 13219
+    - 13227
+    - 13227
+    - 13227
+    - 13227
+    - 340
+  vts_libopus_16k_6ch_128k_a501_v0_11sec:
+    input: vts_libopus_16k_6ch_128k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 6
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 55
+    - 90
+    - 4638
+    - 6478
+    - 6893
+    - 7109
+    - 7127
+    - 7127
+    - 7127
+    - 7127
+    - 7127
+    - 7127
+    - 156
+  vts_libopus_16k_6ch_256k_a501_v0_11sec:
+    input: vts_libopus_16k_6ch_256k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 6
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 55
+    - 90
+    - 6666
+    - 9037
+    - 9694
+    - 10021
+    - 10147
+    - 10177
+    - 10206
+    - 10227
+    - 10227
+    - 10227
+    - 280
+
+  vts_libopus_16k_6ch_32k_a501_v0_11sec:
+    input: vts_libopus_16k_6ch_32k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 6
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 55
+    - 90
+    - 2240
+    - 2220
+    - 2227
+    - 2227
+    - 2227
+    - 2227
+    - 2227
+    - 2227
+    - 2227
+    - 2227
+    - 64
+
+  vts_libopus_16k_6ch_64k_a501_v0_11sec:
+    input: vts_libopus_16k_6ch_64k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 6
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 55
+    - 90
+    - 2678
+    - 2389
+    - 2402
+    - 2418
+    - 2414
+    - 2423
+    - 2409
+    - 2426
+    - 2412
+    - 2457
+    - 60
+
+  vts_libopus_24k_1ch_128k_a501_v0_11sec:
+    input: vts_libopus_24k_1ch_128k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 1
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 20894
+    - 19927
+    - 19927
+    - 19927
+    - 19927
+    - 20159
+    - 19877
+    - 19877
+    - 19877
+    - 19877
+    - 664
+
+  vts_libopus_24k_1ch_32k_a501_v0_11sec:
+    input: vts_libopus_24k_1ch_32k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 1
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 5339
+    - 6927
+    - 7596
+    - 8103
+    - 8258
+    - 8302
+    - 8277
+    - 8277
+    - 8277
+    - 8277
+    - 182
+
+  vts_libopus_24k_1ch_64k_a501_v0_11sec:
+    input: vts_libopus_24k_1ch_64k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 1
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 11360
+    - 10732
+    - 11550
+    - 11987
+    - 12148
+    - 12449
+    - 12172
+    - 12127
+    - 12127
+    - 12127
+    - 343
+
+  vts_libopus_24k_2ch_128k_a501_v0_11sec:
+    input: vts_libopus_24k_2ch_128k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 23492
+    - 21617
+    - 21617
+    - 21617
+    - 21617
+    - 22374
+    - 21277
+    - 21277
+    - 21277
+    - 21277
+    - 661
+
+  vts_libopus_24k_2ch_32k_a501_v0_11sec:
+    input: vts_libopus_24k_2ch_32k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 6353
+    - 8777
+    - 8777
+    - 8777
+    - 8777
+    - 8723
+    - 8677
+    - 8677
+    - 8677
+    - 8677
+    - 179
+
+  vts_libopus_24k_2ch_64k_a501_v0_11sec:
+    input: vts_libopus_24k_2ch_64k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 13586
+    - 12465
+    - 13246
+    - 13931
+    - 14177
+    - 14649
+    - 13977
+    - 13977
+    - 13977
+    - 14024
+    - 340
+
+  vts_libopus_24k_6ch_128k_a501_v0_11sec:
+    input: vts_libopus_24k_6ch_128k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 6
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 55
+    - 90
+    - 5180
+    - 6777
+    - 7086
+    - 7227
+    - 7227
+    - 7199
+    - 7177
+    - 7177
+    - 7177
+    - 7177
+    - 157
+
+  vts_libopus_24k_6ch_256k_a501_v0_11sec:
+    input: vts_libopus_24k_6ch_256k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 6
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 55
+    - 90
+    - 7697
+    - 9628
+    - 10172
+    - 10711
+    - 10904
+    - 11225
+    - 10927
+    - 10927
+    - 10927
+    - 10927
+    - 281
+
+  vts_libopus_24k_6ch_32k_a501_v0_11sec:
+    input: vts_libopus_24k_6ch_32k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 6
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 55
+    - 90
+    - 2252
+    - 2320
+    - 2326
+    - 2327
+    - 2327
+    - 2330
+    - 2327
+    - 2327
+    - 2327
+    - 2327
+    - 64
+
+  vts_libopus_24k_6ch_64k_a501_v0_11sec:
+    input: vts_libopus_24k_6ch_64k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 6
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 55
+    - 90
+    - 3042
+    - 2770
+    - 2806
+    - 2797
+    - 2853
+    - 2800
+    - 2785
+    - 2805
+    - 2777
+    - 2853
+    - 80
+
+  vts_libopus_48k_1ch_128k_a501_v0_11sec:
+    input: vts_libopus_48k_1ch_128k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 1
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 23681
+    - 21927
+    - 22476
+    - 21777
+    - 21777
+    - 22099
+    - 21477
+    - 21477
+    - 22547
+    - 22227
+    - 665
+
   vts_libopus_48k_1ch_32k_a501_v0_11sec:
-    input: vts_libopus_48k_1ch_32k_a501_v0_11sec.ogg
-    reference: tones_48k_2_256_ref.pcm
+    input: vts_libopus_48k_1ch_32k_a501_v0_11sec.opus
+    reference:
     codec: OPUS
     sample_rate: 48000
     channels: 1
@@ -44,12 +519,35 @@ AudioStreams:
     - 8627
     - 183
 
-  vts_libopus_48k_2ch_128k_a501_v0_11sec:
-    input: vts_libopus_48k_2ch_128k_a501_v0_11sec.ogg
-    reference: tones_48k_2_256_ref.pcm
+  vts_libopus_48k_1ch_64k_a501_v0_11sec:
+    input: vts_libopus_48k_1ch_64k_a501_v0_11sec.opus
+    reference:
     codec: OPUS
     sample_rate: 48000
-    channels: 3
+    channels: 1
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 13286
+    - 11698
+    - 13165
+    - 13756
+    - 13985
+    - 14203
+    - 13720
+    - 13777
+    - 14703
+    - 14577
+    - 344
+
+  vts_libopus_48k_2ch_128k_a501_v0_11sec:
+    input: vts_libopus_48k_2ch_128k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 2
     format: S16LE
     num_of_frames: 13
     frame_size:
@@ -67,9 +565,32 @@ AudioStreams:
     - 24277
     - 663
 
+  vts_libopus_48k_2ch_32k_a501_v0_11sec:
+    input: vts_libopus_48k_2ch_32k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 6561
+    - 8927
+    - 8920
+    - 8927
+    - 8927
+    - 8862
+    - 8814
+    - 8815
+    - 8862
+    - 8877
+    - 181
+
   vts_libopus_48k_2ch_64k_a501_v0_11sec:
-    input: vts_libopus_48k_2ch_64k_a501_v0_11sec.ogg
-    reference: tones_48k_2_256_ref.pcm
+    input: vts_libopus_48k_2ch_64k_a501_v0_11sec.opus
+    reference:
     codec: OPUS
     sample_rate: 48000
     channels: 2
@@ -90,9 +611,9 @@ AudioStreams:
     - 16977
     - 342
 
-  vts_libopus_48k_6ch_512k_a501_v0_11sec:
-    input: vts_libopus_48k_6ch_512k_a501_v0_11sec.ogg
-    reference: tones_48k_2_256_ref.pcm
+  vts_libopus_48k_6ch_128k_a501_v0_11sec:
+    input: vts_libopus_48k_6ch_128k_a501_v0_11sec.opus
+    reference:
     codec: OPUS
     sample_rate: 48000
     channels: 6
@@ -101,14 +622,312 @@ AudioStreams:
     frame_size:
     - 55
     - 90
-    - 19588
-    - 17978
-    - 18650
-    - 18068
-    - 18116
-    - 18431
-    - 17792
-    - 17827
-    - 18896
-    - 18577
-    - 497
+    - 5498
+    - 7327
+    - 7317
+    - 7311
+    - 7310
+    - 7265
+    - 7227
+    - 7227
+    - 7348
+    - 7377
+    - 158
+
+  vts_libopus_48k_6ch_256k_a501_v0_11sec:
+    input: vts_libopus_48k_6ch_256k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 6
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 55
+    - 90
+    - 8225
+    - 10777
+    - 11501
+    - 11688
+    - 11963
+    - 12381
+    - 12456
+    - 12521
+    - 13330
+    - 13477
+    - 281
+
+  vts_libopus_48k_6ch_32k_a501_v0_11sec:
+    input: vts_libopus_48k_6ch_32k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 6
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 55
+    - 90
+    - 2162
+    - 2077
+    - 2086
+    - 2096
+    - 2095
+    - 2095
+    - 2084
+    - 2062
+    - 2061
+    - 2062
+    - 68
+
+  vts_libopus_48k_6ch_64k_a501_v0_11sec:
+    input: vts_libopus_48k_6ch_64k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 6
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 55
+    - 90
+    - 3025
+    - 2780
+    - 2789
+    - 2817
+    - 2815
+    - 2858
+    - 2823
+    - 2840
+    - 2829
+    - 2825
+    - 82
+
+  vts_libopus_8k_1ch_128k_a501_v0_11sec:
+    input: vts_libopus_8k_1ch_128k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 1
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 16389
+    - 16177
+    - 16177
+    - 16177
+    - 16177
+    - 16177
+    - 16177
+    - 16177
+    - 16177
+    - 16177
+    - 642
+
+  vts_libopus_8k_1ch_32k_a501_v0_11sec:
+    input: vts_libopus_8k_1ch_32k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 1
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 4202
+    - 4443
+    - 4568
+    - 4627
+    - 4627
+    - 4627
+    - 4627
+    - 4627
+    - 4627
+    - 4627
+    - 173
+
+  vts_libopus_8k_1ch_64k_a501_v0_11sec:
+    input: vts_libopus_8k_1ch_64k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 1
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 7603
+    - 8067
+    - 8325
+    - 8416
+    - 8452
+    - 8477
+    - 8477
+    - 8477
+    - 8477
+    - 8477
+    - 330
+
+  vts_libopus_8k_2ch_128k_a501_v0_11sec:
+    input: vts_libopus_8k_2ch_128k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 16342
+    - 16127
+    - 16127
+    - 16127
+    - 16127
+    - 16127
+    - 16127
+    - 16127
+    - 16127
+    - 16127
+    - 613
+
+  vts_libopus_8k_2ch_32k_a501_v0_11sec:
+    input: vts_libopus_8k_2ch_32k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 4430
+    - 4651
+    - 4829
+    - 4887
+    - 4927
+    - 4927
+    - 4927
+    - 4927
+    - 4927
+    - 4927
+    - 156
+
+  vts_libopus_8k_2ch_64k_a501_v0_11sec:
+    input: vts_libopus_8k_2ch_64k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 47
+    - 90
+    - 7492
+    - 7894
+    - 8231
+    - 8356
+    - 8398
+    - 8427
+    - 8427
+    - 8427
+    - 8427
+    - 8427
+    - 301
+
+  vts_libopus_8k_6ch_128k_a501_v0_11sec:
+    input: vts_libopus_8k_6ch_128k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 6
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 55
+    - 90
+    - 3972
+    - 4165
+    - 4264
+    - 4300
+    - 4327
+    - 4327
+    - 4327
+    - 4327
+    - 4327
+    - 4327
+    - 148
+
+  vts_libopus_8k_6ch_256k_a501_v0_11sec:
+    input: vts_libopus_8k_6ch_256k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 6
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 55
+    - 90
+    - 6641
+    - 7006
+    - 7202
+    - 7277
+    - 7306
+    - 7327
+    - 7327
+    - 7327
+    - 7327
+    - 7327
+    - 269
+
+  vts_libopus_8k_6ch_32k_a501_v0_11sec:
+    input: vts_libopus_8k_6ch_32k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 6
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 55
+    - 90
+    - 2012
+    - 1873
+    - 1878
+    - 1869
+    - 1885
+    - 1868
+    - 1881
+    - 1873
+    - 1871
+    - 1886
+    - 60
+  vts_libopus_8k_6ch_64k_a501_v0_11sec:
+    input: vts_libopus_8k_6ch_64k_a501_v0_11sec.opus
+    reference:
+    codec: OPUS
+    sample_rate: 48000
+    channels: 6
+    format: S16LE
+    num_of_frames: 13
+    frame_size:
+    - 55
+    - 90
+    - 2028
+    - 1891
+    - 1887
+    - 1879
+    - 1880
+    - 1883
+    - 1882
+    - 1881
+    - 1882
+    - 1879
+    - 60
