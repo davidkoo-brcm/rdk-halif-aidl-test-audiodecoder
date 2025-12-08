@@ -55,3 +55,49 @@ The following test streams will be used for validation:
 |8|tones_48k_2_256_zero.mp3|3|frame contains valid sync word with data replaced with zero|
 |9|tones_48k_2_256_randombits.mp3|3|frame contains valid sync word with data replaced with ff|
 
+## Error Streams Info
+
+AV VTS L4 includes playback of error (corrupted) streams to evaluate the error recovery capability of the product.
+
+As part of this verification, various audio error streams are generated and used during testing.
+
+**Example:** Audio Error Stream File Name
+
+```bash
+
+    aac_48k_2ch_frame-skip-duplication_256k_a2814_v0_60sec.mp4
+
+```
+
+**Stream File Name Breakdown:**
+
+|Codec|Sample Rate|Channel|Error Type|Bit Rate|Audio Frames|Video Frames|Duration|
+|------|----------|------------|---------|----------|-------------|--------|------|
+|AAC|48k | 2ch        |frame-skip-duplication|256k|2814|0|60sec|
+
+**Supported Audio Error Types:**
+
+Below is the list of supported audio error types used for AV VTS L4 recovery validation:
+
+#### Frame-Level Structural Corruptions
+
+|**Audio Error Type**|**Description**|**Typical Effects**|
+|--------|----------------|-------------------|
+|frame-skip-duplication|Randomly drops or duplicates complete audio frames.|Audible pops, timing drift, “Invalid frame length” warnings.|
+|frame-truncation|Cuts a frame before its natural end, leaving partial data.|Decoder “unexpected EOF” or silence gap.|
+|adts-header-corruption|Flips bits in ADTS headers (for AAC) but keeps syncword.|“Invalid sampling rate index”, playback mutes briefly.|
+
+#### Bitstream Parameter Corruptions
+
+|**Audio Error Type**|**Description**|**Typical Effects**|
+|------|-----------|------------|
+|bitrate-field-corruption|Alters header fields that signal bitrate or profile.|Decoder fallback to default profile; momentary mute.|
+|channel-mode-corruption|Flips channel config bits (stereo/mono/surround).|Channel imbalance, “Invalid channel configuration”.|
+|dynamic-range-corruption|Modifies DRC metadata values.|Louder/quieter playback bursts.
+
+#### Entropy / Coefficient Corruptions
+
+|**Audio Error Type**|**Description**|**Typical Effects**|
+|------|---------|-------------|
+|entropy-bit-flip|Flips bits in Huffman-coded spectral data.|Crackling or “Invalid scalefactor” warnings.|
+|quantization-noise-injection|Adds small random values to quantized coefficients.|Subtle distortion or fuzziness.|
