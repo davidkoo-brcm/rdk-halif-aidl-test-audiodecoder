@@ -1,20 +1,20 @@
-/**
- *  If not stated otherwise in this file or this component's LICENSE
- *  file the following copyright and licenses apply:
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
  *
- *  Copyright 2024 RDK Management
+ * Copyright 2025 RDK Management
  *
- *  Licensed under the Apache License, Version 2.0 (the License);
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an AS IS BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
@@ -233,10 +233,10 @@ Status AudioDecoderEventListener::onDecodeError(audiodecoder::ErrorCode vendorEr
  * @param newState New state
  * @return Status
  */
-Status AudioDecoderEventListener::onStateChanged(State oldState,State newState)
+Status AudioDecoderEventListener::onStateChanged(AudioDecoderState oldState,AudioDecoderState newState)
 {
-    UT_LOG_INFO("[Audio DecoderID: %d] State Change received: %s -> %s", mDecoderID, com::rdk::hal::toString(oldState).c_str(), com::rdk::hal::toString(newState).c_str());
-    if(oldState == State::CLOSED && newState == State::OPENING)
+    UT_LOG_INFO("[Audio DecoderID: %d] State Change received: %s -> %s", mDecoderID, audiodecoder::toString(oldState).c_str(), audiodecoder::toString(newState).c_str());
+    if(oldState == AudioDecoderState::CLOSED && newState == AudioDecoderState::OPENING)
     {
         mUsedDecoderID = mDecoderID;
     }
@@ -283,7 +283,7 @@ bool AudioDecoderEventListener::getNextError(ErrorDetails_t &errorDetails)
  * @param timeout      How long to wait, e.g. chrono::milliseconds(500).
  * @return true if the state was reached; false if we timed out waiting.
  */
-bool AudioDecoderEventListener::waitForState(State desiredState, chrono::milliseconds timeout)
+bool AudioDecoderEventListener::waitForState(AudioDecoderState desiredState, chrono::milliseconds timeout)
 {
     unique_lock<mutex> lock(mMutex);
     // Wait until mCurrentState == desiredState or until timeout
@@ -312,9 +312,9 @@ void AudioDecoderEventListener::resetStateChanges()
  * @return returns if the expected states received or not
  */
 
-bool AudioDecoderEventListener::checkStateTransistion(State expOldState, State expNewState)
+bool AudioDecoderEventListener::checkStateTransistion(AudioDecoderState expOldState, AudioDecoderState expNewState)
 {
-    vector<pair<State, State>> stateChange;
+    vector<pair<AudioDecoderState, AudioDecoderState>> stateChange;
     bool foundClosedToOpening = false;
 
     {

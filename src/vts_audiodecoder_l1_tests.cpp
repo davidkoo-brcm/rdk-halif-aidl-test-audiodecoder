@@ -2,7 +2,7 @@
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
- * Copyright 2016 RDK Management
+ * Copyright 2025 RDK Management
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 /**
  * @addtogroup HPK Hardware Porting Kit
@@ -244,14 +244,14 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, getAudioDecoder_neg)
 
     invalidID = decoderIds.front();
     invalidID.value -= 1;
-    AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(invalidID, audiodecoder);
+    AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(invalidID, audiodecoder, Status::EX_ILLEGAL_ARGUMENT);
 
     invalidID = decoderIds.back();
     invalidID.value += 1;
-    AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(invalidID, audiodecoder);
+    AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(invalidID, audiodecoder, Status::EX_ILLEGAL_ARGUMENT);
 
     invalidID.value = IAudioDecoder::Id::UNDEFINED;
-    AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(invalidID, audiodecoder);
+    AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(invalidID, audiodecoder, Status::EX_ILLEGAL_ARGUMENT);
 }
 
 /**
@@ -319,11 +319,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, getProperty_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
+    Capabilities capabilities;
     std::vector<Property> testProperties = {Property::RESOURCE_ID, Property::LOW_LATENCY_MODE, Property::AV_SOURCE, Property::SECURE_AUDIO,
-                                            Property::AC4_PRESENTATION_GROUP_INDEX, Property::AC4_PREFERRED_LANG1, Property::AC4_PREFERRED_LANG2,
-                                            Property::AC4_ASSOCIATED_TYPE, Property::AC4_AUTO_SELECTION_PRIORITY, Property::AC4_MIXER_BALANCE,
-                                            Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, Property::METRIC_FRAMES_DECODED,
-                                            Property::METRIC_DECODE_ERRORS, Property::METRIC_FRAMES_DROPPED};
+                                            Property::METRIC_FRAMES_DECODED, Property::METRIC_DECODE_ERRORS, Property::METRIC_FRAMES_DROPPED};
+    std::vector<Property> testAC4Properties = {Property::AC4_PRESENTATION_GROUP_INDEX, Property::AC4_PREFERRED_LANG1, Property::AC4_PREFERRED_LANG2,
+                                               Property::AC4_ASSOCIATED_TYPE, Property::AC4_AUTO_SELECTION_PRIORITY, Property::AC4_MIXER_BALANCE,
+                                               Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE};
     ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
@@ -331,13 +332,32 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, getProperty_pos)
 
     for(const auto& _decoderId: decoderIds)
     {
+        bool isAC4Supported = false;
         /* Get Audio decoder handle */
         AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, &capabilities);
+
+        for(const auto& _codec: capabilities.supportedCodecs)
+        {
+            if(Codec::DOLBY_AC4 == _codec)
+            {
+                isAC4Supported = true;
+                break;
+            }
+        }
+        std::optional<PropertyValue> propertyValue;
+        if(isAC4Supported){
+            for (auto property : testAC4Properties)
+            {
+                AUDIODECODER_GET_PROPERTY_SUCCESS(audioDecoder, property, propertyValue);
+                UT_ASSERT_TRUE(vts_audiodecoder_helper_validatePropertyValue(_decoderId.value, propertyValue, property));
+            }
+        }
         /* Get RESOURCE_ID */
         for (auto property : testProperties)
         {
-            std::optional<PropertyValue> propertyValue;
             AUDIODECODER_GET_PROPERTY_SUCCESS(audioDecoder, property, propertyValue);
             UT_ASSERT_TRUE(vts_audiodecoder_helper_validatePropertyValue(_decoderId.value, propertyValue, property));
         }
@@ -368,19 +388,41 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, getProperty_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
+    Capabilities capabilities;
     std::optional<PropertyValue> propertyValue;
     int32_t firstValue = static_cast<int32_t>(Property::RESOURCE_ID);
     Property Invalidproperty = static_cast<Property>(firstValue - 1);
     ::android::binder::Status status;
+    std::vector<Property> testAC4Properties = {Property::AC4_PRESENTATION_GROUP_INDEX, Property::AC4_PREFERRED_LANG1, Property::AC4_PREFERRED_LANG2,
+                                               Property::AC4_ASSOCIATED_TYPE, Property::AC4_AUTO_SELECTION_PRIORITY, Property::AC4_MIXER_BALANCE,
+                                               Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE};
 
     /* Get the Audio decoder IDs */
     AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
+        bool isAC4Supported = false;
         /* Get Audio decoder handle */
         AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
 
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, &capabilities);
+
+        for(const auto& _codec: capabilities.supportedCodecs)
+        {
+            if(Codec::DOLBY_AC4 == _codec)
+            {
+                isAC4Supported = true;
+                break;
+            }
+        }
+        if(!isAC4Supported){
+            for (auto property : testAC4Properties)
+            {
+                AUDIODECODER_GET_PROPERTY_FAILURE(audioDecoder, property, propertyValue, Status::EX_ILLEGAL_ARGUMENT);
+            }
+        }
         AUDIODECODER_GET_PROPERTY_FAILURE(audioDecoder, Invalidproperty, propertyValue, Status::EX_ILLEGAL_ARGUMENT);
     }
 }
@@ -1721,13 +1763,15 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalEOS_neg)
 * |Variation / Step|Description|Test Data|Expected Result|Notes|
 * |----------------|-----------|---------|---------------|-----|
 * |01|Get the supported IDs and loop through the available decoder|None|None|None|
-* |02|Open the audio decoder with the codec and create audioDecoderController with listener|_codec, _decoder.supportsSecure, listener, audioDecoderController|status.isOk() should be true, audioDecoderController != nullptr|Should pass|
-* |03|Verify the state of the decoder after open|state|state should be READY|Should pass|
-* |04|start the decoder|audioDecoderController|status should be ok|Should pass|
-* |05|Check the state of the decoder|None|state should be STARTED, status should be ok|Should pass|
-* |06|Set CSD data to the decoder|CSD data|status should be ok and state should be STARTED|Should pass|
-* |07|Stop the decoder|None|state should be READY, status should be ok|Should pass|
-* |08|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
+* |02|Get the supported codecs for each decoder|capabilities.supportedCodecs|Valid codec list|Should pass|
+* |03|For each codec, determine applicable CSD format|MP4_AUDIO_SPECIFIC_CONFIG for AAC codecs, EAC3_SPECIFIC_CONFIG for EAC3+ codecs, AC4_SPECIFIC_CONFIG for AC4 codec|Valid CSD format mapping|Should pass|
+* |04|Open the audio decoder with the codec and create audioDecoderController with listener|_codec, _decoder.supportsSecure, listener, audioDecoderController|status.isOk() should be true, audioDecoderController != nullptr|Should pass|
+* |05|Verify the state of the decoder after open|state|state should be READY|Should pass|
+* |06|Start the decoder|audioDecoderController|status should be ok|Should pass|
+* |07|Check the state of the decoder|None|state should be STARTED, status should be ok|Should pass|
+* |08|Set appropriate CSD data to the decoder based on codec type|CSD format and codec-specific data (AAC: {0x12, 0x10}, EAC3: {0xEC, 0x3F}, AC4: {0xAC, 0x40, 0x00, 0x00})|status should be ok and state should be STARTED|Should pass|
+* |09|Stop the decoder|None|state should be READY, status should be ok|Should pass|
+* |10|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 */
 UT_ADD_TEST(VTS_L1_AudioDecoder, parseCodecSpecificData_pos)
 {
@@ -1736,12 +1780,34 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, parseCodecSpecificData_pos)
     audiodecoder::Capabilities capabilities;
     ::android::binder::Status status;
 
-    /*
-      Audio Object Type: 2 (AAC LC)
-      Sampling Frequency Index: 4 (44.1 kHz)
-      Channel Configuration: 2 (stereo)
-    */
-    std::vector<uint8_t> codecData = {0x12, 0x10};
+    /* Codec specific data for different CSD formats */
+    struct CSDTestData {
+        CSDAudioFormat format;
+        std::vector<uint8_t> codecData;
+        std::vector<Codec> applicableCodecs;
+        std::string description;
+    };
+
+    std::vector<CSDTestData> csdTestData = {
+        {
+            CSDAudioFormat::MP4_AUDIO_SPECIFIC_CONFIG,
+            {0x12, 0x10}, // AAC LC, 44.1kHz, stereo
+            {Codec::AAC_LC, Codec::HE_AAC, Codec::HE_AAC2, Codec::AAC_ELD},
+            "MP4 Audio Specific Config for AAC"
+        },
+        {
+            CSDAudioFormat::EAC3_SPECIFIC_CONFIG,
+            {0xEC, 0x3F}, // Enhanced AC-3 config
+            {Codec::DOLBY_AC3_PLUS, Codec::DOLBY_AC3_PLUS_JOC},
+            "Enhanced AC-3 Specific Config"
+        },
+        {
+            CSDAudioFormat::AC4_SPECIFIC_CONFIG,
+            {0xAC, 0x40, 0x00, 0x00}, // Basic AC-4 'dac4' box
+            {Codec::DOLBY_AC4},
+            "Dolby AC-4 Specific Config"
+        }
+    };
 
     /* Get the Audio decoder IDs */
     AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
@@ -1756,30 +1822,39 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, parseCodecSpecificData_pos)
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
-            if (_codec == Codec::AAC_LC ||
-                _codec == Codec::HE_AAC ||
-                _codec == Codec::HE_AAC2)
+            /* Test each CSD format that applies to this codec */
+            for(const auto& testData : csdTestData)
             {
-                CSDAudioFormat csdAudioFormat = CSDAudioFormat::MP4_AUDIO_SPECIFIC_CONFIG;
+                /* Check if this CSD format applies to the current codec */
+                bool codecApplicable = std::find(testData.applicableCodecs.begin(),
+                                                  testData.applicableCodecs.end(),
+                                                  _codec) != testData.applicableCodecs.end();
 
-                sp<IAudioDecoderController> audioDecoderController;
-                sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
-                sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
+                if (codecApplicable)
+                {
+                    UT_LOG_INFO("Testing %s for codec %s",
+                                testData.description.c_str(),
+                                toString(_codec).c_str());
 
-                /* Open the Decoder */
-                AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
+                    sp<IAudioDecoderController> audioDecoderController;
+                    sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
+                    sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
 
-                /* Start the decoder */
-                AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
+                    /* Open the Decoder */
+                    AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
 
-                /* Set CSD data to the decoder */
-                AUDIODECODER_PARSE_CSD_SUCCESS(audioDecoder, audioDecoderController, csdAudioFormat, codecData, true);
+                    /* Start the decoder */
+                    AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
 
-                /* Stop the decoder */
-                AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
+                    /* Set CSD data to the decoder */
+                    AUDIODECODER_PARSE_CSD_SUCCESS(audioDecoder, audioDecoderController, testData.format, testData.codecData, true);
 
-                /* Close the decoder */
-                AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
+                    /* Stop the decoder */
+                    AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
+
+                    /* Close the decoder */
+                    AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
+                }
             }
         }
     }
@@ -1841,43 +1916,61 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, parseCodecSpecificData_neg)
 
         for(const auto& _codec: capabilities.supportedCodecs)
         {
-            if (_codec == Codec::AAC_LC ||
-                _codec == Codec::HE_AAC ||
-                _codec == Codec::HE_AAC2)
+            /* Define CSD format and data based on codec type */
+            CSDAudioFormat csdAudioFormat;
+            std::vector<uint8_t> validCodecData;
+
+            if (_codec == Codec::AAC_LC || _codec == Codec::HE_AAC ||
+                _codec == Codec::HE_AAC2 || _codec == Codec::AAC_ELD)
             {
-                CSDAudioFormat csdAudioFormat = CSDAudioFormat::MP4_AUDIO_SPECIFIC_CONFIG;
-
-                sp<IAudioDecoderController> audioDecoderController;
-                sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
-                sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
-
-                /* Open the Decoder */
-                AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
-
-                /* Set CSD data to the decoder before STARTED*/
-                AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, valid_codecData, Status::EX_ILLEGAL_STATE);
-
-                /* Start the decoder */
-                AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
-
-                /* Set invalid CSD data to the decoder */
-                AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, invalid_codecData_1, Status::EX_ILLEGAL_ARGUMENT);
-
-                /* Set invalid CSD data to the decoder */
-                AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, invalid_codecData_2, Status::EX_ILLEGAL_ARGUMENT);
-
-                /* Stop the decoder */
-                AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
-
-                /* Set CSD data to the decoder after STOP */
-                AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, valid_codecData, Status::EX_ILLEGAL_STATE);
-
-                /* Close the decoder */
-                AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
-
-                /* Set CSD data to the decoder after CLOSE */
-                //AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, valid_codecData, Status::EX_ILLEGAL_STATE);
+                csdAudioFormat = CSDAudioFormat::MP4_AUDIO_SPECIFIC_CONFIG;
+                validCodecData = valid_codecData; // Use AAC data
             }
+            else if (_codec == Codec::DOLBY_AC3_PLUS || _codec == Codec::DOLBY_AC3_PLUS_JOC)
+            {
+                csdAudioFormat = CSDAudioFormat::EAC3_SPECIFIC_CONFIG;
+                validCodecData = {0xEC, 0x3F}; // EAC3 config
+            }
+            else if (_codec == Codec::DOLBY_AC4)
+            {
+                csdAudioFormat = CSDAudioFormat::AC4_SPECIFIC_CONFIG;
+                validCodecData = {0xAC, 0x40, 0x00, 0x00}; // AC4 config
+            }
+            else
+            {
+                continue; // Skip codecs that don't support CSD
+            }
+
+            sp<IAudioDecoderController> audioDecoderController;
+            sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
+            sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
+
+            /* Open the Decoder */
+            AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
+
+            /* Set CSD data to the decoder before STARTED*/
+            AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, validCodecData, Status::EX_ILLEGAL_STATE);
+
+            /* Start the decoder */
+            AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            /* Set invalid CSD data to the decoder */
+            AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, invalid_codecData_1, Status::EX_ILLEGAL_ARGUMENT);
+
+            /* Set invalid CSD data to the decoder */
+            AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, invalid_codecData_2, Status::EX_ILLEGAL_ARGUMENT);
+
+            /* Stop the decoder */
+            AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            /* Set CSD data to the decoder after STOP */
+            AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, validCodecData, Status::EX_ILLEGAL_STATE);
+
+            /* Close the decoder */
+            AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            /* Set CSD data to the decoder after CLOSE */
+            //AUDIODECODER_PARSE_CSD_FAILURE(audioDecoderController, csdAudioFormat, validCodecData, Status::EX_ILLEGAL_STATE);
         }
     }
 }
@@ -2102,7 +2195,6 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setProperty_neg)
     sp<IAudioDecoder> audioDecoder;
     audiodecoder::Capabilities capabilities;
     ::android::binder::Status status;
-
     /* Get the Audio decoder IDs */
     AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
@@ -2140,9 +2232,6 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setProperty_neg)
 
             /* set the properties in invalid state */
             AUDIODECODER_SETPROPERTY_LIST_FAILURE(audioDecoderController, validIntPropertyReady, intValue, Status::EX_ILLEGAL_STATE);
-
-            /* set the properties which can be set after Ready */
-            AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, validIntPropertyReady, intValue);
 
             /* Stop the decoder */
             AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
