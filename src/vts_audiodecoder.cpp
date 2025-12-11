@@ -651,7 +651,7 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
                 UT_LOG_INFO("[Audio DecoderID: %d] Decode Time in micro second [PTS: %lld]: %lld", mDecoderId.value, decodedFrame.framePTS, duration.count());
                 UT_ASSERT_TRUE(duration.count() <= mTestConfiguration.decodeTime);
 
-                if(!mIsSinkAvailable)
+                if(!mIsSinkAttached)
                 {
                     if(decodedFrame.frameBufferHandle != -1)
                     {
