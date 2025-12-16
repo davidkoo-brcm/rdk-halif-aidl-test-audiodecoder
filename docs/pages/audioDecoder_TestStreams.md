@@ -130,9 +130,9 @@ Below is the list of supported audio error types used for AV VTS L4 recovery val
 
 |**Audio Error Type**|**Description**|**Typical Effects**|
 |--------------------|---------------|-------------------|
-|**Identification-Setup-Header-Corruption**|Tamper fields like audio_channels, audio_sample_rate, nominal bitrate, or blocksize in the Vorbis setup headers.|Decoder misinterprets stream parameters → decode rejection or severe mis-synthesis (wrong channel layout, timing errors).|
-|**Codebook-Floor-Residue-Field-Corruption**|Flip bits in packed codebooks, floor parameters, or residue configuration within the setup packet.|Entropy decode desynchronization → harsh noise bursts, tonal distortion, or frame drops while stream structure remains recoverable.|
-|**Mode-Window-Type-Flag-Corruption**|Alter packet type or mode/window flags so the decoder selects an incorrect transform size or mode.|Audible pre-echo, warbling artifacts, or hard decode error for that packet.|
+|**identification-setup-header-corruption**|Tamper fields like audio_channels, audio_sample_rate, nominal bitrate, or blocksize in the Vorbis setup headers.|Decoder misinterprets stream parameters → decode rejection or severe mis-synthesis (wrong channel layout, timing errors).|
+|**codebook-floor-residue-field-corruption**|Flip bits in packed codebooks, floor parameters, or residue configuration within the setup packet.|Entropy decode desynchronization → harsh noise bursts, tonal distortion, or frame drops while stream structure remains recoverable.|
+|**mode-window-type-flag-corruption**|Alter packet type or mode/window flags so the decoder selects an incorrect transform size or mode.|Audible pre-echo, warbling artifacts, or hard decode error for that packet.|
 
 #### Opus Specific Corruptions
 
