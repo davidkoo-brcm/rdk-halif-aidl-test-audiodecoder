@@ -433,6 +433,7 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
         if (!inputFile)
         {
             UT_LOG_ERROR("[Audio DecoderID: %d] Failed to open file: %s", mDecoderId.value, mTestConfiguration.input.c_str());
+            UT_FAIL("Failed to open input file");
             AVBUFFER_DESTROY_POOL_SUCCESS(mAVBufferManager, audioPool);
             return;
         }
