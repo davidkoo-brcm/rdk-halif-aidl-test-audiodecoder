@@ -892,11 +892,11 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, unregisterEventListener_pos)
 * |Variation / Step|Description|Test Data|Expected Result|Notes|
 * |----------------|-----------|---------|---------------|-----|
 * |01|Get the supported IDs and loop through the available decoder|None|None|None|
-* |02|un-register decoder events without register|listener|status should be ok|Should pass|
-* |03|register decoder events|listener|status should be ok|Should pass|
-* |04|un-register decoder events with nullptr|listener=nullptr|status should not be ok|Should pass|
-* |05|un-register decoder events|listener|status should be ok|Should pass|
-* |06|un-register decoder events again|listener|status should not be ok|Should pass|
+* |02|un-register decoder events without register|listener|status should be ok, return value should be false|Should pass|
+* |03|register decoder events|listener|status should be ok, return value should be true|Should pass|
+* |04|un-register decoder events with nullptr|listener=nullptr|status should not be ok (EX_NULL_POINTER exception)|Should pass|
+* |05|un-register decoder events|listener|status should be ok, return value should be true|Should pass|
+* |06|un-register decoder events again|listener|status should be ok, return value should be false|Should pass|
 */
 UT_ADD_TEST(VTS_L1_AudioDecoder, unregisterEventListener_neg)
 {
