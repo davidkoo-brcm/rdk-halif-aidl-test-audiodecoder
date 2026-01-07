@@ -536,8 +536,9 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
             if(mTestConfiguration.decoderDelay > 0)
                 this_thread::sleep_for(chrono::milliseconds(mTestConfiguration.decoderDelay));
 
-            if(framePTS == mTestConfiguration.frameDetails.back().framePTS)
+            if(framePTS == std::get<1>(mTestConfiguration.frameDetails.back()))
             {
+                UT_LOG_INFO("Signalled EOS after the last frame");
                 AUDIODECODER_SIGNAL_EOS_SUCCESS(mDecoderHandle, audioDecoderController, true);
             }
         }
