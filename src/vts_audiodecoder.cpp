@@ -121,17 +121,33 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
         frame.isMetaAvailable = true;
         frame.metadata.sourceCodec = metadata->sourceCodec;
         frame.metadata.isDolbyAtmos = metadata->isDolbyAtmos;
-        frame.metadata.numChannels = metadata->numChannels;
-        frame.metadata.channelTypes = metadata->channelTypes;
-        frame.metadata.sampleRate = metadata->sampleRate;
-        frame.metadata.format = metadata->format;
-        frame.metadata.planarFormat = metadata->planarFormat;
         frame.metadata.trimStartNs = metadata->trimStartNs;
         frame.metadata.trimEndNs = metadata->trimEndNs;
         frame.metadata.lowLatency = metadata->lowLatency;
         frame.metadata.endOfStream = metadata->endOfStream;
         frame.metadata.discontinuity = metadata->discontinuity;
         frame.metadata.source = metadata->source;
+
+        // PCM details moved under FrameMetadata::metadata (optional<PCMMetadata>)
+        if (metadata->metadata.has_value())
+        {
+            const auto& pcm = *(metadata->metadata);
+
+            UT_LOG_INFO("[Audio DecoderID: %d] PCM Details [SampleRate: %d, Channels: %d, channelType: [%s] format: %s planarFormat: %s]",
+                        mDecoderID,
+                        pcm.sampleRate,
+                        pcm.numChannels,
+                        formatChannelVector(pcm.channelTypes).c_str(),
+                        ::com::rdk::hal::audiodecoder::toString(pcm.format).c_str(),
+                        UT_Control_GetMapString(bool_mapTable, pcm.planarFormat));
+
+            // Copy PCM fields into your local metadata struct
+            frame.metadata.numChannels  = pcm.numChannels;
+            frame.metadata.channelTypes = pcm.channelTypes;
+            frame.metadata.sampleRate   = pcm.sampleRate;
+            frame.metadata.format       = pcm.format;
+            frame.metadata.planarFormat = pcm.planarFormat;
+        }
     }
     {
         lock_guard<mutex> lock(mQueueMutex);
