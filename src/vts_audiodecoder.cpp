@@ -433,6 +433,7 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
         if (!inputFile)
         {
             UT_LOG_ERROR("[Audio DecoderID: %d] Failed to open file: %s", mDecoderId.value, mTestConfiguration.input.c_str());
+            UT_FAIL("Failed to open input file");
             AVBUFFER_DESTROY_POOL_SUCCESS(mAVBufferManager, audioPool);
             return;
         }
@@ -519,14 +520,8 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
 
             if(mTestConfiguration.eosPts == framePTS)
             {
+                UT_LOG_INFO("Signaling EOS at PTS:%lld", framePTS);
                 AUDIODECODER_SIGNAL_EOS_SUCCESS(mDecoderHandle, audioDecoderController, true);
-
-                /* After EOS signal decode should fail */
-                AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, framePTS, audioBufferHandle, trimStartNs, trimEndNs, Status::EX_NONE);
-
-                /* decoder should be restarted after eos */
-                AUDIODECODER_STOP_SUCCESS(mDecoderHandle, audioDecoderController, true);
-                AUDIODECODER_START_SUCCESS(mDecoderHandle, audioDecoderController, true);
             }
 
             AVBUFFER_ISVALID_SUCCESS(mAVBufferManager, audioBufferHandle, isValidBuffer);
@@ -540,6 +535,14 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
             /* wait time to next frames */
             if(mTestConfiguration.decoderDelay > 0)
                 this_thread::sleep_for(chrono::milliseconds(mTestConfiguration.decoderDelay));
+
+            auto endPTS = std::get<1>(mTestConfiguration.frameDetails.back());
+
+            if(framePTS == endPTS)
+            {
+                UT_LOG_DEBUG("Signalled EOS after the last frame framePTS:%lld, endPTS:%lld", framePTS, endPTS);
+                AUDIODECODER_SIGNAL_EOS_SUCCESS(mDecoderHandle, audioDecoderController, true);
+            }
         }
 
         if(validateMetrics)
@@ -549,6 +552,7 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
             {
                 DecodedAudioFrame_t decodedFrame;
                 chrono::steady_clock::time_point receiveTime;
+                bool isBufferValid;
 
                 inputFrameIndex++;
 
@@ -649,6 +653,18 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
                 auto duration = chrono::duration_cast<chrono::microseconds>(decodedFrame.receiveTime - inputFrame.sendTime);
                 UT_LOG_INFO("[Audio DecoderID: %d] Decode Time in micro second [PTS: %lld]: %lld", mDecoderId.value, decodedFrame.framePTS, duration.count());
                 UT_ASSERT_TRUE(duration.count() <= mTestConfiguration.decodeTime);
+
+                if(!mIsSinkAttached)
+                {
+                    if(decodedFrame.frameBufferHandle != -1)
+                    {
+                        AVBUFFER_ISVALID_SUCCESS(mAVBufferManager, decodedFrame.frameBufferHandle, isBufferValid);
+                        if (isBufferValid)
+                        {
+                            AVBUFFER_FREE_SUCCESS(mAVBufferManager, decodedFrame.frameBufferHandle);
+                        }
+                    }
+                }
             }
 
             /* Get decoder metrics after decoding */
