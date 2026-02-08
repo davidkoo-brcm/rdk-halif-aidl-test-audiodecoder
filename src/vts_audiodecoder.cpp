@@ -110,15 +110,34 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
     frame.isMetaAvailable = false;
     if (metadata.has_value())
     {
-        UT_LOG_INFO("[Audio DecoderID: %d] Stream Details [Codec: %s, SampleRate: %d, Channels: %d, channelType: [%s] format: %s planarFormat: %s, isDolbyAtom: %s]",
-                    mDecoderID, audiodecoder::toString(metadata->sourceCodec).c_str(), metadata->sampleRate, metadata->numChannels,
-                    formatChannelVector(metadata->channelTypes).c_str(), audiodecoder::toString(metadata->format).c_str(),
-                    UT_Control_GetMapString(bool_mapTable, metadata->planarFormat), UT_Control_GetMapString(bool_mapTable, metadata->isDolbyAtmos));
+        if (metadata->metadata.has_value())
+        {
+            const auto& pcm = *(metadata->metadata);
+
+            UT_LOG_INFO("[Audio DecoderID: %d] Stream Details [Codec: %s, SampleRate: %d, Channels: %d, channelType: [%s] format: %s planarFormat: %s, isDolbyAtmos: %s]",
+                        mDecoderID,
+                        audiodecoder::toString(metadata->sourceCodec).c_str(),
+                        pcm.sampleRate,
+                        pcm.numChannels,
+                        formatChannelVector(pcm.channelTypes).c_str(),
+                        ::com::rdk::hal::audiodecoder::toString(pcm.format).c_str(),
+                        UT_Control_GetMapString(bool_mapTable, pcm.planarFormat),
+                        UT_Control_GetMapString(bool_mapTable, metadata->isDolbyAtmos));
+        }
+        else
+        {
+            UT_LOG_INFO("[Audio DecoderID: %d] Stream Details [Codec: %s, PCMMetadata: not available, isDolbyAtmos: %s]",
+                        mDecoderID,
+                        audiodecoder::toString(metadata->sourceCodec).c_str(),
+                        UT_Control_GetMapString(bool_mapTable, metadata->isDolbyAtmos));
+        }
+
         UT_LOG_INFO("[Audio DecoderID: %d] Control Parameters [PTS: %lld, discontinuity: %d, EOS: %d, LowLatency: %d, Source: %d, Trim(%lld-%lld)]",
                     mDecoderID, nsPresentationTime, metadata->discontinuity, metadata->endOfStream, metadata->lowLatency,
                     metadata->source, metadata->trimStartNs, metadata->trimEndNs);
 
         frame.isMetaAvailable = true;
+
         frame.metadata.sourceCodec = metadata->sourceCodec;
         frame.metadata.isDolbyAtmos = metadata->isDolbyAtmos;
         frame.metadata.trimStartNs = metadata->trimStartNs;
@@ -127,6 +146,7 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
         frame.metadata.endOfStream = metadata->endOfStream;
         frame.metadata.discontinuity = metadata->discontinuity;
         frame.metadata.source = metadata->source;
+
 
         // PCM details moved under FrameMetadata::metadata (optional<PCMMetadata>)
         if (metadata->metadata.has_value())
@@ -147,6 +167,13 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
             frame.metadata.sampleRate   = pcm.sampleRate;
             frame.metadata.format       = pcm.format;
             frame.metadata.planarFormat = pcm.planarFormat;
+        }
+        else
+        {
+            frame.metadata.numChannels  = 0;
+            frame.metadata.sampleRate   = 0;
+            frame.metadata.planarFormat = false;
+            frame.metadata.channelTypes.clear();
         }
     }
     {
