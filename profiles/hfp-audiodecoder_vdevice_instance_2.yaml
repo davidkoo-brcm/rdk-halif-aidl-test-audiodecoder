@@ -22,23 +22,23 @@
 
 # HAL Feature Profile for audiodecoder
 
-IAudioDecoderManager:           # Component object begins
+audiodecoder:                   # Component object begins
     interfaceVersion: current
     IAudioDecoder:              # Resource list
-      - id: 0                   # Resource object begins
-        supportedCodecs:
+      - 0:                      # Resource object begins
+         supportedCodecs:
            - AAC_LC
            - DOLBY_AC3
-        supportsSecure: false
-      - id: 1
-        supportedCodecs:
+         supportsSecure: false
+      - 1:
+         supportedCodecs:
            - AAC_LC
            - DOLBY_AC3
-        supportsSecure: false
-      - id: 2
-        supportedCodecs:
+         supportsSecure: false
+      - 2:
+         supportedCodecs:
            - AAC_LC
            - DOLBY_AC3
-        supportsSecure: false
+         supportsSecure: false
     availableDecoders:
       - 1
