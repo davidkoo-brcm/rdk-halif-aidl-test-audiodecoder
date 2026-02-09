@@ -724,6 +724,7 @@ typedef struct DecodedAudioFrame
     int64_t framePTS;
     bool isMetaAvailable;
     bool isTunnel;
+    com::rdk::hal::audiodecoder::FrameType frameType { com::rdk::hal::audiodecoder::FrameType::PCM };
     int64_t frameBufferHandle;
     struct AudioMetatData metadata;
     chrono::steady_clock::time_point receiveTime;
