@@ -727,6 +727,7 @@ typedef struct DecodedAudioFrame
     com::rdk::hal::audiodecoder::FrameType frameType { com::rdk::hal::audiodecoder::FrameType::PCM };
     int64_t frameBufferHandle;
     struct AudioMetatData metadata;
+    std::vector<uint8_t> soCPrivate;
     chrono::steady_clock::time_point receiveTime;
 }DecodedAudioFrame_t;
 
