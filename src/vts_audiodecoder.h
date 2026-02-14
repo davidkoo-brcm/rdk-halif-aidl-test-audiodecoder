@@ -122,7 +122,10 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
 extern void *gAudioDecoderTestConfiguration;
 extern sp<IAudioDecoderManager> gAudioDecoderManager;
 
-#define MAX_TRANSITORY_STATE_WAIT_MS  10
+#ifdef MAX_TRANSITORY_STATE_WAIT_MS
+#undef MAX_TRANSITORY_STATE_WAIT_MS
+#endif
+#define MAX_TRANSITORY_STATE_WAIT_MS 10
 #define MAX_FINAL_STATE_WAIT_MS  500
 
 #ifndef ENABLE_UT_INFO_LOGGING
