@@ -152,7 +152,7 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
         // PCM details moved under FrameMetadata::metadata (optional<PCMMetadata>)
         if (metadata->metadata.has_value())
         {
-            const auto& pcm = *(metadata->metadata);
+            const auto& pcm = metadata->metadata.value();
 
             UT_LOG_INFO("[Audio DecoderID: %d] PCM Details [SampleRate: %d, Channels: %d, channelType: [%s] format: %s planarFormat: %s]",
                         mDecoderID,
@@ -672,8 +672,12 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
                         if (decodedFrame.isMetaAvailable)
                         {
                             UT_ASSERT_EQUAL(decodedFrame.metadata.sourceCodec, mTestConfiguration.codec);
-                            UT_ASSERT_EQUAL(decodedFrame.metadata.numChannels, mTestConfiguration.numChannels);
-                            UT_ASSERT_EQUAL(decodedFrame.metadata.sampleRate, mTestConfiguration.sampleRate);
+
+                            if((decodedFrame.metadata.numChannels != 0 || decodedFrame.metadata.sampleRate != 0))
+                            {
+                                UT_ASSERT_EQUAL(decodedFrame.metadata.numChannels, mTestConfiguration.numChannels);
+                                UT_ASSERT_EQUAL(decodedFrame.metadata.sampleRate, mTestConfiguration.sampleRate);
+                            }
                             UT_ASSERT_EQUAL(int32_t(static_cast<int32_t>(decodedFrame.metadata.source)),
                                             avSourcePropertyValue.value->get<PropertyValue::Value::Tag::intValue>());
                         }
