@@ -42,13 +42,13 @@
  */
 
 /**
- * @defgroup AUDIO_DECODER_HALTEST_PARSE_TESTCONFIG Audio Decoder HAL Tests parse test configuration file
+ * @defgroup AUDIO_DECODER_HALTEST_PARSE_HFP Audio Decoder HAL Tests parse Hardware feature profile
  * @{
  * @parblock
  *
- * ### Parse test configuration functions for Audio Decoder :
+ * ### Parse HFP functions for Audio Decoder :
  *
- * Parse configuration functions required for the module across all vendors.
+ * Parse HFP functions required for the module across all vendors.
  *
  * **Pre-Conditions:**  None @n
  * **Dependencies:** None @n
@@ -58,219 +58,91 @@
  */
 
 /**
- * @file vts_audiodecoder_parse_testconfig.cpp
+ * @file vts_audiodecoder_parse_hfp.cpp
  *
  */
 
-#include <filesystem>
-#include <set>
-#include "vts_audiodecoder_parse_testconfig.h"
+#include "ut_kvp_profile.h"
 #include "vts_audiodecoder_helper_functions.h"
+#include "vts_audiodecoder_parse_hfp.h"
 
-static bool vts_audiodecoder_tryParseFeatureProfile(ut_kvp_instance_t* kvpTestInstance,
-                                                    std::set<int32_t>& supportedCodecEnums,
-                                                    bool& anyResourceSupportsSecure)
+using namespace std;
+
+vector<audioDecoder> gAudiodecoders_hfp;
+
+UT_status_t vts_audiodecoder_parseAudioDecoderHFP()
 {
-    anyResourceSupportsSecure = false;
-    supportedCodecEnums.clear();
+    std::map<std::string , int32_t> componentMap;
+    std::string audiodecoderpath = AUDIODECODERMGR_IAUDIODECODER;
+    std::string availableDecodersPath = AUDIODECODERMGR_AVAILABLEDECODERS;
+    int32_t number_of_audiodecoders, available_decoders;
+    int32_t supportedcodec_count;
+    audioDecoder temporary;
+    vector<int32_t> availableIds;
 
-    const std::string fpBase = "audiodecoder.IAudioDecoder";
-
-    int32_t resourceCount = ut_kvp_getListCount(kvpTestInstance, fpBase.c_str());
-    if (resourceCount <= 0)
+    number_of_audiodecoders = UT_KVP_PROFILE_GET_LIST_COUNT(audiodecoderpath.c_str());
+    if(number_of_audiodecoders <= 0)
     {
-        return false;
+        UT_LOG_ERROR("No audiodecoders found in the HFP");
+        return UT_STATUS_FAILURE;
     }
 
-    for (int32_t i = 0; i < resourceCount; i++)
-    {
-        std::string codecsPath = fpBase + "." + std::to_string(i) + ".supportedCodecs";
-        int32_t codecCount = ut_kvp_getListCount(kvpTestInstance, codecsPath.c_str());
-        for (int32_t j = 0; j < codecCount; j++)
-        {
-            char codecStr[UT_KVP_MAX_ELEMENT_SIZE] = {0};
-            std::string codecItemPath = codecsPath + "." + std::to_string(j);
-            if (UT_KVP_STATUS_OK == ut_kvp_getStringField(kvpTestInstance, codecItemPath.c_str(),
-                                                         codecStr, UT_KVP_MAX_ELEMENT_SIZE))
-            {
-                auto codecEnum = (int32_t)vts_audioDecoder_helper_StringToCodec(std::string(codecStr));
-                supportedCodecEnums.insert(codecEnum);
-            }
-        }
+    available_decoders = UT_KVP_PROFILE_GET_LIST_COUNT(availableDecodersPath.c_str());
 
-        std::string securePath = fpBase + "." + std::to_string(i) + ".supportsSecure";
-        if (ut_kvp_fieldPresent(kvpTestInstance, securePath.c_str()))
-        {
-            uint32_t s = ut_kvp_getUInt32Field(kvpTestInstance, securePath.c_str());
-            if (s != 0) anyResourceSupportsSecure = true;
-        }
+    for(int32_t i = 0; i < available_decoders; i++)
+    {
+        std::string decoderIdPath = availableDecodersPath + "." + std::to_string(i);
+        int32_t id = UT_KVP_PROFILE_GET_UINT32(decoderIdPath.c_str());
+        availableIds.push_back(id);
     }
 
-    return true;
-}
-
-UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *module, const char *testGroup, const char *testName, vector<testConfiguration_t>& testConfiguration)
-{
-    ut_kvp_status_t status;
-    ut_kvp_instance_t* kvpTestInstance = (ut_kvp_instance_t*)pTestInstance;
-    char streamInputPath[UT_KVP_MAX_ELEMENT_SIZE] = {0};
-    char streamRefPath[UT_KVP_MAX_ELEMENT_SIZE] = {0};
-    int32_t streamCount = 0;
-    filesystem::path fullPath;
-
-    std::set<int32_t> supportedCodecsFromProfile;
-    bool anyResourceSupportsSecure = false;
-    bool haveFeatureProfile = vts_audiodecoder_tryParseFeatureProfile(kvpTestInstance,
-                                                                      supportedCodecsFromProfile,
-                                                                      anyResourceSupportsSecure);
-
-    const filesystem::path currentPath = filesystem::current_path();
-    const string testList = string(module) + "." + string(testGroup) + "." + string(testName);
-    const string controlList = testList + "." + "Controls";
-    const string streamList = testList + "." + "Inputs" + "." + string("Streams");
-    const string streamsDetails = string("AudioStreams");
-
-    status = ut_kvp_getStringField(kvpTestInstance, STREAM_INPUT_PATH, streamInputPath, UT_KVP_MAX_ELEMENT_SIZE);
-    status = ut_kvp_getStringField(kvpTestInstance, STREAM_REF_PATH, streamRefPath, UT_KVP_MAX_ELEMENT_SIZE);
-
-    streamCount = ut_kvp_getListCount(kvpTestInstance, streamList.c_str());
-
-    for(int32_t i = 0; i < streamCount; i++)
+    for(int32_t i = 0; i < number_of_audiodecoders; ++i)
     {
-        char resultKVP[UT_KVP_MAX_ELEMENT_SIZE] = {0};
-        testConfiguration_t testDetails;
-        vector<int32_t> errorFrameNum;
+        std::string audiodecoderidpath = audiodecoderpath + "." + std::to_string(i) + ".id";
+        std::string supportedcodecpath = audiodecoderpath + "." + std::to_string(i) + ".supportedCodecs";
+        std::string supportsSecurepath = audiodecoderpath + "." + std::to_string(i) + ".supportsSecure";
 
-        string streamName = streamList + "." + to_string(i) + "Name";
-        ut_kvp_getStringField(kvpTestInstance, streamName.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
-
-        string input       = streamsDetails + "." + string(resultKVP) + "." +"input";
-        string reference   = streamsDetails + "." + string(resultKVP) + "." +"reference";
-        string codec       = streamsDetails + "." + string(resultKVP) + "." +"codec";
-        string sampleRate  = streamsDetails + "." + string(resultKVP) + "." +"sample_rate";
-        string channels    = streamsDetails + "." + string(resultKVP) + "." +"channels";
-        string format      = streamsDetails + "." + string(resultKVP) + "." +"format";
-        string numOfFrames = streamsDetails + "." + string(resultKVP) + "." +"num_of_frames";
-        string frameSize   = streamsDetails + "." + string(resultKVP) + "." +"frame_size";
-        string errorFrames = streamsDetails + "." + string(resultKVP) + "." +"error_frames";
-        string framePTS    = streamList + "." + to_string(i) + "." +"PTS";
-        string rmsDiff     = streamList + "." + to_string(i) + "." +"rms_diff_threshold";
-        string decodeTime  = streamList + "." + to_string(i) + "." +"decode_time_threshold";
-        string trimStart   = streamList + "." + to_string(i) + "." +"trim.0";
-        string trimEnd     = streamList + "." + to_string(i) + "." +"trim.1";
-        string decoderDelay = controlList + "." +"delay_between_decode_calls";
-        string stopPts      = controlList + "." + "stop_start_pts";
-        string discontinuityPts = controlList + "." + "signal_discontinuity_pts";
-        string flushPts     = controlList + "." + "flush_pts";
-        string flushRestPts = controlList + "." + "flush_reset_pts";
-        string eosPts       = controlList + "." + "eos_pts";
-        string sinkEosPts       = controlList + "." + "sink_eos_pts";
-        string sinkFlushPts       = controlList + "." + "sink_flush_pts";
-
-        string streamSecureA = streamsDetails + "." + string(resultKVP) + "." + "secure";
-        string streamSecureB = streamList + "." + to_string(i) + "." + "Secure";
-        bool streamRequiresSecure = false;
-
-        ut_kvp_getStringField(kvpTestInstance, input.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
-        fullPath = currentPath;
-        fullPath.append(streamInputPath);
-        fullPath.append(resultKVP);
-        testDetails.input = fullPath.string();
-
-        ut_kvp_getStringField(kvpTestInstance, reference.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
-        fullPath = currentPath;
-        fullPath.append(streamRefPath);
-        fullPath.append(resultKVP);
-        testDetails.reference = fullPath.string();
-
-        ut_kvp_getStringField(kvpTestInstance, codec.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
-        testDetails.codec = vts_audioDecoder_helper_StringToCodec(string(resultKVP));
-
-        if (ut_kvp_fieldPresent(kvpTestInstance, streamSecureA.c_str()))
+        /* Updated HFP: no explicit ".id" field; use list index as id when absent */
+        bool hasIdField = UT_KVP_PROFILE_IS_FIELD_PRESENT(audiodecoderidpath.c_str());
+        if (hasIdField)
         {
-            uint32_t s = ut_kvp_getUInt32Field(kvpTestInstance, streamSecureA.c_str());
-            streamRequiresSecure = (s != 0);
+            temporary.id = UT_KVP_PROFILE_GET_UINT32(audiodecoderidpath.c_str());
         }
-        else if (ut_kvp_fieldPresent(kvpTestInstance, streamSecureB.c_str()))
+        else
         {
-            uint32_t s = ut_kvp_getUInt32Field(kvpTestInstance, streamSecureB.c_str());
-            streamRequiresSecure = (s != 0);
+            temporary.id = i;
         }
 
-        if (haveFeatureProfile)
-        {
-            if (supportedCodecsFromProfile.size() > 0)
-            {
-                int32_t codecEnum = (int32_t)testDetails.codec;
-                if (supportedCodecsFromProfile.find(codecEnum) == supportedCodecsFromProfile.end())
-                {
-                    continue;
-                }
-            }
+        temporary.supportsSecure = UT_KVP_PROFILE_GET_BOOL(supportsSecurepath.c_str());
+        supportedcodec_count = UT_KVP_PROFILE_GET_LIST_COUNT(supportedcodecpath.c_str());
 
-            if (streamRequiresSecure && !anyResourceSupportsSecure)
+        /* Updated HFP: no "availableDecoders" list; treat all listed decoders as available when absent */
+        temporary.isAvailable = true;
+        if (available_decoders > 0)
+        {
+            auto it = find(availableIds.begin(), availableIds.end(), temporary.id);
+            temporary.isAvailable = false;
+            if (it != availableIds.end())
             {
-                continue;
+                temporary.isAvailable = true;
             }
         }
 
-        testDetails.sampleRate = ut_kvp_getUInt32Field(kvpTestInstance, sampleRate.c_str());
-        testDetails.numChannels = ut_kvp_getUInt32Field(kvpTestInstance, channels.c_str());
-
-        ut_kvp_getStringField(kvpTestInstance, format.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
-        testDetails.format = vts_audioDecoder_helper_StringToPCMFormat(string(resultKVP));
-
-        testDetails.numOfFrames = ut_kvp_getUInt32Field(kvpTestInstance, numOfFrames.c_str());
-
-        if(ut_kvp_fieldPresent(kvpTestInstance, errorFrames.c_str()))
+        for(int32_t j = 0; j < supportedcodec_count; ++j)
         {
-            int32_t count = ut_kvp_getListCount(kvpTestInstance, errorFrames.c_str());
-            for (int32_t j = 0; j < count; j++)
-            {
-                string error = errorFrames + "." + to_string(j);
-                int32_t frameNum = ut_kvp_getUInt32Field(kvpTestInstance, error.c_str());
-                errorFrameNum.push_back(frameNum);
-            }
+            char result_kvp[UT_KVP_MAX_ELEMENT_SIZE];
+            std::string codecpath = supportedcodecpath+"."+std::to_string(j);
+            UT_KVP_PROFILE_GET_STRING(codecpath.c_str(), result_kvp);
+            std::string _codec = std::string(result_kvp);
+            temporary.supportedCodecs.push_back(vts_audioDecoder_helper_StringToCodec(_codec));
         }
-
-        for(int32_t j = 0; j < testDetails.numOfFrames; j++)
-        {
-            bool errorFrame = false;
-
-            string eachFrame = frameSize + "." + to_string(j);
-            string eachPTS = framePTS + "." + to_string(j);
-            int32_t size = ut_kvp_getUInt32Field(kvpTestInstance, eachFrame.c_str());
-            int64_t PTS = ut_kvp_getUInt64Field(kvpTestInstance, eachPTS.c_str());
-            if(errorFrameNum.size() > 0)
-            {
-                if (find(errorFrameNum.begin(), errorFrameNum.end(), j) != errorFrameNum.end())
-                {
-                    errorFrame = true;
-                }
-            }
-            testDetails.frameDetails.push_back({size, PTS, errorFrame});
-        }
-
-        testDetails.rms_diff_threashold = ut_kvp_getDoubleField(kvpTestInstance, rmsDiff.c_str());
-        testDetails.decodeTime = ut_kvp_getDoubleField(kvpTestInstance, decodeTime.c_str());
-        testDetails.trimStartNs  = ut_kvp_getUInt64Field(kvpTestInstance, trimStart.c_str());
-        testDetails.trimEndNs    = ut_kvp_getUInt64Field(kvpTestInstance, trimEnd.c_str());
-        testDetails.decoderDelay = ut_kvp_getUInt32Field(kvpTestInstance, decoderDelay.c_str());
-        testDetails.stopPts      = ut_kvp_getUInt64Field(kvpTestInstance, stopPts.c_str());
-        testDetails.discontinuityPts = ut_kvp_getUInt64Field(kvpTestInstance, discontinuityPts.c_str());
-        testDetails.flushPts     = ut_kvp_getUInt64Field(kvpTestInstance, flushPts.c_str());
-        testDetails.flushRestPts = ut_kvp_getUInt64Field(kvpTestInstance, flushRestPts.c_str());
-        testDetails.eosPts       = ut_kvp_getUInt64Field(kvpTestInstance, eosPts.c_str());
-        testDetails.sinkEosPts   = ut_kvp_getUInt64Field(kvpTestInstance, sinkEosPts.c_str());
-        testDetails.sinkFlushPts = ut_kvp_getUInt64Field(kvpTestInstance, sinkFlushPts.c_str());
-
-        testConfiguration.push_back(testDetails);
+        gAudiodecoders_hfp.push_back(temporary);
+        temporary.supportedCodecs.clear();
     }
-
     return UT_STATUS_OK;
 }
 
-/** @} */ // End of AUDIO_DECODER_HALTEST_PARSE_TESTCONFIG
+/** @} */ // End of AUDIO_DECODER_HALTEST_PARSE_HFP
 /** @} */ // End of AUDIO_DECODER_HALTEST
 /** @} */ // End of AUDIO_DECODER
 /** @} */ // End of HPK
