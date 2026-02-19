@@ -30,15 +30,15 @@ audiodecoder:                   # Component object begins
            - AAC_LC
            - DOLBY_AC3
          supportsSecure: false
-      - 1:
+      - 1:                      # Resource object begins
          supportedCodecs:
            - AAC_LC
            - DOLBY_AC3
          supportsSecure: false
-      - 2:
+      - 2:                      # Resource object begins
          supportedCodecs:
            - AAC_LC
            - DOLBY_AC3
          supportsSecure: false
-    availableDecoders:
+    availableDecoders:          # List of available decoder IDs
       - 0

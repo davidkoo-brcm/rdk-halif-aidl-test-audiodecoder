@@ -37,3 +37,7 @@ audiodecoder:                   # Component object begins
            - DOLBY_AC3_PLUS_JOC
            - MP3
          supportsSecure: true
+    availableDecoders:          # List of available decoder IDs
+      - 0
+      - 1
+

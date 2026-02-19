@@ -72,58 +72,58 @@ vector<audioDecoder> gAudiodecoders_hfp;
 
 UT_status_t vts_audiodecoder_parseAudioDecoderHFP()
 {
-    std::map<std::string , int32_t> componentMap;
     std::string audiodecoderpath = AUDIODECODERMGR_IAUDIODECODER;
     std::string availableDecodersPath = AUDIODECODERMGR_AVAILABLEDECODERS;
-    int32_t number_of_audiodecoders, available_decoders;
-    int32_t supportedcodec_count;
+
+    int32_t number_of_audiodecoders = 0;
+    int32_t available_decoders = 0;
+    int32_t supportedcodec_count = 0;
+
     audioDecoder temporary;
     vector<int32_t> availableIds;
 
     number_of_audiodecoders = UT_KVP_PROFILE_GET_LIST_COUNT(audiodecoderpath.c_str());
-    if(number_of_audiodecoders <= 0)
+    if (number_of_audiodecoders <= 0)
     {
         UT_LOG_ERROR("No audiodecoders found in the HFP");
         return UT_STATUS_FAILURE;
     }
 
     available_decoders = UT_KVP_PROFILE_GET_LIST_COUNT(availableDecodersPath.c_str());
-    for(int32_t i = 0; i < available_decoders; i++)
+    for (int32_t i = 0; i < available_decoders; i++)
     {
         std::string decoderIdPath = availableDecodersPath + "." + std::to_string(i);
         int32_t id = UT_KVP_PROFILE_GET_UINT32(decoderIdPath.c_str());
         availableIds.push_back(id);
     }
 
-    for(int32_t i = 0; i < number_of_audiodecoders; ++i)
-    {
-        std::string supportedcodecpath = audiodecoderpath + "." + std::to_string(i) + ".supportedCodecs";
-        std::string supportsSecurepath = audiodecoderpath + "." + std::to_string(i) + ".supportsSecure";
+    gAudiodecoders_hfp.clear();
 
-        /* Updated HFP: no explicit ".id" field; use list index as id */
+    for (int32_t i = 0; i < number_of_audiodecoders; ++i)
+    {
+        std::string decoderbasepath = audiodecoderpath + "." + std::to_string(i) + "." + std::to_string(i);
+        std::string supportedcodecpath = decoderbasepath + ".supportedCodecs";
+        std::string supportsSecurepath = decoderbasepath + ".supportsSecure";
+
         temporary.id = i;
 
         temporary.supportsSecure = UT_KVP_PROFILE_GET_BOOL(supportsSecurepath.c_str());
         supportedcodec_count = UT_KVP_PROFILE_GET_LIST_COUNT(supportedcodecpath.c_str());
 
-        temporary.isAvailable = false;
-        if (available_decoders > 0)
+        if (available_decoders <= 0)
         {
-            auto it = find(availableIds.begin(), availableIds.end(), temporary.id);
-            if (it != availableIds.end())
-            {
-                temporary.isAvailable = true;
-            }
+            temporary.isAvailable = true;
         }
         else
         {
-            /* If availableDecoders list is absent/empty, treat all as available */
-            temporary.isAvailable = true;
+            auto it = find(availableIds.begin(), availableIds.end(), temporary.id);
+            temporary.isAvailable = (it != availableIds.end());
         }
 
-        for(int32_t j = 0; j < supportedcodec_count; ++j)
+        temporary.supportedCodecs.clear();
+        for (int32_t j = 0; j < supportedcodec_count; ++j)
         {
-            char result_kvp[UT_KVP_MAX_ELEMENT_SIZE];
+            char result_kvp[UT_KVP_MAX_ELEMENT_SIZE] = {0};
             std::string codecpath = supportedcodecpath + "." + std::to_string(j);
             UT_KVP_PROFILE_GET_STRING(codecpath.c_str(), result_kvp);
             std::string _codec = std::string(result_kvp);
@@ -131,11 +131,10 @@ UT_status_t vts_audiodecoder_parseAudioDecoderHFP()
         }
 
         gAudiodecoders_hfp.push_back(temporary);
-        temporary.supportedCodecs.clear();
     }
+
     return UT_STATUS_OK;
 }
-
 /** @} */ // End of AUDIO_DECODER_HALTEST_PARSE_HFP
 /** @} */ // End of AUDIO_DECODER_HALTEST
 /** @} */ // End of AUDIO_DECODER
