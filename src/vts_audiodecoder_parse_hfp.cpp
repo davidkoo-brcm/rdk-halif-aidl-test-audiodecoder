@@ -101,7 +101,7 @@ UT_status_t vts_audiodecoder_parseAudioDecoderHFP()
 
     for (int32_t i = 0; i < number_of_audiodecoders; ++i)
     {
-        std::string decoderbasepath = audiodecoderpath + "." + std::to_string(i) + "." + std::to_string(i);
+        std::string decoderbasepath = audiodecoderpath + "." + std::to_string(i);
         std::string supportedcodecpath = decoderbasepath + ".supportedCodecs";
         std::string supportsSecurepath = decoderbasepath + ".supportsSecure";
 
