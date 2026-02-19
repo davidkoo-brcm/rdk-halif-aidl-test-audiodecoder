@@ -118,7 +118,6 @@ using namespace com::rdk::hal::avbuffer;
 // Type alias for cleaner code
 using AudioDecoderState = ::com::rdk::hal::audiodecoder::State;
 
-extern sp<IAudioDecoderManager> gAudioDecoderManager;
 extern void *gAudioDecoderTestConfiguration;
 extern sp<IAudioDecoderManager> gAudioDecoderManager;
 

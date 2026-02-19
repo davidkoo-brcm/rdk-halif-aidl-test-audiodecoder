@@ -82,7 +82,7 @@ struct audioDecoder
 
 extern std::vector<audioDecoder> gAudiodecoders_hfp;
 
-#define AUDIODECODERMGR_AVAILABLEDECODERS "audiodecoder.IAudioDecoder"
+#define AUDIODECODERMGR_AVAILABLEDECODERS "audiodecoder.availableDecoders"
 #define AUDIODECODERMGR_IAUDIODECODER "audiodecoder.IAudioDecoder"
 
 UT_status_t vts_audiodecoder_parseAudioDecoderHFP();
