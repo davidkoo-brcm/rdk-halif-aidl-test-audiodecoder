@@ -426,6 +426,36 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
 
         UT_LOG_WARNING("[Audio DecoderID: %d] Start of Testing Stream: %s", mDecoderId.value, mTestConfiguration.input.c_str());
 
+        if (mSecureDecode)
+        {
+            HeapMetrics heapMetrics{};
+            Status hmStatus = mAVBufferManager->getHeapMetrics(true, &heapMetrics);
+
+            UT_LOG_INFO("[Audio DecoderID: %d] getHeapMetrics(secure=true) -> statusOk=%s ex=%s secure=%s bytesUsed=%d bytesTotal=%d",
+                        mDecoderId.value,
+                        UT_Control_GetMapString(bool_mapTable, hmStatus.isOk()),
+                        UT_Control_GetMapString(statusException_mapTable, hmStatus.exceptionCode()),
+                        UT_Control_GetMapString(bool_mapTable, heapMetrics.secure),
+                        heapMetrics.bytesUsed,
+                        heapMetrics.bytesTotal);
+
+            // If secure heap isn't usable, don't attempt createAudioPool(true,...)
+            if (!hmStatus.isOk() ||
+                hmStatus.exceptionCode() != Status::EX_NONE ||
+                !heapMetrics.secure ||
+                heapMetrics.bytesTotal <= 0)
+            {
+                UT_LOG_WARNING("[Audio DecoderID: %d] Secure heap not available/provisioned. "
+                               "Not creating secure audio pool; returning from test. "
+                               "(statusOk=%s ex=%s secure=%s bytesTotal=%d)",
+                               mDecoderId.value,
+                               UT_Control_GetMapString(bool_mapTable, hmStatus.isOk()),
+                               UT_Control_GetMapString(statusException_mapTable, hmStatus.exceptionCode()),
+                               UT_Control_GetMapString(bool_mapTable, heapMetrics.secure),
+                               heapMetrics.bytesTotal);
+                return;
+            }
+        }
         /* Create Audio Pool */
         AVBUFFER_CREATE_AUDIOPOOL_SUCCESS(mAVBufferManager, mSecureDecode, mDecoderId, bufferListener, audioPool);
 
