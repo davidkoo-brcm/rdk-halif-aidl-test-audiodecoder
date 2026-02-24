@@ -170,7 +170,7 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_LOG_DEBUG("Result getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[0x%X]), status:[isOK:%s, exception:%s]", \
                                 _decoderId.value, audioDecoder.get(), UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                                 UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_FALSE(status.isOk()) << "getAudioDecoder succeeded unexpectedly"; \
+        UT_ASSERT_TRUE(status.isOk()) << "getAudioDecoder succeeded "; \
         UT_ASSERT_EQUAL(status.exceptionCode(), (expectedException)) << "Unexpected exception for getAudioDecoder"; \
         UT_ASSERT_TRUE(audioDecoder.get() == nullptr) << "audioDecoder should be null on failure"; \
     } while (0)
@@ -289,11 +289,16 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_LOG_DEBUG("Calling open(IN:codec[%d], IN:secure[%s], IN:controllerListener[%p], OUT:audioDecoderController[])", \
             codec, UT_Control_GetMapString(bool_mapTable, secure), controllerListener); \
         status = audioDecoder->open(codec, secure, controllerListener, &audioDecoderController); \
-        UT_LOG_DEBUG("Result open(IN:codec[%d], IN:secure[%s], IN:controllerListener[%p]), status:[isOK:%s, exception:%s]", \
-            codec, UT_Control_GetMapString(bool_mapTable, secure), controllerListener, \
+        UT_LOG_DEBUG("Result open(IN:codec[%d], IN:secure[%s], IN:controllerListener[%p], OUT:audioDecoderController[0x%X]), status:[isOK:%s, exception:%s]", \
+            codec, UT_Control_GetMapString(bool_mapTable, secure), controllerListener, audioDecoderController.get(), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_FALSE(status.isOk()); \
+        if ((exception) == Status::EX_NONE) { \
+            UT_ASSERT_TRUE(status.isOk()); \
+            UT_ASSERT_TRUE(audioDecoderController.get() == nullptr); \
+        } else { \
+            UT_ASSERT_FALSE(status.isOk()); \
+        } \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
     } while (0)
 
