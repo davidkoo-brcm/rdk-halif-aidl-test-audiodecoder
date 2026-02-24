@@ -209,7 +209,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, getAudioDecoder_pos)
 /**
 * @brief Test to verify behavior of getAudioDecoder with invalid ID
 *
-* This test checks if getAudioDecoder returns the appropriate error when provided with an invalid decoder ID
+* This test checks if getAudioDecoder returns null when provided with an invalid decoder ID
 *
 * **Test Group ID:** Basic: 01@n
 * **Test Case ID:** 003@n
@@ -223,9 +223,9 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, getAudioDecoder_pos)
 * |Variation / Step|Description|Test Data|Expected Result|Notes|
 * |----------------|-----------|---------|---------------|-----|
 * |01|Retrieve the initial audio decoder IDs|None|Should retrieve a non-empty list of IDs|Should Pass|
-* |02|Get audio decoder with invalid id (min id value - 1)|(min id value - 1), audiodecoder|status.isOk() should be false and audiodecoder should be nullptr|Should Pass|
-* |03|Get audio decoder with invalid id (max id value + 1)|(max id value + 1), audiodecoder|status.isOk() should be false and audiodecoder should be nullptr|Should Pass|
-* |04|Get audio decoder for UNDEFINED ID|UNDEFINED, audiodecoder|status.isOk() should be false and audiodecoder should be nullptr|Should Pass|
+* |02|Get audio decoder with invalid id (min id value - 1)|(min id value - 1), audiodecoder|status.isOk() should be true and audiodecoder should be nullptr|Should Pass|
+* |03|Get audio decoder with invalid id (max id value + 1)|(max id value + 1), audiodecoder|status.isOk() should be true and audiodecoder should be nullptr|Should Pass|
+* |04|Get audio decoder for UNDEFINED ID|UNDEFINED, audiodecoder|status.isOk() should be true and audiodecoder should be nullptr|Should Pass|
 */
 UT_ADD_TEST(VTS_L1_AudioDecoder, getAudioDecoder_neg)
 {
@@ -244,14 +244,14 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, getAudioDecoder_neg)
 
     invalidID = decoderIds.front();
     invalidID.value -= 1;
-    AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(invalidID, audiodecoder, Status::EX_ILLEGAL_ARGUMENT);
+    AUDIODECODER_MANAGER_GETAUDIODECODER_INVALID_ID(invalidID, audiodecoder);
 
     invalidID = decoderIds.back();
     invalidID.value += 1;
-    AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(invalidID, audiodecoder, Status::EX_ILLEGAL_ARGUMENT);
+    AUDIODECODER_MANAGER_GETAUDIODECODER_INVALID_ID(invalidID, audiodecoder);
 
     invalidID.value = IAudioDecoder::Id::UNDEFINED;
-    AUDIODECODER_MANAGER_GETAUDIODECODER_FAILURE(invalidID, audiodecoder, Status::EX_ILLEGAL_ARGUMENT);
+    AUDIODECODER_MANAGER_GETAUDIODECODER_INVALID_ID(invalidID, audiodecoder);
 }
 
 /**

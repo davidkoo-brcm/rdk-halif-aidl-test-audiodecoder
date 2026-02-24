@@ -175,6 +175,19 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_ASSERT_TRUE(audioDecoder.get() == nullptr) << "audioDecoder should be null on failure"; \
     } while (0)
 
+#define AUDIODECODER_MANAGER_GETAUDIODECODER_INVALID_ID(_decoderId, audioDecoder) \
+    do { \
+        ::android::binder::Status status; \
+        UT_LOG_DEBUG("Calling getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[])", _decoderId.value); \
+        status = gAudioDecoderManager->getAudioDecoder(_decoderId, &audioDecoder); \
+        UT_LOG_DEBUG("Result getAudioDecoder(IN:_decoderId:[%d], OUT:audioDecoder[0x%X]), status:[isOK:%s, exception:%s]", \
+                                _decoderId.value, audioDecoder.get(), UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                                UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()) << "getAudioDecoder failed unexpectedly"; \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE) << "Unexpected exception for getAudioDecoder"; \
+        UT_ASSERT_TRUE(audioDecoder.get() == nullptr) << "audioDecoder should be null for invalid ID"; \
+    } while (0)
+
 #define AUDIODECODER_GETCAPABILITIES(audioDecoder, capabilities) \
     do { \
         ::android::binder::Status status; \

@@ -91,7 +91,7 @@ namespace com
                     if(!found)
                     {
                         *_aidl_return = nullptr;
-                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
+                        return android::binder::Status::ok();
                     }
 
                     android::sp<IAudioDecoder> audioDecoder = new AudioDecoder(decoderResourceId);
