@@ -163,16 +163,11 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
                         UT_Control_GetMapString(bool_mapTable, pcm.planarFormat));
 
             // Copy PCM fields into your local metadata struct
-            frame.metadata.numChannels  = pcm.numChannels;
             frame.metadata.channelTypes = pcm.channelTypes;
-            frame.metadata.sampleRate   = pcm.sampleRate;
-            frame.metadata.format       = pcm.format;
             frame.metadata.planarFormat = pcm.planarFormat;
         }
         else
         {
-            frame.metadata.numChannels  = 0;
-            frame.metadata.sampleRate   = 0;
             frame.metadata.planarFormat = false;
             frame.metadata.channelTypes.clear();
         }
@@ -672,11 +667,6 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
                         {
                             UT_ASSERT_EQUAL(decodedFrame.metadata.sourceCodec, mTestConfiguration.codec);
 
-                            if((decodedFrame.metadata.numChannels != 0 && decodedFrame.metadata.sampleRate != 0))
-                            {
-                                UT_ASSERT_EQUAL(decodedFrame.metadata.numChannels, mTestConfiguration.numChannels);
-                                UT_ASSERT_EQUAL(decodedFrame.metadata.sampleRate, mTestConfiguration.sampleRate);
-                            }
                             UT_ASSERT_EQUAL(int32_t(static_cast<int32_t>(decodedFrame.metadata.source)),
                                             avSourcePropertyValue.value->get<PropertyValue::Value::Tag::intValue>());
                         }

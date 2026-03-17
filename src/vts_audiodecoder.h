@@ -731,9 +731,6 @@ struct AudioMetatData
 {
     com::rdk::hal::audiodecoder::Codec sourceCodec;
     bool isDolbyAtmos;
-    int32_t numChannels;
-    int32_t sampleRate;
-    PCMFormat format;
     bool planarFormat;
     int32_t trimStartNs;
     int32_t trimEndNs;
