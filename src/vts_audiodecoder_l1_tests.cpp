@@ -2279,6 +2279,166 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setProperty_neg)
     }
 }
 
+/**
+ * @brief Positive: setAudioFormat across all (channels × sampleRate) combinations in READY.
+ *
+ * Test Group ID: Basic: 01@n
+ * Test Case ID : 031@n
+ * Priority     : High@n
+ *
+ * Pre-Conditions: Controller opened and in READY@n
+ * Dependencies  : None@n
+ * User Interaction: None@n
+ * @n
+ * **Test Procedure:** @n
+ * |Variation / Step|Description|Test Data|Expected Result|Notes|
+ * |----------------|-----------|---------|---------------|-----|
+ * |01|Get the supported IDs and loop through the available decoders|None|None|None|
+ * |02|Open the audio decoder with the codec and create audioDecoderController with listener|_codec, _decoder.supportsSecure, listener, audioDecoderController|status.isOk() = true, controller != nullptr|Should pass|
+ * |03|Verify the decoder state after open|state|state = READY|Should pass|
+ * |04|Loop through valid (channels × sampleRate) combinations and call setAudioFormat|channels = {1,2,6,8}, sampleRates = {8000…192000}|status.isOk() = true|Should pass|
+ * |05|Start the decoder|audioDecoderController|status.isOk() = true|Should pass|
+ * |06|Check the state of the decoder|None|state = STARTED, status.isOk() = true|Should pass|
+ * |07|Call setAudioFormat in STARTED state (should not be allowed)|valid channels & sampleRates|status.isOk() = false, EX_ILLEGAL_STATE|Should pass|
+ * |08|Stop the decoder|None|state = READY, status.isOk() = true|Should pass|
+ * |09|Call setAudioFormat again in READY state (valid values)|valid channels & sampleRates|status.isOk() = true|Should pass|
+ * |10|Close the audio decoder and verify cleanup|audioDecoderController, _aidl_return|status.isOk() = true, _aidl_return = true|Should pass|
+ */
+UT_ADD_TEST(VTS_L1_AudioDecoder, setAudioFormat_pos)
+{
+    std::vector<IAudioDecoder::Id> decoderIds;
+    sp<IAudioDecoder> audioDecoder;
+    audiodecoder::Capabilities capabilities;
+
+    // Define test matrices
+    const int channels[]    = { 1, 2, 6, 8 };
+    const int sampleRates[] = { 8000, 16000, 32000, 44100, 48000, 96000, 192000 };
+
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
+
+    for (const auto& _decoderId : decoderIds)
+    {
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
+
+        /* Get Capabilities */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, &capabilities);
+        if (capabilities.supportedCodecs.empty()) continue;
+
+        // Choose any supported codec (first is fine for coverage)
+        const auto codec = capabilities.supportedCodecs.front();
+
+        sp<IAudioDecoderControllerListener> listener = new AudioDecoderControllerListener();
+        sp<IAudioDecoderController> audioDecoderController;
+
+        /* Open -> READY */
+        AUDIODECODER_OPEN_SUCCESS(audioDecoder, codec, capabilities.supportsSecure,
+                                  listener, audioDecoderController, true);
+
+        // Iterate full Cartesian product: channels × sampleRates
+        for (auto _channels : channels)
+        {
+            for (auto _sampleRates : sampleRates)
+            {
+                // Expect success for all positive values
+                AUDIODECODER_SETAUDIOFORMAT_SUCCESS(audioDecoderController, _channels, _sampleRates);
+            }
+        }
+
+        /* Close */
+        AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
+    }
+}
+
+/**
+ * @brief Negative: setAudioFormat rejects invalid inputs and wrong states (matrix).
+ *
+ * Test Group ID: Basic: 01@n
+ * Test Case ID : 032@n
+ * Priority     : High@n
+ *
+ * Pre-Conditions: Audio decoder exists@n
+ * Dependencies  : None@n
+ * User Interaction: None@n
+ * @n
+ * **Test Procedure:** @n
+ * |Variation / Step|Description|Test Data|Expected Result|Notes|
+ * |----------------|-----------|---------|---------------|-----|
+ * |01|Get the supported IDs and loop through the available decoders|None|None|None|
+ * |02|Open the audio decoder and create controller|_codec, listener|status.isOk() = true, controller != nullptr|Should pass|
+ * |03|Verify state after open|state|state = READY|Should pass|
+ * |04|Set invalid properties (invalid channels × valid sampleRates)|channels = {0, −1, −6}, sampleRates = valid|status.isOk() = false, EX_ILLEGAL_ARGUMENT|Should pass|
+ * |05|Set invalid properties (valid channels × invalid sampleRates)|channels = valid, sampleRates = {0, −44100}|status.isOk() = false, EX_ILLEGAL_ARGUMENT|Should pass|
+ * |06|Set invalid properties (invalid channels × invalid sampleRates)|combined invalid inputs|status.isOk() = false, EX_ILLEGAL_ARGUMENT|Should pass|
+ * |07|Start the decoder|controller|status.isOk() = true|Should pass|
+ * |08|Verify state after start|state|state = STARTED|Should pass|
+ * |09|Call setAudioFormat in STARTED state (not allowed)|valid channels × valid sampleRates|status.isOk() = false, EX_ILLEGAL_STATE|Should pass|
+ * |10|Stop the decoder|None|state = READY, status.isOk() = true|Should pass|
+ * |11|Close the decoder|controller|status.isOk() = true, _aidl_return = true|Should pass|
+ * |12|Call setAudioFormat after close (not READY)|valid channels × valid sampleRates|status.isOk() = false, EX_ILLEGAL_STATE|Should pass|
+ */
+UT_ADD_TEST(VTS_L1_AudioDecoder, setAudioFormat_neg)
+{
+    std::vector<IAudioDecoder::Id> decoderIds;
+    sp<IAudioDecoder> audioDecoder;
+    audiodecoder::Capabilities capabilities;
+
+    // Invalid matrices
+    const int invalidChannels[]    = { 0, -1, -6 };
+    const int invalidSampleRates[] = { 0, -8000, -48000 };
+
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
+
+    for (const auto& _decoderId : decoderIds)
+    {
+        sp<IAudioDecoderController> audioDecoderController;
+
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
+
+        /* Get Capabilities */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, &capabilities);
+        if (capabilities.supportedCodecs.empty()) continue;
+
+        // --------------- Open -> READY ---------------
+        const auto codec = capabilities.supportedCodecs.front();
+        sp<IAudioDecoderControllerListener> listener = new AudioDecoderControllerListener();
+
+        AUDIODECODER_OPEN_SUCCESS(audioDecoder, codec, capabilities.supportsSecure,
+                                  listener, audioDecoderController, true);
+
+        // --------------- Invalid input matrices (while READY) ---------------
+        for (int _invalidChannel : invalidChannels)
+        {
+            // Pair invalid channels with a valid sample rate
+            AUDIODECODER_SETAUDIOFORMAT_FAILURE(audioDecoderController, _invalidChannel, 48000,
+                                                Status::EX_ILLEGAL_ARGUMENT);
+        }
+        for (int _invalidSampleRate : invalidSampleRates)
+        {
+            // Pair invalid sample rates with a valid channel count
+            AUDIODECODER_SETAUDIOFORMAT_FAILURE(audioDecoderController, 2, _invalidSampleRate,
+                                                Status::EX_ILLEGAL_ARGUMENT);
+        }
+        // Full invalid × valid cross-check (optional)
+        for (int _invalidChannel : invalidChannels)
+        {
+            for (int _invalidSampleRate : invalidSampleRates)
+            {
+                AUDIODECODER_SETAUDIOFORMAT_FAILURE(audioDecoderController, _invalidChannel, _invalidSampleRate,
+                                                    Status::EX_ILLEGAL_ARGUMENT);
+            }
+        }
+
+        // --------------- Close -> Not READY, then call again ---------------
+        AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
+
+        AUDIODECODER_SETAUDIOFORMAT_FAILURE(audioDecoderController, 2, 48000, Status::EX_ILLEGAL_STATE);
+    }
+}
+
 /** @} */ // End of AUDIO_DECODER_HALTEST L1 File
 /** @} */ // End of AUDIO_DECODER_HALTEST
 /** @} */ // End of AUDIO_DECODER Module

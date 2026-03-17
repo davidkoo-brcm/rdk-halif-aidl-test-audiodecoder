@@ -662,6 +662,30 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_ASSERT_FALSE(status.isOk()); \
     } while (0)
 
+#define AUDIODECODER_SETAUDIOFORMAT_SUCCESS(audioDecoderController, channel, sampleRate) \
+    do { \
+        ::android::binder::Status status; \
+        UT_LOG_DEBUG("Calling setAudioFormat(IN:channel[%d], IN:sampleRate[%d])", channel , sampleRate); \
+        status = audioDecoderController->setAudioFormat(channel, sampleRate); \
+        UT_LOG_DEBUG("Result setAudioFormat(IN:channel[%d], IN:sampleRate[%d], status:[isOK:%s, exception:%s]", channel, sampleRate, \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+    } while (0)
+
+#define AUDIODECODER_SETAUDIOFORMAT_FAILURE(audioDecoderController, channel, sampleRate, exception) \
+    do { \
+        ::android::binder::Status status; \
+        UT_LOG_DEBUG("Calling setAudioFormat(IN:channel[%d], IN:sampleRate[%d])", channel , sampleRate); \
+        status = audioDecoderController->setAudioFormat(channel, sampleRate); \
+        UT_LOG_DEBUG("Result setAudioFormat(IN:channel[%d], IN:sampleRate[%d]), status:[isOK:%s, exception:%s]", channel, sampleRate, \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
+    } while (0)
+
 #define AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, properyList, type) \
     do { \
         for (const auto& [property, value] : properyList) \
