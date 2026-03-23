@@ -726,6 +726,24 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         } \
     } while (0)
 
+
+
+struct PCM_Metadata
+{
+    int32_t numChannels{};
+    int32_t sampleRate{};
+
+    // Enum from AIDL: com.rdk.hal.audiodecoder.PcmFormat
+    com::rdk::hal::audiodecoder::PCMFormat format{};
+
+    // Channel layout info from AIDL: audiodecoder.ChannelType
+    std::vector<audiodecoder::ChannelType> channelTypes;
+
+    bool planarFormat{};      // true if planar audio format
+};
+
+
+
 /* Stream metadata */
 struct AudioMetatData
 {
@@ -737,6 +755,7 @@ struct AudioMetatData
     bool lowLatency;
     bool endOfStream;
     bool discontinuity;
+    PCM_Metadata pcm_metadata;
     vector<audiodecoder::ChannelType> channelTypes;
     AVSource source;
 };

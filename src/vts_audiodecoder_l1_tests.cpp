@@ -2432,6 +2432,14 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setAudioFormat_neg)
             }
         }
 
+        /* Start the decoder */
+        AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
+
+        AUDIODECODER_SETAUDIOFORMAT_FAILURE(audioDecoderController, 2, 48000, Status::EX_ILLEGAL_STATE);
+
+        /* Stop the decoder */
+        AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
+
         // --------------- Close -> Not READY, then call again ---------------
         AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
 

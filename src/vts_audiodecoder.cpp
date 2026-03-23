@@ -142,6 +142,9 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
         frame.metadata.isDolbyAtmos = metadata->isDolbyAtmos;
         frame.metadata.trimStartNs = metadata->trimStartNs;
         frame.metadata.trimEndNs = metadata->trimEndNs;
+        frame.metadata.pcm_metadata.numChannels = metadata->metadata->numChannels;
+        frame.metadata.pcm_metadata.sampleRate = metadata->metadata->sampleRate;
+        frame.metadata.pcm_metadata.format = metadata->metadata->format;
         frame.metadata.lowLatency = metadata->lowLatency;
         frame.metadata.endOfStream = metadata->endOfStream;
         frame.metadata.discontinuity = metadata->discontinuity;
@@ -164,10 +167,15 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
 
             // Copy PCM fields into your local metadata struct
             frame.metadata.channelTypes = pcm.channelTypes;
+            frame.metadata.pcm_metadata.numChannels  = pcm.numChannels;
             frame.metadata.planarFormat = pcm.planarFormat;
+            frame.metadata.pcm_metadata.sampleRate   = pcm.sampleRate;
+            frame.metadata.pcm_metadata.format = pcm.format;
         }
         else
         {
+            frame.metadata.pcm_metadata.numChannels  = 0;
+            frame.metadata.pcm_metadata.sampleRate   = 0;
             frame.metadata.planarFormat = false;
             frame.metadata.channelTypes.clear();
         }
@@ -666,7 +674,6 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
                         if (decodedFrame.isMetaAvailable)
                         {
                             UT_ASSERT_EQUAL(decodedFrame.metadata.sourceCodec, mTestConfiguration.codec);
-
                             UT_ASSERT_EQUAL(int32_t(static_cast<int32_t>(decodedFrame.metadata.source)),
                                             avSourcePropertyValue.value->get<PropertyValue::Value::Tag::intValue>());
                         }
