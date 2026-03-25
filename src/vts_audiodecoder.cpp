@@ -496,6 +496,12 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
         /* Set AV Source */
         AUDIODECODER_SETPROPERTY_SUCCESS(audioDecoderController, audiodecoder::Property::AV_SOURCE, avSourcePropertyValue);
 
+
+        /* Set audio format */
+        AUDIODECODER_SETAUDIOFORMAT_SUCCESS(audioDecoderController,
+                                            mTestConfiguration.numChannels,
+                                            mTestConfiguration.sampleRate);
+
         /* Start the decoder */
         AUDIODECODER_START_SUCCESS(mDecoderHandle, audioDecoderController, true);
 
