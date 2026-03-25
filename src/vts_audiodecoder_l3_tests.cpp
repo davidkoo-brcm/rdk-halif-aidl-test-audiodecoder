@@ -63,7 +63,7 @@
 /* Test class registration with UT_Core */
 UT_ADD_TEST_TO_GROUP(VTS_L3_AudioDecoder, UT_TESTS_L3)
 
-static const char *gModuleName = "IAudioDecoderManager";
+static const char *gModuleName = "audiodecoder";
 static const char *gTestGroup = "L3";
 
 static sp<IAVBuffer> vts_avbuffer_getService()

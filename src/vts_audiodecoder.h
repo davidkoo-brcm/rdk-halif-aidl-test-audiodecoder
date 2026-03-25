@@ -118,11 +118,13 @@ using namespace com::rdk::hal::avbuffer;
 // Type alias for cleaner code
 using AudioDecoderState = ::com::rdk::hal::audiodecoder::State;
 
-extern sp<IAudioDecoderManager> gAudioDecoderManager;
 extern void *gAudioDecoderTestConfiguration;
 extern sp<IAudioDecoderManager> gAudioDecoderManager;
 
-#define MAX_TRANSITORY_STATE_WAIT_MS  10
+#ifdef MAX_TRANSITORY_STATE_WAIT_MS
+#undef MAX_TRANSITORY_STATE_WAIT_MS
+#endif
+#define MAX_TRANSITORY_STATE_WAIT_MS 10
 #define MAX_FINAL_STATE_WAIT_MS  500
 
 #ifndef ENABLE_UT_INFO_LOGGING
@@ -660,6 +662,30 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_ASSERT_FALSE(status.isOk()); \
     } while (0)
 
+#define AUDIODECODER_SETAUDIOFORMAT_SUCCESS(audioDecoderController, channel, sampleRate) \
+    do { \
+        ::android::binder::Status status; \
+        UT_LOG_DEBUG("Calling setAudioFormat(IN:channel[%d], IN:sampleRate[%d])", channel , sampleRate); \
+        status = audioDecoderController->setAudioFormat(channel, sampleRate); \
+        UT_LOG_DEBUG("Result setAudioFormat(IN:channel[%d], IN:sampleRate[%d], status:[isOK:%s, exception:%s]", channel, sampleRate, \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+    } while (0)
+
+#define AUDIODECODER_SETAUDIOFORMAT_FAILURE(audioDecoderController, channel, sampleRate, exception) \
+    do { \
+        ::android::binder::Status status; \
+        UT_LOG_DEBUG("Calling setAudioFormat(IN:channel[%d], IN:sampleRate[%d])", channel , sampleRate); \
+        status = audioDecoderController->setAudioFormat(channel, sampleRate); \
+        UT_LOG_DEBUG("Result setAudioFormat(IN:channel[%d], IN:sampleRate[%d]), status:[isOK:%s, exception:%s]", channel, sampleRate, \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
+    } while (0)
+
 #define AUDIODECODER_SETPROPERTY_LIST_SUCCESS(audioDecoderController, properyList, type) \
     do { \
         for (const auto& [property, value] : properyList) \
@@ -700,20 +726,36 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         } \
     } while (0)
 
+
+
+struct PCM_Metadata
+{
+    int32_t numChannels{};
+    int32_t sampleRate{};
+
+    // Enum from AIDL: com.rdk.hal.audiodecoder.PcmFormat
+    com::rdk::hal::audiodecoder::PCMFormat format{};
+
+    // Channel layout info from AIDL: audiodecoder.ChannelType
+    std::vector<audiodecoder::ChannelType> channelTypes;
+
+    bool planarFormat{};      // true if planar audio format
+};
+
+
+
 /* Stream metadata */
 struct AudioMetatData
 {
     com::rdk::hal::audiodecoder::Codec sourceCodec;
     bool isDolbyAtmos;
-    int32_t numChannels;
-    int32_t sampleRate;
-    PCMFormat format;
     bool planarFormat;
     int32_t trimStartNs;
     int32_t trimEndNs;
     bool lowLatency;
     bool endOfStream;
     bool discontinuity;
+    PCM_Metadata pcm_metadata;
     vector<audiodecoder::ChannelType> channelTypes;
     AVSource source;
 };
@@ -724,8 +766,10 @@ typedef struct DecodedAudioFrame
     int64_t framePTS;
     bool isMetaAvailable;
     bool isTunnel;
+    com::rdk::hal::audiodecoder::FrameType frameType { com::rdk::hal::audiodecoder::FrameType::PCM };
     int64_t frameBufferHandle;
     struct AudioMetatData metadata;
+    std::vector<uint8_t> socPrivate;
     chrono::steady_clock::time_point receiveTime;
 }DecodedAudioFrame_t;
 
