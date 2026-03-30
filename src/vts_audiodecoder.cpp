@@ -183,6 +183,7 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
         {
             UT_LOG_INFO("[Audio DecoderID: %d] FrameType SOC_PROPRIETARY: pass-through output; decoded PCM may not be produced.",
                         mDecoderID);
+            frame.socPrivate = metadata->SoCPrivate;
         }
     }
     {
