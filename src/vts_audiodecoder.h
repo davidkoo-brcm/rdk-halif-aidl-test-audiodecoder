@@ -874,18 +874,9 @@ public:
                 sp<AudioDecoderControllerListener> controlListener,
                 sp<AudioDecoderEventListener> eventListener,
                 sp<IAVBuffer> AVBufferManager, IAVBufferHelper* avbufferHelper,
-                bool secureDecode, testConfiguration_t config, bool isSinkAttached)
-    {
-        mDecoderId = decoderId;
-        mDecoderHandle = decoderHandle;
-        mControlListener = controlListener;
-        mSecureDecode = secureDecode;
-        mEventListener = eventListener;
-        mTestConfiguration = config;
-        mAVBufferManager = AVBufferManager;
-        mAVbufferHelper = avbufferHelper;
-        mIsSinkAttached = isSinkAttached;
-    }
+                bool secureDecode, testConfiguration_t config, bool isSinkAttached);
+
+    ~AudioDecoderTest();
 
     void run(bool validateMetrics);
 
@@ -902,8 +893,17 @@ private:
     deque<InputAudioFrame_t> mInputFrame;
     IAVBufferHelper* mAVbufferHelper;
     bool mIsSinkAttached;
+    Pool mAudioPool;
+    sp<IAVBufferSpaceListener> mBufferListener;
+    mutex mInputFrameMutex;
+    condition_variable mInputFrameCV;
+    bool mDecodeComplete{false};
 
     void decodeAndConsumeAudioStreams(bool validateMetrics);
+    void validateMetricsThread(PropertyValue avSourcePropertyValue,
+                               int32_t startFramesDecoded,
+                               int32_t startFrameErrors,
+                               int32_t startFramesDropped);
 };
 
 #endif //__VTS_AUDIODECODER_H__
