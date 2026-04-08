@@ -533,6 +533,24 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
         /* Launch validate metrics thread in parallel before the decode loop.
          * Only runs when validateMetrics is true and no sink is attached. */
         std::thread validateThread;
+        /* RAII guard: ensures validateThread is always joined on every exit path
+         * (normal return, early return, or exception).  Without this, an exception
+         * thrown after the thread starts would destroy a joinable std::thread and
+         * call std::terminate during stack unwinding.  The guard also sets
+         * mDecodeComplete and signals the CV so the thread can unblock if it is
+         * still waiting for input frames when an exception fires mid-loop. */
+        struct JoinOnExit {
+            std::thread& t;
+            std::mutex& mtx;
+            bool& done;
+            std::condition_variable& cv;
+            ~JoinOnExit() {
+                { std::lock_guard<std::mutex> lk(mtx); done = true; }
+                cv.notify_all();
+                if (t.joinable()) t.join();
+            }
+        } validateThreadGuard{validateThread, mInputFrameMutex, mDecodeComplete, mInputFrameCV};
+
         if (validateMetrics && !mIsSinkAttached)
         {
             validateThread = std::thread(&AudioDecoderTest::validateMetricsThread, this,
@@ -662,11 +680,7 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
         }
         mInputFrameCV.notify_all();
 
-        /* Wait for validate thread to finish */
-        if (validateThread.joinable())
-        {
-            validateThread.join();
-        }
+        /* validateThreadGuard joins validateThread here on the normal exit path */
 
         /* Stop the decoder */
         AUDIODECODER_STOP_SUCCESS(mDecoderHandle, audioDecoderController, true);
@@ -702,12 +716,22 @@ void AudioDecoderTest::validateMetricsThread(PropertyValue avSourcePropertyValue
     DecodedAudioFrame_t firstDecodedFrame;
     int32_t endFramesDecoded, endFrameErrors, endFramesDropped;
 
+    /* Wait until the decode loop has enqueued at least one input frame before
+     * polling for decoded output.  The thread is started before any decoding
+     * work begins, so without this gate the MAX_WAIT_TIME window could expire
+     * before the first frame has even been submitted to the HAL. */
+    {
+        unique_lock<mutex> lock(mInputFrameMutex);
+        mInputFrameCV.wait(lock, [this]{ return !mInputFrame.empty() || mDecodeComplete; });
+    }
+
     /* Peek first decoded frame to detect SOC_PROPRIETARY pass-through */
     bool haveFirst = mControlListener->getNextFrame(firstDecodedFrame, MAX_WAIT_TIME, false);
     if (!haveFirst)
     {
-        UT_LOG_WARNING("[Audio DecoderID: %d] No initial decoded frame received... "
-                       "skipping decoded frame and metrics validation.", mDecoderId.value);
+        UT_LOG_WARNING("[Audio DecoderID: %d] No initial decoded frame received within %d ms "
+                       "after first buffer was submitted — skipping decoded-frame and metrics validation.",
+                       mDecoderId.value, MAX_WAIT_TIME);
         return;
     }
 
@@ -743,8 +767,10 @@ void AudioDecoderTest::validateMetricsThread(PropertyValue avSourcePropertyValue
         return;
     }
 
-    /* Pop the peeked first decoded frame for use in the validation loop */
-    mControlListener->getNextFrame(firstDecodedFrame, MAX_WAIT_TIME, true);
+    /* firstDecodedFrame was peeked above and is still at the head of the queue.
+     * The validation loop pops it only once the current input PTS is confirmed to
+     * have a corresponding output — trim/missed inputs produce no decoded frame and
+     * must not advance the queue head. */
 
     /* Consume and validate each input frame in order */
     while (true)
@@ -781,18 +807,20 @@ void AudioDecoderTest::validateMetricsThread(PropertyValue avSourcePropertyValue
             continue;
         }
 
-        /* Obtain the decoded output frame.
-         * Re-use the already-popped firstDecodedFrame for the first non-error input;
-         * pop subsequent frames directly from the listener queue. */
+        /* Peek at the next decoded output frame — do not pop yet.
+         * We defer the pop until PTS alignment is confirmed.  Trim and missed input
+         * frames produce no decoded output; popping before that check would consume
+         * a frame that belongs to a later input and permanently desync the pairing. */
         DecodedAudioFrame_t decodedFrame;
         if (!firstDecodedFrameUsed)
         {
+            /* firstDecodedFrame was already peeked at function entry and is still
+             * at the head of the queue; use the cached copy without a second call. */
             decodedFrame = firstDecodedFrame;
-            firstDecodedFrameUsed = true;
         }
         else
         {
-            if (!mControlListener->getNextFrame(decodedFrame, MAX_WAIT_TIME, true))
+            if (!mControlListener->getNextFrame(decodedFrame, MAX_WAIT_TIME, false))
             {
                 UT_LOG_ERROR("[Audio DecoderID: %d] onFrameOutput callback not received...", mDecoderId.value);
                 UT_ASSERT_TRUE(false);
@@ -800,12 +828,25 @@ void AudioDecoderTest::validateMetricsThread(PropertyValue avSourcePropertyValue
             }
         }
 
-        /* Flush scenario: skip metadata validation, only free the decoded buffer */
+        /* Flush scenario: the input falls within the flushed range, but whether it
+         * produced decoded output depends on pipeline timing.
+         *   - decoded PTS == input PTS: HAL decoded the frame before the flush arrived
+         *     → pop and free the decoded buffer.
+         *   - decoded PTS > input PTS:  HAL flushed the frame before decoding it
+         *     → no decoded frame to consume; leave the queue untouched. */
         if (mTestConfiguration.flushPts > 0 || mTestConfiguration.flushRestPts > 0)
         {
             if (inputFrame.framePTS < mTestConfiguration.flushPts ||
                 (mTestConfiguration.flushRestPts > 0 && inputFrame.framePTS < mTestConfiguration.flushRestPts))
             {
+                if (inputFrame.framePTS < decodedFrame.framePTS)
+                {
+                    UT_LOG_INFO("[Audio DecoderID: %d] Frame [PTS: %lld] was flushed before decoding — no output to consume",
+                                mDecoderId.value, inputFrame.framePTS);
+                    continue;
+                }
+                mControlListener->getNextFrame(decodedFrame, MAX_WAIT_TIME, true);
+                firstDecodedFrameUsed = true;
                 UT_LOG_INFO("[Audio DecoderID: %d] Frame [PTS: %lld] is flushed - skipping metadata validation",
                             mDecoderId.value, inputFrame.framePTS);
                 if (!decodedFrame.isTunnel && decodedFrame.frameBufferHandle != -1)
@@ -859,8 +900,12 @@ void AudioDecoderTest::validateMetricsThread(PropertyValue avSourcePropertyValue
             UT_LOG_ERROR("[Audio DecoderID: %d] Frame [PTS: %lld] is Missed",
                          mDecoderId.value, inputFrame.framePTS);
             UT_ASSERT_TRUE(false);
-            continue;
+            continue;  /* decoded frame stays in queue — belongs to a later input */
         }
+
+        /* PTS alignment confirmed — pop the peeked decoded frame */
+        mControlListener->getNextFrame(decodedFrame, MAX_WAIT_TIME, true);
+        firstDecodedFrameUsed = true;
 
         /* Count EOS frames in decoded output */
         if (decodedFrame.isMetaAvailable && decodedFrame.metadata.endOfStream)
