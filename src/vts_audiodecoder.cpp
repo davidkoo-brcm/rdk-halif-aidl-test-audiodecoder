@@ -619,8 +619,14 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
                 UT_LOG_INFO("Signaling EOS at PTS:%lld", framePTS);
                 AUDIODECODER_SIGNAL_EOS_SUCCESS(mDecoderHandle, audioDecoderController, true);
 
-                /* After EOS signal decode should fail */
-                AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, framePTS, audioBufferHandle, trimStartNs, trimEndNs, Status::EX_NONE);
+                /* After EOS, decodeBuffer must be rejected with EX_ILLEGAL_STATE.
+                 * A fresh buffer is allocated for this test since audioBufferHandle
+                 * was already submitted to the HAL and is no longer owned by VTS. */
+                int64_t eosTestHandle = -1;
+                AVBUFFER_ALLOC_SUCCESS(mAVBufferManager, mAudioPool, 1, eosTestHandle);
+                AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, framePTS, eosTestHandle, trimStartNs, trimEndNs, Status::EX_ILLEGAL_STATE);
+                /* HAL rejected the buffer — VTS must free it */
+                AVBUFFER_FREE_SUCCESS(mAVBufferManager, eosTestHandle);
 
                 /* Decoder must be restarted after EOS */
                 AUDIODECODER_STOP_SUCCESS(mDecoderHandle, audioDecoderController, true);
@@ -710,14 +716,29 @@ void AudioDecoderTest::validateMetricsThread(PropertyValue avSourcePropertyValue
     {
         UT_LOG_WARNING("[Audio DecoderID: %d] SOC_PROPRIETARY(pass-through) output detected. "
                        "Skipping decoded-frame and metrics validation.", mDecoderId.value);
-        mControlListener->getNextFrame(firstDecodedFrame, MAX_WAIT_TIME, true);
-        /* Drain remaining input frames */
+        /* Drain remaining input frames, waiting for decode to complete */
         while (true)
         {
             unique_lock<mutex> lock(mInputFrameMutex);
             mInputFrameCV.wait(lock, [this]{ return !mInputFrame.empty() || mDecodeComplete; });
             if (mInputFrame.empty()) break;
             mInputFrame.pop_front();
+        }
+        // Drain all output frames and free their buffer handles so the pool can be destroyed.
+        // The decoder passes input handles through as output (no PCM decode), so VTS must free them.
+        // The first frame was only peeked (not popped), so it is still in the queue and handled here.
+        DecodedAudioFrame_t drainFrame;
+        while (mControlListener->getNextFrame(drainFrame, MAX_WAIT_TIME, true))
+        {
+            if (!drainFrame.isTunnel && drainFrame.frameBufferHandle != -1)
+            {
+                bool isBufferValid;
+                AVBUFFER_ISVALID_SUCCESS(mAVBufferManager, drainFrame.frameBufferHandle, isBufferValid);
+                if (isBufferValid)
+                {
+                    AVBUFFER_FREE_SUCCESS(mAVBufferManager, drainFrame.frameBufferHandle);
+                }
+            }
         }
         return;
     }
