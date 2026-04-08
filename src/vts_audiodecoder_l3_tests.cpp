@@ -177,10 +177,12 @@ public:
             /* Get heap metrics */
             AVBUFFER_GETMETRICS(mAVBufferManager, secureDecode, beforeHeapMetrics);
 
-            AudioDecoderTest decodeTest(_decoderId, decoderHandle, controlListener,
-                                    eventListener, mAVBufferManager, mAVbufferHelper, secureDecode, testConfig, isSinkAttached);
+            {
+                AudioDecoderTest decodeTest(_decoderId, decoderHandle, controlListener,
+                                        eventListener, mAVBufferManager, mAVbufferHelper, secureDecode, testConfig, isSinkAttached);
 
-            decodeTest.run(true);
+                decodeTest.run(true);
+            } /* decodeTest destructor called here — destroyPool fires before metrics check */
 
             /* Get heap metrics */
             AVBUFFER_GETMETRICS(mAVBufferManager, secureDecode, afterHeapMetrics);
@@ -207,27 +209,30 @@ public:
             /* Get heap metrics */
             AVBUFFER_GETMETRICS(mAVBufferManager, secureDecode, beforeHeapMetrics);
 
-            std::vector<std::unique_ptr<AudioDecoderTest>> decoderTests;
-            for (const auto& [_decoderId, decoderHandle, controlListener, eventListener, capabilities] : mAudioDecoderList)
             {
-                if (!isDecoderUsable(_decoderId, capabilities, testConfig, secureDecode))
+                std::vector<std::unique_ptr<AudioDecoderTest>> decoderTests;
+                for (const auto& [_decoderId, decoderHandle, controlListener, eventListener, capabilities] : mAudioDecoderList)
                 {
-                    continue;
+                    if (!isDecoderUsable(_decoderId, capabilities, testConfig, secureDecode))
+                    {
+                        continue;
+                    }
+
+                    auto decoderTest = std::make_unique<AudioDecoderTest>(_decoderId, decoderHandle,
+                                                                    controlListener, eventListener,
+                                                                    mAVBufferManager, mAVbufferHelper,
+                                                                    secureDecode, testConfig, isSinkAttached);
+                    threads.emplace_back(&AudioDecoderTest::run, decoderTest.get(), true);
+
+                    decoderTests.push_back(std::move(decoderTest));
                 }
+                for (auto& t : threads)
+                {
+                    if (t.joinable())
+                        t.join();
+                }
+            } /* all AudioDecoderTest destructors called here — destroyPool fires before metrics check */
 
-                auto decoderTest = std::make_unique<AudioDecoderTest>(_decoderId, decoderHandle,
-                                                                controlListener, eventListener,
-                                                                mAVBufferManager, mAVbufferHelper,
-                                                                secureDecode, testConfig, isSinkAttached);
-                threads.emplace_back(&AudioDecoderTest::run, decoderTest.get(), true);
-
-                decoderTests.push_back(std::move(decoderTest));
-            }
-            for (auto& t : threads)
-            {
-                if (t.joinable())
-                    t.join();
-            }
             /* Get heap metrics */
             AVBUFFER_GETMETRICS(mAVBufferManager, secureDecode, afterHeapMetrics);
 
