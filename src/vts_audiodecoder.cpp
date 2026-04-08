@@ -680,7 +680,16 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
         }
         mInputFrameCV.notify_all();
 
-        /* validateThreadGuard joins validateThread here on the normal exit path */
+        /* Join the validate thread before stopping/closing the decoder.
+         * The thread calls getNextFrame() and getDecoderMetrics() — both of which
+         * touch decoder state — so it must complete before the decoder is torn down.
+         * validateThreadGuard::~JoinOnExit also calls join(), but only if the thread
+         * is still joinable, so this explicit join and the guard's later destructor
+         * are safe to coexist: the second call is a no-op on an already-joined thread. */
+        if (validateThread.joinable())
+        {
+            validateThread.join();
+        }
 
         /* Stop the decoder */
         AUDIODECODER_STOP_SUCCESS(mDecoderHandle, audioDecoderController, true);
