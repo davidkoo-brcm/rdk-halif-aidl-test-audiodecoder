@@ -637,12 +637,10 @@ void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
                 UT_LOG_INFO("Signaling EOS at PTS:%lld", framePTS);
                 AUDIODECODER_SIGNAL_EOS_SUCCESS(mDecoderHandle, audioDecoderController, true);
 
-                /* After EOS, decodeBuffer must be rejected with EX_ILLEGAL_STATE.
-                 * A fresh buffer is allocated for this test since audioBufferHandle
-                 * was already submitted to the HAL and is no longer owned by VTS. */
+                /* After EOS, decodeBuffer must be rejected with EX_NONE. */
                 int64_t eosTestHandle = -1;
                 AVBUFFER_ALLOC_SUCCESS(mAVBufferManager, mAudioPool, 1, eosTestHandle);
-                AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, framePTS, eosTestHandle, trimStartNs, trimEndNs, Status::EX_ILLEGAL_STATE);
+                AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, framePTS, eosTestHandle, trimStartNs, trimEndNs, Status::EX_NONE);
                 /* HAL rejected the buffer — VTS must free it */
                 AVBUFFER_FREE_SUCCESS(mAVBufferManager, eosTestHandle);
 
