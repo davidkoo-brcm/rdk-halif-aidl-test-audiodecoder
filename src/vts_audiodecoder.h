@@ -839,6 +839,12 @@ public:
 
     bool getNextError(ErrorDetails_t &errorDetails);
 
+    int32_t getErrorCount()
+    {
+        lock_guard<mutex> lock(mErrorMutex);
+        return static_cast<int32_t>(mErrors.size());
+    }
+
     /**
      * Wait for the decoder to reach a particular State within a given timeout.
      *
@@ -896,14 +902,20 @@ private:
     Pool mAudioPool;
     sp<IAVBufferSpaceListener> mBufferListener;
     mutex mInputFrameMutex;
-    condition_variable mInputFrameCV;
-    bool mDecodeComplete{false};
+    mutex mDecodeMutex;
+    condition_variable mDecodeCV;
+    bool mDecodingComplete{false};
+    sp<IAudioDecoderController> mAudioDecoderController;
+    PropertyValue mAvSourcePropertyValue;
+    int32_t mStartFramesDecoded{0};
+    int32_t mStartFrameErrors{0};
+    int32_t mStartFramesDropped{0};
+    ifstream mInputFile;
 
-    void decodeAndConsumeAudioStreams(bool validateMetrics);
-    void validateMetricsThread(PropertyValue avSourcePropertyValue,
-                               int32_t startFramesDecoded,
-                               int32_t startFrameErrors,
-                               int32_t startFramesDropped);
+    void setupAudioDecoder();
+    void startDecoding();
+    void teardownDecoder();
+    void validateDecodedFrame();
 };
 
 #endif //__VTS_AUDIODECODER_H__
