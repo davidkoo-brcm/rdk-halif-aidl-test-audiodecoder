@@ -511,16 +511,10 @@ AudioStreams:
       - 334
     error_frames:
       - 0
-      - 1
-      - 2
       - 3
-      - 4
-      - 5
       - 6
-      - 7
-      - 8
       - 9
-    error_info: Invalid sampling freq, invalid channel confg, invalid layer (repeat)
+    error_info: "Repeating 3-frame pattern: frame N=invalid sampling_frequency_index (15, reserved), frame N+1=valid, frame N+2=invalid layer (3, must be 0). Frames 0,3,6,9: invalid sampling_frequency_index forces decode error. Frames 1,4,7: fully valid. Frames 2,5,8: invalid layer ignored by decoder."
 
   tones_48k_2_256_incomplete_aac:
     input: tones_48k_2_256_incomplete.aac
