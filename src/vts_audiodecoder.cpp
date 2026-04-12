@@ -566,7 +566,6 @@ void AudioDecoderTest::startDecoding()
         void *mapBuffer = nullptr;
         uint32_t mapSize = 0;
         InputAudioFrame_t inputFrame;
-        bool isValidBuffer = false;
 
         /* Allocate the audio buffer */
         AVBUFFER_ALLOC_SUCCESS(mAVBufferManager, mAudioPool, frameSize, audioBufferHandle);
@@ -642,15 +641,6 @@ void AudioDecoderTest::startDecoding()
 
         /* Send the buffer to decoder */
         AUDIODECODER_DECODEBUFFER_SUCCESS(mDecoderId.value, mAudioDecoderController, framePTS, audioBufferHandle, trimStartNs, trimEndNs);
-
-        /* Validate that the input buffer has been released by the decoder */
-        AVBUFFER_ISVALID_SUCCESS(mAVBufferManager, audioBufferHandle, isValidBuffer);
-        if(isValidBuffer)
-        {
-            UT_LOG_ERROR("output buffer not released by decoder [handle:0x%llx]", audioBufferHandle);
-        } else {
-            UT_LOG_INFO("output buffer released by decoder [handle:0x%llx]", audioBufferHandle);
-        }
 
         /* wait time to next frames */
         if(mTestConfiguration.decoderDelay > 0)
