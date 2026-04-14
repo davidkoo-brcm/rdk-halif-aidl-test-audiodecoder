@@ -954,6 +954,13 @@ private:
     void validateDecodedFrame();
 };
 
+/**
+ * Resets both listeners before each stream decode run so that
+ * errors and frames from a previous stream do not affect validation.
+ */
+void resetDecodeSession(sp<AudioDecoderEventListener> eventListener,
+                        sp<AudioDecoderControllerListener> controlListener);
+
 #endif //__VTS_AUDIODECODER_H__
 
 /** @} */ // End of AUDIO_DECODER_HALTEST_HEADER

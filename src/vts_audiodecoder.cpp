@@ -418,6 +418,13 @@ void AudioDecoderEventListener::resetErrors()
     }
 }
 
+void resetDecodeSession(sp<AudioDecoderEventListener> eventListener,
+                        sp<AudioDecoderControllerListener> controlListener)
+{
+    eventListener->resetErrors();
+    controlListener->resetFrames();
+}
+
 /**
  * Sets the Decoder ID
  *
@@ -792,67 +799,69 @@ void AudioDecoderTest::validateDecodedFrame()
         UT_ASSERT_TRUE(framesDecoded <= expectedFrames);
     }
 
-    /* Non-passthrough only: discontinuity, EOS, error count and metrics validation */
-    if (!isPassThrough)
+    /* SOC_PROPRIETARY pass-through: frame count already validated above, no further checks needed */
+    if (isPassThrough)
     {
-        /* Discontinuity/flush validation: at least one but not all frames should carry
-         * the discontinuity flag when a discontinuity or flush point is configured */
-        if ((mTestConfiguration.discontinuityPts != -1) || (mTestConfiguration.flushPts != -1))
+        return;
+    }
+
+    /* Discontinuity/flush validation: at least one but not all frames should carry
+     * the discontinuity flag when a discontinuity or flush point is configured */
+    if ((mTestConfiguration.discontinuityPts != -1) || (mTestConfiguration.flushPts != -1))
+    {
+        UT_ASSERT_TRUE((discontinuityFramesReceived > 0 && discontinuityFramesReceived < expectedFrames));
+    }
+
+    /* EOS validation: one EOS always expected at stream end; a second when eosPts is configured */
+    int32_t expectedEOSFrames = 1;
+
+    if (mTestConfiguration.eosPts != -1)
+    {
+        expectedEOSFrames++;
+    }
+
+    UT_ASSERT_EQUAL(eosFramesReceived, expectedEOSFrames);
+
+    /* Error count validation */
+    UT_ASSERT_EQUAL(totalErrors, decodeErrors);
+
+    /* Decoder metrics validation — -1 means vendor has not implemented the metric, skip.
+     * When flush is configured use relaxed (<=) checks. */
+    int32_t metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped;
+
+    getDecoderMetrics(metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped);
+
+    UT_LOG_DEBUG("Final Decoder Metrics: Codec: %d, Frames Decoded=%d, Decode Errors=%d, Frames Dropped=%d",
+        mTestConfiguration.codec, metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped);
+
+    if ((mTestConfiguration.flushPts == -1) && (mTestConfiguration.flushRestPts == -1))
+    {
+        if (metricsFrameDecoded != -1)
         {
-            UT_ASSERT_TRUE((discontinuityFramesReceived > 0 && discontinuityFramesReceived < expectedFrames));
+            UT_ASSERT_EQUAL(metricsFrameDecoded, expectedFrames);
         }
-
-        /* EOS validation: one EOS always expected at stream end; a second when eosPts is configured */
-        int32_t expectedEOSFrames = 1;
-
-        if (mTestConfiguration.eosPts != -1)
+        if (metricsDecodeErrors != -1)
         {
-            expectedEOSFrames++;
+            UT_ASSERT_EQUAL(metricsDecodeErrors, decodeErrors);
         }
-
-        UT_ASSERT_EQUAL(eosFramesReceived, expectedEOSFrames);
-
-        /* Error count validation */
-        UT_ASSERT_EQUAL(totalErrors, decodeErrors);
-
-        /* Decoder metrics validation — -1 means vendor has not implemented the metric, skip.
-         * When flush is configured use relaxed (<=) checks. */
-        int32_t metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped;
-
-        getDecoderMetrics(metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped);
-
-        UT_LOG_DEBUG("Final Decoder Metrics: Codec: %d, Frames Decoded=%d, Decode Errors=%d, Frames Dropped=%d",
-            mTestConfiguration.codec, metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped);
-
-        if ((mTestConfiguration.flushPts == -1) && (mTestConfiguration.flushRestPts == -1))
+        if (metricsFramesDropped != -1)
         {
-            if (metricsFrameDecoded != -1)
-            {
-                UT_ASSERT_EQUAL(metricsFrameDecoded, expectedFrames);
-            }
-            if (metricsDecodeErrors != -1)
-            {
-                UT_ASSERT_EQUAL(metricsDecodeErrors, decodeErrors);
-            }
-            if (metricsFramesDropped != -1)
-            {
-                UT_ASSERT_EQUAL(metricsFramesDropped, 0);
-            }
+            UT_ASSERT_EQUAL(metricsFramesDropped, 0);
         }
-        else
+    }
+    else
+    {
+        if (metricsFrameDecoded != -1)
         {
-            if (metricsFrameDecoded != -1)
-            {
-                UT_ASSERT_TRUE(metricsFrameDecoded <= expectedFrames);
-            }
-            if (metricsDecodeErrors != -1)
-            {
-                UT_ASSERT_TRUE(metricsDecodeErrors <= decodeErrors);
-            }
-            if (metricsFramesDropped != -1)
-            {
-                UT_ASSERT_TRUE(metricsFramesDropped >= 0);
-            }
+            UT_ASSERT_TRUE(metricsFrameDecoded <= expectedFrames);
+        }
+        if (metricsDecodeErrors != -1)
+        {
+            UT_ASSERT_TRUE(metricsDecodeErrors <= decodeErrors);
+        }
+        if (metricsFramesDropped != -1)
+        {
+            UT_ASSERT_TRUE(metricsFramesDropped >= 0);
         }
     }
 }

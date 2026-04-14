@@ -174,9 +174,8 @@ public:
                 continue;
             }
 
-            /* Reset per-stream error count so each stream's errors are validated independently */
-            eventListener->resetErrors();
-            controlListener->resetFrames();
+            /* Reset per-stream state so each stream's errors and frames are validated independently */
+            resetDecodeSession(eventListener, controlListener);
 
             /* Get heap metrics */
             AVBUFFER_GETMETRICS(mAVBufferManager, secureDecode, beforeHeapMetrics);
@@ -222,9 +221,8 @@ public:
                         continue;
                     }
 
-                    /* Reset per-stream error count so each decoder's errors are validated independently */
-                    eventListener->resetErrors();
-                    controlListener->resetFrames();
+                    /* Reset per-stream state so each decoder's errors and frames are validated independently */
+                    resetDecodeSession(eventListener, controlListener);
 
                     auto decoderTest = std::make_unique<AudioDecoderTest>(_decoderId, decoderHandle,
                                                                     controlListener, eventListener,
