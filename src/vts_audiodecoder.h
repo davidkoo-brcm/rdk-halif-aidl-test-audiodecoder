@@ -847,6 +847,7 @@ public:
 
 
     bool getNextFrame(DecodedAudioFrame_t &frameInfo, int32_t waitTime, bool popFrame);
+    void resetFrames();
 
     void shutdown();
     void setDecoderID(int32_t id);
@@ -927,7 +928,7 @@ public:
 
     void run(bool validateMetrics);
 
-    bool getDecoderMetrics(int32_t &framesDecoded, int32_t &decodeErrors, int32_t &framesDropped);
+    void getDecoderMetrics(int32_t &framesDecoded, int32_t &decodeErrors, int32_t &framesDropped);
 
 private:
     IAudioDecoder::Id mDecoderId;
@@ -943,14 +944,8 @@ private:
     Pool mAudioPool;
     sp<IAVBufferSpaceListener> mBufferListener;
     mutex mInputFrameMutex;
-    mutex mDecodeMutex;
-    condition_variable mDecodeCV;
-    bool mDecodingComplete{false};
     sp<IAudioDecoderController> mAudioDecoderController;
     PropertyValue mAvSourcePropertyValue;
-    int32_t mStartFramesDecoded{0};
-    int32_t mStartFrameErrors{0};
-    int32_t mStartFramesDropped{0};
     ifstream mInputFile;
 
     void setupAudioDecoder();
