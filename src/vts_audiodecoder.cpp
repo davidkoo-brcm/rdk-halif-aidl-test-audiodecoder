@@ -442,6 +442,12 @@ void AudioDecoderTest::run(bool validateMetrics)
 {
     thread validateThread;
 
+    if (!mAVbufferHelper)
+    {
+        UT_ASSERT_TRUE(false) << "AVBufferHelper is not initialized";
+        return;
+    }
+
     setupAudioDecoder();
 
     if (validateMetrics && !mIsSinkAttached)
@@ -599,7 +605,22 @@ void AudioDecoderTest::startDecoding()
         else
         {
             mapBuffer = mAVbufferHelper->mapHandle(audioBufferHandle, &mapSize);
-            memcpy(mapBuffer, inputBuffer.data(), mapSize);
+            if (mapBuffer && mapSize >= frameSize)
+            {
+                memcpy(mapBuffer, inputBuffer.data(), frameSize);
+                mAVbufferHelper->unmapHandle(audioBufferHandle);
+            }
+            else
+            {
+                UT_LOG_ERROR("[Audio DecoderID: %d] Failed to map buffer or insufficient size (mapBuffer:%p, mapSize:%u, required:%u)",
+                             mDecoderId.value, mapBuffer, mapSize, frameSize);
+                if (mapBuffer)
+                {
+                    mAVbufferHelper->unmapHandle(audioBufferHandle);
+                }
+                AVBUFFER_FREE_SUCCESS(mAVBufferManager, audioBufferHandle);
+                continue;
+            }
         }
 
         /* ReStart the decoder */
