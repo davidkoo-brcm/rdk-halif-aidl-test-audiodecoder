@@ -124,6 +124,12 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
                         ::com::rdk::hal::audiodecoder::toString(pcm.format).c_str(),
                         UT_Control_GetMapString(bool_mapTable, pcm.planarFormat),
                         UT_Control_GetMapString(bool_mapTable, metadata->isDolbyAtmos));
+            // Copy PCM fields into your local metadata struct
+            frame.metadata.channelTypes = pcm.channelTypes;
+            frame.metadata.pcm_metadata.numChannels  = pcm.numChannels;
+            frame.metadata.planarFormat = pcm.planarFormat;
+            frame.metadata.pcm_metadata.sampleRate   = pcm.sampleRate;
+            frame.metadata.pcm_metadata.format = pcm.format;
         }
         else
         {
@@ -131,6 +137,10 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
                         mDecoderID,
                         audiodecoder::toString(metadata->sourceCodec).c_str(),
                         UT_Control_GetMapString(bool_mapTable, metadata->isDolbyAtmos));
+            frame.metadata.pcm_metadata.numChannels  = 0;
+            frame.metadata.pcm_metadata.sampleRate   = 0;
+            frame.metadata.planarFormat = false;
+            frame.metadata.channelTypes.clear();
         }
 
         UT_LOG_INFO("[Audio DecoderID: %d] Control Parameters [PTS: %lld, discontinuity: %d, EOS: %d, LowLatency: %d, Source: %d, Trim(%lld-%lld)]",
@@ -143,9 +153,6 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
         frame.metadata.isDolbyAtmos = metadata->isDolbyAtmos;
         frame.metadata.trimStartNs = metadata->trimStartNs;
         frame.metadata.trimEndNs = metadata->trimEndNs;
-        frame.metadata.pcm_metadata.numChannels = metadata->metadata->numChannels;
-        frame.metadata.pcm_metadata.sampleRate = metadata->metadata->sampleRate;
-        frame.metadata.pcm_metadata.format = metadata->metadata->format;
         frame.metadata.lowLatency = metadata->lowLatency;
         frame.metadata.endOfStream = metadata->endOfStream;
         frame.metadata.discontinuity = metadata->discontinuity;
@@ -153,33 +160,6 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
 
         frame.frameType = metadata->type;
 
-        // PCM details moved under FrameMetadata::metadata (optional<PCMMetadata>)
-        if (metadata->metadata.has_value())
-        {
-            const auto& pcm = metadata->metadata.value();
-
-            UT_LOG_INFO("[Audio DecoderID: %d] PCM Details [SampleRate: %d, Channels: %d, channelType: [%s] format: %s planarFormat: %s]",
-                        mDecoderID,
-                        pcm.sampleRate,
-                        pcm.numChannels,
-                        formatChannelVector(pcm.channelTypes).c_str(),
-                        ::com::rdk::hal::audiodecoder::toString(pcm.format).c_str(),
-                        UT_Control_GetMapString(bool_mapTable, pcm.planarFormat));
-
-            // Copy PCM fields into your local metadata struct
-            frame.metadata.channelTypes = pcm.channelTypes;
-            frame.metadata.pcm_metadata.numChannels  = pcm.numChannels;
-            frame.metadata.planarFormat = pcm.planarFormat;
-            frame.metadata.pcm_metadata.sampleRate   = pcm.sampleRate;
-            frame.metadata.pcm_metadata.format = pcm.format;
-        }
-        else
-        {
-            frame.metadata.pcm_metadata.numChannels  = 0;
-            frame.metadata.pcm_metadata.sampleRate   = 0;
-            frame.metadata.planarFormat = false;
-            frame.metadata.channelTypes.clear();
-        }
         if (metadata->type == com::rdk::hal::audiodecoder::FrameType::SOC_PROPRIETARY)
         {
             UT_LOG_INFO("[Audio DecoderID: %d] FrameType SOC_PROPRIETARY: pass-through output; decoded PCM may not be produced.",
