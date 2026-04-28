@@ -22,6 +22,8 @@
 
 include_0: stream_configuration/vts_audio_aac_streams.yaml
 include_3: stream_configuration/vts_audio_ac3_streams.yaml
+include_4: stream_configuration/vts_audio_opus_streams.yaml
+include_5: stream_configuration/vts_audio_eac3_streams.yaml
 #include_4: stream_configuration/vts_audio_mp3_streams.yaml
 #include_5: stream_configuration/vts_audio_mp2_streams.yaml
 #include_1: stream_configuration/vts_audio_heaac_streams.yaml

@@ -514,4 +514,157 @@ audiodecoder:
               - 0
             decode_time_threshold: 100000
             rms_diff_threshold: 0.5
+####### OPUS Streams ##############
+          - Name: vts_opus_48k_1ch_64k_opus
+            PTS:
+              - 0
+              - 20000000
+              - 40000000
+              - 60000000
+              - 80000000
+              - 100000000
+              - 120000000
+              - 140000000
+              - 160000000
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: vts_opus_48k_2ch_32k_opus
+            PTS:
+              - 0
+              - 20000000
+              - 40000000
+              - 60000000
+              - 80000000
+              - 100000000
+              - 120000000
+              - 140000000
+              - 160000000
+              - 180000000
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: vts_opus_48k_2ch_64k_opus
+            PTS:
+              - 0
+              - 20000000
+              - 40000000
+              - 60000000
+              - 80000000
+              - 100000000
+              - 120000000
+              - 140000000
+              - 160000000
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: vts_opus_48k_2ch_128k_opus
+            PTS:
+              - 0
+              - 20000000
+              - 40000000
+              - 60000000
+              - 80000000
+              - 100000000
+              - 120000000
+              - 140000000
+              - 160000000
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: vts_opus_48k_6ch_256k_opus
+            PTS:
+              - 0
+              - 20000000
+              - 40000000
+              - 60000000
+              - 80000000
+              - 100000000
+              - 120000000
+              - 140000000
+              - 160000000
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+####### EAC3 Streams ##############
+          - Name: vts_eac3_48k_1ch_64k_eac3
+            PTS:
+              - 0
+              - 32000000
+              - 64000000
+              - 96000000
+              - 128000000
+              - 160000000
+              - 192000000
+              - 224000000
+              - 256000000
+              - 288000000
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: vts_eac3_48k_2ch_128k_eac3
+            PTS:
+              - 0
+              - 32000000
+              - 64000000
+              - 96000000
+              - 128000000
+              - 160000000
+              - 192000000
+              - 224000000
+              - 256000000
+              - 288000000
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: vts_eac3_48k_6ch_256k_eac3
+            PTS:
+              - 0
+              - 32000000
+              - 64000000
+              - 96000000
+              - 128000000
+              - 160000000
+              - 192000000
+              - 224000000
+              - 256000000
+              - 288000000
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: vts_eac3_48k_6ch_512k_eac3
+            PTS:
+              - 0
+              - 32000000
+              - 64000000
+              - 96000000
+              - 128000000
+              - 160000000
+              - 192000000
+              - 224000000
+              - 256000000
+              - 288000000
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+
+
 
