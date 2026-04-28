@@ -1,0 +1,118 @@
+#** *****************************************************************************
+# *
+# * If not stated otherwise in this file or this component's LICENSE file the
+# * following copyright and licenses apply:
+# *
+# * Copyright 2025 RDK Management
+# *
+# * Licensed under the Apache License, Version 2.0 (the "License");
+# * you may not use this file except in compliance with the License.
+# * You may obtain a copy of the License at
+# *
+# *
+# * http://www.apache.org/licenses/LICENSE-2.0
+# *
+# * Unless required by applicable law or agreed to in writing, software
+# * distributed under the License is distributed on an "AS IS" BASIS,
+# * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# * See the License for the specific language governing permissions and
+# * limitations under the License.
+# *
+#** ******************************************************************************
+
+AudioStreams:
+  vts_opus_48k_1ch_64k_opus:
+    input: vts_opus_48k_1ch_64k.opus            # Stream name
+    reference: vts_opus_48k_1ch_64k_ref.pcm      # Reference stream name
+    codec: OPUS                                  # audio codec information (Opus)
+    sample_rate: 48000                           # Sample rate in Hz
+    channels: 1                                  # Number of audio channels (mono)
+    format: S16LE                                # PCM format of the reference stream
+    num_of_frames: 9                             # Total number of Opus packets/frames
+    frame_size:                                 # Byte size for each Opus packet
+      - 220
+      - 227
+      - 221
+      - 225
+      - 225
+      - 225
+      - 225
+      - 225
+      - 225
+
+  vts_opus_48k_2ch_32k_opus:
+    input: vts_opus_48k_2ch_32k.opus            # Stream name
+    reference: vts_opus_48k_2ch_32k_ref.pcm      # Reference stream name
+    codec: OPUS                                  # audio codec information (Opus)
+    sample_rate: 48000                           # Sample rate in Hz
+    channels: 2                                 # Number of audio channels (stereo)
+    format: S16LE                                # PCM format of the reference stream
+    num_of_frames: 10                            # Total number of Opus packets/frames
+    frame_size:                                 # Byte size for each Opus packet
+      - 72
+      - 67
+      - 64
+      - 65
+      - 67
+      - 64
+      - 62
+      - 64
+      - 63
+      - 65
+
+  vts_opus_48k_2ch_64k_opus:
+    input: vts_opus_48k_2ch_64k.opus            # Stream name
+    reference: vts_opus_48k_2ch_64k_ref.pcm      # Reference stream name
+    codec: OPUS                                  # audio codec information (Opus)
+    sample_rate: 48000                           # Sample rate in Hz
+    channels: 2                                 # Number of audio channels (stereo)
+    format: S16LE                                # PCM format of the reference stream
+    num_of_frames: 9                             # Total number of Opus packets/frames
+    frame_size:                                 # Byte size for each Opus packet
+      - 266
+      - 272
+      - 256
+      - 262
+      - 262
+      - 262
+      - 262
+      - 262
+      - 262
+
+  vts_opus_48k_2ch_128k_opus:
+    input: vts_opus_48k_2ch_128k.opus            # Stream name
+    reference: vts_opus_48k_2ch_128k_ref.pcm      # Reference stream name
+    codec: OPUS                                  # audio codec information (Opus)
+    sample_rate: 48000                           # Sample rate in Hz
+    channels: 2                                  # Number of audio channels (stereo)
+    format: S16LE                                # PCM format of the reference stream
+    num_of_frames: 9                             # Total number of Opus packets/frames
+    frame_size:                                 # Byte size for each Opus packet
+      - 462
+      - 480
+      - 450
+      - 457
+      - 457
+      - 457
+      - 457
+      - 457
+      - 457
+
+  vts_opus_48k_6ch_256k_opus:
+    input: vts_opus_48k_6ch_256k.opus            # Stream name
+    reference: vts_opus_48k_6ch_256k_ref.pcm      # Reference stream name
+    codec: OPUS                                  # audio codec information (Opus)
+    sample_rate: 48000                           # Sample rate in Hz
+    channels: 6                                  # Number of audio channels (5.1)
+    format: S16LE                                # PCM format of the reference stream
+    num_of_frames: 9                             # Total number of Opus packets/frames
+    frame_size:                                 # Byte size for each Opus packet
+      - 112
+      - 107
+      - 112
+      - 105
+      - 109
+      - 109
+      - 105
+      - 107
+      - 109
