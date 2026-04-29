@@ -693,6 +693,16 @@ void AudioDecoderTest::validateDecodedFrame()
         mTestConfiguration.frameDetails.end(),
         [](const auto& f) { return get<2>(f); }));
 
+    uint64_t accumulatedSize = 0;
+    int64_t  prevPTS = -1;
+    int32_t  spf = vts_audioDecoder_helper_getSamplesPerFrame(mTestConfiguration.codec);
+    bool     validatePTS = (spf > 0 && decodeErrors == 0 &&
+                            mTestConfiguration.flushPts == -1 &&
+                            mTestConfiguration.flushRestPts == -1);
+    int32_t  cachedOutputSampleRate = 0;
+    int32_t  cachedOutputChannels   = 0;
+    audiodecoder::PCMFormat cachedOutputFormat{};
+
     while (mControlListener->getNextFrame(decodedFrame, MAX_FRAME_WAIT_TIME, true))
     {
         /* Block 1: frame data — only when buffer is valid */
@@ -736,7 +746,17 @@ void AudioDecoderTest::validateDecodedFrame()
                                 mDecoderId.value, decodedFrame.framePTS, duration.count());
                     UT_ASSERT_TRUE(duration.count() <= mTestConfiguration.decodeTime);
                 }
+
+                if (spf > 0 && validatePTS && prevPTS != -1)
+                {
+                    int64_t frameDurationNs = ((int64_t)spf * 1000000000LL + mTestConfiguration.sampleRate / 2) / mTestConfiguration.sampleRate;
+                    UT_ASSERT_EQUAL(decodedFrame.framePTS - prevPTS, frameDurationNs);
+                }
+                prevPTS = decodedFrame.framePTS;
             }
+
+            if (mTestConfiguration.duration > 0)
+                accumulatedSize += mAVbufferHelper->getAllocationSize(decodedFrame.frameBufferHandle);
 
             /* Free decoded output buffer — both SOC_PROPRIETARY and normal path */
             bool isBufferValid;
@@ -779,7 +799,29 @@ void AudioDecoderTest::validateDecodedFrame()
                 UT_ASSERT_EQUAL(expectedTrimStart, decodedFrame.metadata.trimStartNs);
                 UT_ASSERT_EQUAL(expectedTrimEnd,   decodedFrame.metadata.trimEndNs);
             }
+
+            if (cachedOutputSampleRate == 0 && decodedFrame.metadata.pcm_metadata.sampleRate > 0)
+            {
+                cachedOutputSampleRate = decodedFrame.metadata.pcm_metadata.sampleRate;
+                cachedOutputChannels   = decodedFrame.metadata.pcm_metadata.numChannels;
+                cachedOutputFormat     = decodedFrame.metadata.pcm_metadata.format;
+                UT_LOG_INFO("[Audio DecoderID: %d] Cached PCM metadata: sampleRate=%d channels=%d format=%s",
+                            mDecoderId.value, cachedOutputSampleRate, cachedOutputChannels,
+                            ::com::rdk::hal::audiodecoder::toString(cachedOutputFormat).c_str());
+            }
         }
+    }
+
+    UT_LOG_INFO("[Audio DecoderID: %d] duration=%lld cachedOutputSampleRate=%d cachedOutputChannels=%d",
+                    mDecoderId.value, (long long)mTestConfiguration.duration, cachedOutputSampleRate, cachedOutputChannels);
+
+    if (mTestConfiguration.duration > 0 && cachedOutputSampleRate > 0 && cachedOutputChannels > 0)
+    {
+        int64_t expectedSamples     = mTestConfiguration.duration * (int64_t)cachedOutputSampleRate / 1000000000LL;
+        int64_t totalDecodedSamples = (int64_t)(accumulatedSize / ((int64_t)vts_bytesPerSample(cachedOutputFormat) * cachedOutputChannels));
+        UT_LOG_INFO("[Audio DecoderID: %d] Resampling validation: totalDecodedSamples=%lld expectedSamples=%lld",
+                    mDecoderId.value, (long long)totalDecodedSamples, (long long)expectedSamples);
+        UT_ASSERT_EQUAL(totalDecodedSamples, expectedSamples);
     }
 
     /* Post-loop validations */

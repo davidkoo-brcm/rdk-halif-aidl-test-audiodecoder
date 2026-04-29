@@ -29,6 +29,7 @@ AudioStreams:
     channels: 2 #Number of audio channels
     format: S16LE # `pcm` format of the reference stream. Refer `PCMFormat` enum
     num_of_frames: 10 #Total number of frames in the stream
+    duration: 1280000000 # (1024 samples/frame x 10 frames x 1e9) / 8000 Hz in nanoseconds
     frame_size: #Byte size for each frame, listed in order
       - 414
       - 452
