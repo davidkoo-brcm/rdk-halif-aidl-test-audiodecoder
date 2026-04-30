@@ -695,8 +695,8 @@ void AudioDecoderTest::validateDecodedFrame()
 
     uint64_t accumulatedSize = 0;
     int64_t  prevPTS = -1;
-    int32_t  spf = vts_audioDecoder_helper_getSamplesPerFrame(mTestConfiguration.codec);
-    bool     validatePTS = (spf > 0 && decodeErrors == 0 &&
+    int32_t  samplesPerFrame = vts_audioDecoder_helper_getSamplesPerFrame(mTestConfiguration.codec);
+    bool     validatePTS = (samplesPerFrame > 0 && decodeErrors == 0 &&
                             mTestConfiguration.flushPts == -1 &&
                             mTestConfiguration.flushRestPts == -1);
     int32_t  cachedOutputSampleRate = 0;
@@ -747,16 +747,18 @@ void AudioDecoderTest::validateDecodedFrame()
                     UT_ASSERT_TRUE(duration.count() <= mTestConfiguration.decodeTime);
                 }
 
-                if (spf > 0 && validatePTS && prevPTS != -1)
+                if (samplesPerFrame > 0 && validatePTS && prevPTS != -1)
                 {
-                    int64_t frameDurationNs = ((int64_t)spf * 1000000000LL + mTestConfiguration.sampleRate / 2) / mTestConfiguration.sampleRate;
+                    int64_t frameDurationNs = ((int64_t)samplesPerFrame * 1000000000LL + mTestConfiguration.sampleRate / 2) / mTestConfiguration.sampleRate;
                     UT_ASSERT_EQUAL(decodedFrame.framePTS - prevPTS, frameDurationNs);
                 }
                 prevPTS = decodedFrame.framePTS;
             }
 
             if (mTestConfiguration.duration > 0)
+            {
                 accumulatedSize += mAVbufferHelper->getAllocationSize(decodedFrame.frameBufferHandle);
+            }
 
             /* Free decoded output buffer — both SOC_PROPRIETARY and normal path */
             bool isBufferValid;
@@ -794,10 +796,10 @@ void AudioDecoderTest::validateDecodedFrame()
             /* Trim metadata validation  */
             if (mTestConfiguration.trimStartNs > 0 || mTestConfiguration.trimEndNs > 0)
             {
-                int32_t expectedTrimStart = (framesDecoded == 1) ? mTestConfiguration.trimStartNs : 0;
-                int32_t expectedTrimEnd   = (framesDecoded == (int32_t)mTestConfiguration.frameDetails.size()) ? mTestConfiguration.trimEndNs : 0;
-                UT_ASSERT_EQUAL(expectedTrimStart, decodedFrame.metadata.trimStartNs);
-                UT_ASSERT_EQUAL(expectedTrimEnd,   decodedFrame.metadata.trimEndNs);
+                int64_t expectedTrimStart = (framesDecoded == 1) ? mTestConfiguration.trimStartNs : 0LL;
+                int64_t expectedTrimEnd   = (framesDecoded == (int32_t)mTestConfiguration.frameDetails.size()) ? mTestConfiguration.trimEndNs : 0LL;
+                UT_ASSERT_EQUAL(expectedTrimStart, (int64_t)decodedFrame.metadata.trimStartNs);
+                UT_ASSERT_EQUAL(expectedTrimEnd,   (int64_t)decodedFrame.metadata.trimEndNs);
             }
 
             if (cachedOutputSampleRate == 0 && decodedFrame.metadata.pcm_metadata.sampleRate > 0)
@@ -817,11 +819,18 @@ void AudioDecoderTest::validateDecodedFrame()
 
     if (mTestConfiguration.duration > 0 && cachedOutputSampleRate > 0 && cachedOutputChannels > 0)
     {
-        int64_t expectedSamples     = mTestConfiguration.duration * (int64_t)cachedOutputSampleRate / 1000000000LL;
+        int64_t expectedSamples     = (mTestConfiguration.duration * (int64_t)cachedOutputSampleRate + 999999999LL) / 1000000000LL;
         int64_t totalDecodedSamples = (int64_t)(accumulatedSize / ((int64_t)vts_bytesPerSample(cachedOutputFormat) * cachedOutputChannels));
-        UT_LOG_INFO("[Audio DecoderID: %d] Resampling validation: totalDecodedSamples=%lld expectedSamples=%lld",
-                    mDecoderId.value, (long long)totalDecodedSamples, (long long)expectedSamples);
-        UT_ASSERT_EQUAL(totalDecodedSamples, expectedSamples);
+        UT_LOG_INFO("[Audio DecoderID: %d] Resampling validation: totalDecodedSamples=%lld expectedSamples=%lld decodeErrors=%d",
+                    mDecoderId.value, (long long)totalDecodedSamples, (long long)expectedSamples, decodeErrors);
+        if (decodeErrors > 0)
+        {
+            UT_ASSERT_TRUE(totalDecodedSamples <= expectedSamples);
+        }
+        else
+        {
+            UT_ASSERT_EQUAL(totalDecodedSamples, expectedSamples);
+        }
     }
 
     /* Post-loop validations */

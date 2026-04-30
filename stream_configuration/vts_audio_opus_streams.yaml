@@ -29,6 +29,7 @@ AudioStreams:
     channels: 1                                  # Number of audio channels (mono)
     format: S16LE                                # PCM format of the reference stream
     num_of_frames: 9                             # Total number of Opus packets/frames
+    duration: 180000000 # (960 samples/frame x 9 frames x 1e9) / 48000 Hz
     frame_size:                                 # Byte size for each Opus packet
       - 220
       - 227
@@ -48,6 +49,7 @@ AudioStreams:
     channels: 2                                 # Number of audio channels (stereo)
     format: S16LE                                # PCM format of the reference stream
     num_of_frames: 10                            # Total number of Opus packets/frames
+    duration: 200000000 # (960 samples/frame x 10 frames x 1e9) / 48000 Hz
     frame_size:                                 # Byte size for each Opus packet
       - 72
       - 67
@@ -68,6 +70,7 @@ AudioStreams:
     channels: 2                                 # Number of audio channels (stereo)
     format: S16LE                                # PCM format of the reference stream
     num_of_frames: 9                             # Total number of Opus packets/frames
+    duration: 180000000 # (960 samples/frame x 9 frames x 1e9) / 48000 Hz
     frame_size:                                 # Byte size for each Opus packet
       - 266
       - 272
@@ -87,6 +90,7 @@ AudioStreams:
     channels: 2                                  # Number of audio channels (stereo)
     format: S16LE                                # PCM format of the reference stream
     num_of_frames: 9                             # Total number of Opus packets/frames
+    duration: 180000000 # (960 samples/frame x 9 frames x 1e9) / 48000 Hz
     frame_size:                                 # Byte size for each Opus packet
       - 462
       - 480
@@ -106,6 +110,7 @@ AudioStreams:
     channels: 6                                  # Number of audio channels (5.1)
     format: S16LE                                # PCM format of the reference stream
     num_of_frames: 9                             # Total number of Opus packets/frames
+    duration: 180000000 # (960 samples/frame x 9 frames x 1e9) / 48000 Hz
     frame_size:                                 # Byte size for each Opus packet
       - 112
       - 107

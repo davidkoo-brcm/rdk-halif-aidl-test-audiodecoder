@@ -29,6 +29,7 @@ AudioStreams:
     channels: 1                                  # Number of audio channels (mono)
     format: S16LE                                # PCM format of the reference stream
     num_of_frames: 10                            # Total number of E-AC-3 syncframes
+    duration: 320000000 # (1536 samples/frame x 10 frames x 1e9) / 48000 Hz
     frame_size:                                 # Byte size for each E-AC-3 syncframe
       - 256
       - 256
@@ -49,6 +50,7 @@ AudioStreams:
     channels: 2                                  # Number of audio channels (stereo)
     format: S16LE                                # PCM format of the reference stream
     num_of_frames: 10                            # Total number of E-AC-3 syncframes
+    duration: 320000000 # (1536 samples/frame x 10 frames x 1e9) / 48000 Hz
     frame_size:                                 # Byte size for each E-AC-3 syncframe
       - 512
       - 512
@@ -69,6 +71,7 @@ AudioStreams:
     channels: 6                                  # Number of audio channels (5.1)
     format: S16LE                                # PCM format of the reference stream
     num_of_frames: 10                            # Total number of E-AC-3 syncframes
+    duration: 320000000 # (1536 samples/frame x 10 frames x 1e9) / 48000 Hz
     frame_size:                                 # Byte size for each E-AC-3 syncframe
       - 1024
       - 1024
@@ -89,6 +92,7 @@ AudioStreams:
     channels: 6                                  # Number of audio channels (5.1)
     format: S16LE                                # PCM format of the reference stream
     num_of_frames: 10                            # Total number of E-AC-3 syncframes
+    duration: 320000000 # (1536 samples/frame x 10 frames x 1e9) / 48000 Hz
     frame_size:                                 # Byte size for each E-AC-3 syncframe
       - 2048
       - 2048
