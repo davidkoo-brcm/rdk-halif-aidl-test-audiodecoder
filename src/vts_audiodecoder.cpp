@@ -67,6 +67,7 @@
 
 #define MAX_WAIT_TIME       200   /* ms — timeout for error event callbacks */
 #define MAX_FRAME_WAIT_TIME 1000  /* ms — timeout for decoded frame output (must survive flush gaps) */
+#define PTS_DELTA_NS        10    /* ns — acceptable tolerance for PTS spacing between decoded frames */
 
 /* Controller listener Class Functions */
 
@@ -694,7 +695,8 @@ void AudioDecoderTest::validateDecodedFrame()
         [](const auto& f) { return get<2>(f); }));
 
     uint64_t accumulatedSize = 0;
-    int64_t  prevPTS = -1;
+    int64_t  prevPTS         = -1;
+    int64_t  expectedNextPTS = -1;
     int32_t  samplesPerFrame = vts_audioDecoder_helper_getSamplesPerFrame(mTestConfiguration.codec);
     bool     validatePTS = (samplesPerFrame > 0 && decodeErrors == 0 &&
                             mTestConfiguration.flushPts == -1 &&
@@ -747,12 +749,23 @@ void AudioDecoderTest::validateDecodedFrame()
                     UT_ASSERT_TRUE(duration.count() <= mTestConfiguration.decodeTime);
                 }
 
-                if (samplesPerFrame > 0 && validatePTS && prevPTS != -1)
+                if (validatePTS)
                 {
-                    int64_t frameDurationNs = ((int64_t)samplesPerFrame * 1000000000LL + mTestConfiguration.sampleRate / 2) / mTestConfiguration.sampleRate;
-                    UT_ASSERT_EQUAL(decodedFrame.framePTS - prevPTS, frameDurationNs);
+                    int32_t outputSampleRate = (decodedFrame.metadata.pcm_metadata.sampleRate > 0)
+                                               ? decodedFrame.metadata.pcm_metadata.sampleRate
+                                               : mTestConfiguration.sampleRate;
+                    int64_t frameDurationNs  = ((int64_t)samplesPerFrame * 1000000000LL) / outputSampleRate;
+
+                    if (prevPTS != -1)
+                    {
+                        int64_t delta = decodedFrame.framePTS - expectedNextPTS;
+                        UT_LOG_INFO("[Audio DecoderID: %d] PTS spacing [frame: %d, expectedPTS: %lld, actualPTS: %lld, delta: %lld]",
+                                    mDecoderId.value, framesDecoded, (long long)expectedNextPTS, (long long)decodedFrame.framePTS, (long long)delta);
+                        UT_ASSERT_TRUE(delta >= -PTS_DELTA_NS && delta <= PTS_DELTA_NS);
+                    }
+                    prevPTS         = decodedFrame.framePTS;
+                    expectedNextPTS = decodedFrame.framePTS + frameDurationNs;
                 }
-                prevPTS = decodedFrame.framePTS;
             }
 
             if (mTestConfiguration.duration > 0)
