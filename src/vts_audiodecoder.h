@@ -78,6 +78,7 @@
 #include <condition_variable>
 #include <tuple>
 #include <fstream>
+#include <cmath>
 #include <inttypes.h>
 
 #include <binder/IServiceManager.h>
@@ -948,10 +949,31 @@ private:
     PropertyValue mAvSourcePropertyValue;
     ifstream mInputFile;
 
+    struct FrameValidationState
+    {
+        int32_t  framesDecoded               = 0;
+        int32_t  eosFramesReceived           = 0;
+        int32_t  discontinuityFramesReceived = 0;
+        bool     isPassThrough               = false;
+        uint64_t accumulatedSize             = 0;
+        int64_t  prevPTS                     = -1;
+        int64_t  expectedNextPTS             = -1;
+        int32_t  decodedSampleRate           = 0;
+        int32_t  decodedChannels             = 0;
+        audiodecoder::PCMFormat decodedFormat{};
+        int32_t  decodeErrors                = 0;
+        bool     validatePTS                 = false;
+    };
+
     void setupAudioDecoder();
     void startDecoding();
     void teardownDecoder();
     void validateDecodedFrame();
+
+    bool checkPassThrough   (const DecodedAudioFrame_t& frame, int32_t framesDecoded, bool& isPassThrough);
+    void checkPTSSpacing    (const DecodedAudioFrame_t& frame, int64_t frameBytes, FrameValidationState& state);
+    void checkFrameMetadata (const DecodedAudioFrame_t& frame, FrameValidationState& state);
+    void validatePostLoopMetrics(const FrameValidationState& state);
 };
 
 /**
