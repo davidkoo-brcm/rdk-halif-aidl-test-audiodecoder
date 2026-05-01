@@ -701,9 +701,9 @@ void AudioDecoderTest::validateDecodedFrame()
     bool     validatePTS = (samplesPerFrame > 0 && decodeErrors == 0 &&
                             mTestConfiguration.flushPts == -1 &&
                             mTestConfiguration.flushRestPts == -1);
-    int32_t  cachedOutputSampleRate = 0;
-    int32_t  cachedOutputChannels   = 0;
-    audiodecoder::PCMFormat cachedOutputFormat{};
+    int32_t  decodedSampleRate = 0;
+    int32_t  decodedChannels   = 0;
+    audiodecoder::PCMFormat decodedFormat{};
 
     while (mControlListener->getNextFrame(decodedFrame, MAX_FRAME_WAIT_TIME, true))
     {
@@ -751,16 +751,11 @@ void AudioDecoderTest::validateDecodedFrame()
 
                 if (validatePTS)
                 {
-                    int32_t outputSampleRate = (decodedFrame.metadata.pcm_metadata.sampleRate > 0)
-                                               ? decodedFrame.metadata.pcm_metadata.sampleRate
-                                               : mTestConfiguration.sampleRate;
-                    int64_t frameDurationNs  = ((int64_t)samplesPerFrame * 1000000000LL) / outputSampleRate;
+                    int64_t frameDurationNs  = ((int64_t)samplesPerFrame * 1000000000LL) / mTestConfiguration.sampleRate;
 
                     if (prevPTS != -1)
                     {
                         int64_t delta = decodedFrame.framePTS - expectedNextPTS;
-                        UT_LOG_INFO("[Audio DecoderID: %d] PTS spacing [frame: %d, expectedPTS: %lld, actualPTS: %lld, delta: %lld]",
-                                    mDecoderId.value, framesDecoded, (long long)expectedNextPTS, (long long)decodedFrame.framePTS, (long long)delta);
                         UT_ASSERT_TRUE(delta >= -PTS_DELTA_NS && delta <= PTS_DELTA_NS);
                     }
                     prevPTS         = decodedFrame.framePTS;
@@ -815,27 +810,20 @@ void AudioDecoderTest::validateDecodedFrame()
                 UT_ASSERT_EQUAL(expectedTrimEnd,   (int64_t)decodedFrame.metadata.trimEndNs);
             }
 
-            if (cachedOutputSampleRate == 0 && decodedFrame.metadata.pcm_metadata.sampleRate > 0)
+            if (decodedSampleRate == 0 && decodedFrame.metadata.pcm_metadata.sampleRate > 0)
             {
-                cachedOutputSampleRate = decodedFrame.metadata.pcm_metadata.sampleRate;
-                cachedOutputChannels   = decodedFrame.metadata.pcm_metadata.numChannels;
-                cachedOutputFormat     = decodedFrame.metadata.pcm_metadata.format;
-                UT_LOG_INFO("[Audio DecoderID: %d] Cached PCM metadata: sampleRate=%d channels=%d format=%s",
-                            mDecoderId.value, cachedOutputSampleRate, cachedOutputChannels,
-                            ::com::rdk::hal::audiodecoder::toString(cachedOutputFormat).c_str());
+                decodedSampleRate = decodedFrame.metadata.pcm_metadata.sampleRate;
+                decodedChannels   = decodedFrame.metadata.pcm_metadata.numChannels;
+                decodedFormat     = decodedFrame.metadata.pcm_metadata.format;
             }
         }
     }
 
-    UT_LOG_INFO("[Audio DecoderID: %d] duration=%lld cachedOutputSampleRate=%d cachedOutputChannels=%d",
-                    mDecoderId.value, (long long)mTestConfiguration.duration, cachedOutputSampleRate, cachedOutputChannels);
-
-    if (mTestConfiguration.duration > 0 && cachedOutputSampleRate > 0 && cachedOutputChannels > 0)
+    if (mTestConfiguration.duration > 0 && decodedSampleRate > 0 && decodedChannels > 0)
     {
-        int64_t expectedSamples     = (mTestConfiguration.duration * (int64_t)cachedOutputSampleRate + 999999999LL) / 1000000000LL;
-        int64_t totalDecodedSamples = (int64_t)(accumulatedSize / ((int64_t)vts_bytesPerSample(cachedOutputFormat) * cachedOutputChannels));
-        UT_LOG_INFO("[Audio DecoderID: %d] Resampling validation: totalDecodedSamples=%lld expectedSamples=%lld decodeErrors=%d",
-                    mDecoderId.value, (long long)totalDecodedSamples, (long long)expectedSamples, decodeErrors);
+        int64_t expectedSamples     = (mTestConfiguration.duration * (int64_t)decodedSampleRate + 999999999LL) / 1000000000LL;
+        int64_t totalDecodedSamples = (int64_t)(accumulatedSize / ((int64_t)vts_bytesPerSample(decodedFormat) * decodedChannels));
+
         if (decodeErrors > 0)
         {
             UT_ASSERT_TRUE(totalDecodedSamples <= expectedSamples);
