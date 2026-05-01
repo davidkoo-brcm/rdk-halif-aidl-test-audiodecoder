@@ -103,6 +103,7 @@ typedef struct testConfiguration
     int64_t eosPts;
     int64_t sinkEosPts;
     int64_t sinkFlushPts;
+    int64_t duration;
     /* Frame size, PTS, error frame */
     std::vector<std::tuple<int32_t, int64_t, bool>> frameDetails;
 }testConfiguration_t;

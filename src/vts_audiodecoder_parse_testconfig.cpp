@@ -117,6 +117,7 @@ UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *m
         string eosPts       = controlList + "." + "eos_pts";
         string sinkEosPts       = controlList + "." + "sink_eos_pts";
         string sinkFlushPts       = controlList + "." + "sink_flush_pts";
+        string streamDuration = streamsDetails + "." + string(resultKVP) + "." + "duration";
 
         ut_kvp_getStringField(kvpTestInstance, input.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
         fullPath = currentPath;
@@ -135,6 +136,7 @@ UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *m
 
         testDetails.sampleRate = ut_kvp_getUInt32Field(kvpTestInstance, sampleRate.c_str());
         testDetails.numChannels = ut_kvp_getUInt32Field(kvpTestInstance, channels.c_str());
+        testDetails.duration     = ut_kvp_getUInt32Field(kvpTestInstance, streamDuration.c_str());
 
         ut_kvp_getStringField(kvpTestInstance, format.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
         testDetails.format = vts_audioDecoder_helper_StringToPCMFormat(string(resultKVP));

@@ -302,6 +302,30 @@ double vts_computeRMSDiff(const void* ref_buf, const void* act_buf, size_t size,
     return std::sqrt(sum_sq / num_samples);
 }
 
+int32_t vts_audioDecoder_helper_getSamplesPerFrame(audiodecoder::Codec codec)
+{
+    switch (codec)
+    {
+        case Codec::AAC_LC: return 1024;
+        case Codec::HE_AAC:
+        case Codec::HE_AAC2: return 2048;
+        case Codec::AAC_ELD: return 512;
+        case Codec::USAC:
+        case Codec::X_HE_AAC: return 1024;
+        case Codec::DOLBY_AC3:
+        case Codec::DOLBY_AC3_PLUS:
+        case Codec::DOLBY_AC3_PLUS_JOC:
+        case Codec::DOLBY_MAT:
+        case Codec::DOLBY_MAT2: return 1536;
+        case Codec::MPEG2:
+        case Codec::MP3: return 1152;
+        case Codec::DTS: return 512;
+        case Codec::OPUS: return 960;
+        case Codec::SBC: return 128;
+        default: return 0; /* variable or unknown — skip validation */
+    }
+}
+
 /** @} */ // End of AUDIO_DECODER_HALTEST_HELPER
 /** @} */ // End of AUDIO_DECODER_HALTEST
 /** @} */ // End of AUDIO_DECODER

@@ -65,7 +65,9 @@
 #include "vts_audiodecoder.h"
 #include "vts_avbuffer.h"
 
-#define MAX_WAIT_TIME 200
+#define MAX_WAIT_TIME       200   /* ms — timeout for error event callbacks */
+#define MAX_FRAME_WAIT_TIME 1000  /* ms — timeout for decoded frame output (must survive flush gaps) */
+#define PTS_DELTA_NS        10    /* ns — acceptable tolerance for PTS spacing between decoded frames */
 
 /* Controller listener Class Functions */
 
@@ -123,6 +125,12 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
                         ::com::rdk::hal::audiodecoder::toString(pcm.format).c_str(),
                         UT_Control_GetMapString(bool_mapTable, pcm.planarFormat),
                         UT_Control_GetMapString(bool_mapTable, metadata->isDolbyAtmos));
+            // Copy PCM fields into your local metadata struct
+            frame.metadata.channelTypes = pcm.channelTypes;
+            frame.metadata.pcm_metadata.numChannels  = pcm.numChannels;
+            frame.metadata.planarFormat = pcm.planarFormat;
+            frame.metadata.pcm_metadata.sampleRate   = pcm.sampleRate;
+            frame.metadata.pcm_metadata.format = pcm.format;
         }
         else
         {
@@ -130,6 +138,10 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
                         mDecoderID,
                         audiodecoder::toString(metadata->sourceCodec).c_str(),
                         UT_Control_GetMapString(bool_mapTable, metadata->isDolbyAtmos));
+            frame.metadata.pcm_metadata.numChannels  = 0;
+            frame.metadata.pcm_metadata.sampleRate   = 0;
+            frame.metadata.planarFormat = false;
+            frame.metadata.channelTypes.clear();
         }
 
         UT_LOG_INFO("[Audio DecoderID: %d] Control Parameters [PTS: %lld, discontinuity: %d, EOS: %d, LowLatency: %d, Source: %d, Trim(%lld-%lld)]",
@@ -142,9 +154,6 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
         frame.metadata.isDolbyAtmos = metadata->isDolbyAtmos;
         frame.metadata.trimStartNs = metadata->trimStartNs;
         frame.metadata.trimEndNs = metadata->trimEndNs;
-        frame.metadata.pcm_metadata.numChannels = metadata->metadata->numChannels;
-        frame.metadata.pcm_metadata.sampleRate = metadata->metadata->sampleRate;
-        frame.metadata.pcm_metadata.format = metadata->metadata->format;
         frame.metadata.lowLatency = metadata->lowLatency;
         frame.metadata.endOfStream = metadata->endOfStream;
         frame.metadata.discontinuity = metadata->discontinuity;
@@ -152,37 +161,11 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
 
         frame.frameType = metadata->type;
 
-        // PCM details moved under FrameMetadata::metadata (optional<PCMMetadata>)
-        if (metadata->metadata.has_value())
-        {
-            const auto& pcm = metadata->metadata.value();
-
-            UT_LOG_INFO("[Audio DecoderID: %d] PCM Details [SampleRate: %d, Channels: %d, channelType: [%s] format: %s planarFormat: %s]",
-                        mDecoderID,
-                        pcm.sampleRate,
-                        pcm.numChannels,
-                        formatChannelVector(pcm.channelTypes).c_str(),
-                        ::com::rdk::hal::audiodecoder::toString(pcm.format).c_str(),
-                        UT_Control_GetMapString(bool_mapTable, pcm.planarFormat));
-
-            // Copy PCM fields into your local metadata struct
-            frame.metadata.channelTypes = pcm.channelTypes;
-            frame.metadata.pcm_metadata.numChannels  = pcm.numChannels;
-            frame.metadata.planarFormat = pcm.planarFormat;
-            frame.metadata.pcm_metadata.sampleRate   = pcm.sampleRate;
-            frame.metadata.pcm_metadata.format = pcm.format;
-        }
-        else
-        {
-            frame.metadata.pcm_metadata.numChannels  = 0;
-            frame.metadata.pcm_metadata.sampleRate   = 0;
-            frame.metadata.planarFormat = false;
-            frame.metadata.channelTypes.clear();
-        }
         if (metadata->type == com::rdk::hal::audiodecoder::FrameType::SOC_PROPRIETARY)
         {
             UT_LOG_INFO("[Audio DecoderID: %d] FrameType SOC_PROPRIETARY: pass-through output; decoded PCM may not be produced.",
                         mDecoderID);
+            frame.socPrivate = metadata->SoCPrivate;
         }
     }
     {
@@ -226,6 +209,21 @@ bool AudioDecoderControllerListener::getNextFrame(DecodedAudioFrame_t &frameInfo
     }
 
     return true;
+}
+
+/**
+ * Clears the frame queue
+ *
+ * @param None.
+ * @return None
+ */
+void AudioDecoderControllerListener::resetFrames()
+{
+    lock_guard<mutex> lock(mQueueMutex);
+    while (!mFrameQueue.empty())
+    {
+        mFrameQueue.pop();
+    }
 }
 
 /**
@@ -401,6 +399,13 @@ void AudioDecoderEventListener::resetErrors()
     }
 }
 
+void resetDecodeSession(sp<AudioDecoderEventListener> eventListener,
+                        sp<AudioDecoderControllerListener> controlListener)
+{
+    eventListener->resetErrors();
+    controlListener->resetFrames();
+}
+
 /**
  * Sets the Decoder ID
  *
@@ -416,35 +421,54 @@ int32_t AudioDecoderEventListener::mUsedDecoderID = -1;
 
 void AudioDecoderTest::run(bool validateMetrics)
 {
-    decodeAndConsumeAudioStreams(validateMetrics);
+    thread validateThread;
+
+    if (!mAVbufferHelper)
+    {
+        UT_ASSERT_TRUE(false) << "AVBufferHelper is not initialized";
+        return;
+    }
+
+    setupAudioDecoder();
+
+    if (validateMetrics && !mIsSinkAttached)
+    {
+        validateThread = thread(&AudioDecoderTest::validateDecodedFrame, this);
+    }
+
+    startDecoding();
+
+    if (validateThread.joinable())
+    {
+        validateThread.join();
+    }
+
+    teardownDecoder();
 }
 
-bool AudioDecoderTest::getDecoderMetrics(int32_t &framesDecoded, int32_t &decodeErrors, int32_t &framesDropped)
+void AudioDecoderTest::getDecoderMetrics(int32_t &framesDecoded, int32_t &decodeErrors, int32_t &framesDropped)
 {
     optional<PropertyValue> propertyValue;
 
+    framesDecoded = decodeErrors = framesDropped = -1;
+
     AUDIODECODER_GET_PROPERTY_SUCCESS(mDecoderHandle, audiodecoder::Property::METRIC_FRAMES_DECODED, propertyValue);
-    if (!propertyValue.has_value() || !propertyValue->value.has_value())
+    if (propertyValue.has_value() && propertyValue->value.has_value())
     {
-        return false;
+        framesDecoded = propertyValue->value->get<PropertyValue::Value::Tag::intValue>();
     }
-    framesDecoded = propertyValue->value->get<PropertyValue::Value::Tag::intValue>();
 
     AUDIODECODER_GET_PROPERTY_SUCCESS(mDecoderHandle, audiodecoder::Property::METRIC_DECODE_ERRORS, propertyValue);
-    if (!propertyValue.has_value() || !propertyValue->value.has_value())
+    if (propertyValue.has_value() && propertyValue->value.has_value())
     {
-        return false;
+        decodeErrors = propertyValue->value->get<PropertyValue::Value::Tag::intValue>();
     }
-    decodeErrors = propertyValue->value->get<PropertyValue::Value::Tag::intValue>();
 
     AUDIODECODER_GET_PROPERTY_SUCCESS(mDecoderHandle, audiodecoder::Property::METRIC_FRAMES_DROPPED, propertyValue);
-    if (!propertyValue.has_value() || !propertyValue->value.has_value())
+    if (propertyValue.has_value() && propertyValue->value.has_value())
     {
-        return false;
+        framesDropped = propertyValue->value->get<PropertyValue::Value::Tag::intValue>();
     }
-    framesDropped = propertyValue->value->get<PropertyValue::Value::Tag::intValue>();
-
-    return true;
 }
 
 class AVBufferSpaceListener : public BnAVBufferSpaceListener
@@ -460,355 +484,474 @@ public:
     }
 };
 
-void AudioDecoderTest::decodeAndConsumeAudioStreams(bool validateMetrics)
+AudioDecoderTest::AudioDecoderTest(IAudioDecoder::Id decoderId, sp<IAudioDecoder> decoderHandle,
+    sp<AudioDecoderControllerListener> controlListener,
+    sp<AudioDecoderEventListener> eventListener,
+    sp<IAVBuffer> AVBufferManager, IAVBufferHelper* avbufferHelper,
+    bool secureDecode, testConfiguration_t config, bool isSinkAttached)
+    : mDecoderId(decoderId),
+      mDecoderHandle(decoderHandle),
+      mControlListener(controlListener),
+      mEventListener(eventListener),
+      mAVBufferManager(AVBufferManager),
+      mAVbufferHelper(avbufferHelper),
+      mSecureDecode(secureDecode),
+      mTestConfiguration(config),
+      mIsSinkAttached(isSinkAttached)
 {
-    try {
-        sp<IAudioDecoderController> audioDecoderController;
-        int64_t audioBufferHandle;
-        Pool audioPool;
-        sp<IAVBufferSpaceListener> bufferListener = new AVBufferSpaceListener();
-        int32_t framesDecoded = 0;
-        int32_t inputFrameIndex = 0;
-        int32_t errorFrames = 0;
-        int32_t startFramesDecoded, startFrameErrors, startFramesDropped;
-        int32_t endFramesDecoded, endFrameErrors, endFramesDropped;
-        PropertyValue avSourcePropertyValue;
+    mBufferListener = new AVBufferSpaceListener();
+    AVBUFFER_CREATE_AUDIOPOOL_SUCCESS(mAVBufferManager, mSecureDecode, mDecoderId, mBufferListener, mAudioPool);
+}
 
-        avSourcePropertyValue.value = PropertyValue::Value::make<PropertyValue::Value::Tag::intValue>(int32_t(static_cast<int32_t>(AVSource::IP)));
+AudioDecoderTest::~AudioDecoderTest()
+{
+    AVBUFFER_DESTROY_POOL_SUCCESS(mAVBufferManager, mAudioPool);
+}
 
-        UT_LOG_WARNING("[Audio DecoderID: %d] Start of Testing Stream: %s", mDecoderId.value, mTestConfiguration.input.c_str());
+void AudioDecoderTest::setupAudioDecoder()
+{
+    mAvSourcePropertyValue.value = PropertyValue::Value::make<PropertyValue::Value::Tag::intValue>(int32_t(static_cast<int32_t>(AVSource::IP)));
 
-        /* Create Audio Pool */
-        AVBUFFER_CREATE_AUDIOPOOL_SUCCESS(mAVBufferManager, mSecureDecode, mDecoderId, bufferListener, audioPool);
+    UT_LOG_DEBUG("[Audio DecoderID: %d] Start of Testing Stream: %s", mDecoderId.value, mTestConfiguration.input.c_str());
 
-        ifstream inputFile(mTestConfiguration.input, ios::binary);
-        if (!inputFile)
-        {
-            UT_LOG_ERROR("[Audio DecoderID: %d] Failed to open file: %s", mDecoderId.value, mTestConfiguration.input.c_str());
-            UT_FAIL("Failed to open input file");
-            AVBUFFER_DESTROY_POOL_SUCCESS(mAVBufferManager, audioPool);
-            return;
+    mInputFile.open(mTestConfiguration.input, ios::binary);
+    if (!mInputFile)
+    {
+        UT_LOG_ERROR("[Audio DecoderID: %d] Failed to open file: %s", mDecoderId.value, mTestConfiguration.input.c_str());
+        UT_FAIL("Failed to open input file");
+        return;
+    }
+
+    /* Open the Decoder */
+    AUDIODECODER_OPEN_SUCCESS(mDecoderHandle, mTestConfiguration.codec, mSecureDecode, mControlListener, mAudioDecoderController, true);
+
+    /* Set AV Source */
+    AUDIODECODER_SETPROPERTY_SUCCESS(mAudioDecoderController, audiodecoder::Property::AV_SOURCE, mAvSourcePropertyValue);
+
+    /* Set audio format */
+    AUDIODECODER_SETAUDIOFORMAT_SUCCESS(mAudioDecoderController,
+                                        mTestConfiguration.numChannels,
+                                        mTestConfiguration.sampleRate);
+
+    /* Start the decoder */
+    AUDIODECODER_START_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+
+    /* Reset shared input frame queue */
+    {
+        lock_guard<mutex> lock(mInputFrameMutex);
+        mInputFrame.clear();
+    }
+}
+
+void AudioDecoderTest::startDecoding()
+{
+    int64_t audioBufferHandle;
+
+    /* Decode loop: runs in parallel with validateDecodedFrame */
+    const auto& frames = mTestConfiguration.frameDetails;
+    for(size_t frameIndex = 0; frameIndex < frames.size(); ++frameIndex)
+    {
+        const auto& [frameSize, framePTS, errorFrame] = frames[frameIndex];
+        vector<uint8_t> inputBuffer;
+
+        /* Gapless trim: apply trimStartNs only to the first frame (encoder delay)
+         * and trimEndNs only to the last frame (encoder padding).
+         * All other frames are passed with zero trim. */
+        int32_t trimStartNs = (frameIndex == 0) ? mTestConfiguration.trimStartNs : 0;
+        int32_t trimEndNs   = (frameIndex == frames.size() - 1) ? mTestConfiguration.trimEndNs : 0;
+        void *mapBuffer = nullptr;
+        uint32_t mapSize = 0;
+        InputAudioFrame_t inputFrame;
+
+        /* Allocate the audio buffer */
+        AVBUFFER_ALLOC_SUCCESS(mAVBufferManager, mAudioPool, frameSize, audioBufferHandle);
+
+        inputBuffer.resize(frameSize);
+        mInputFile.read(reinterpret_cast<char*>(inputBuffer.data()), frameSize);
+        if (mInputFile.eof() || mInputFile.gcount() < frameSize) {
+            mInputFile.clear();
+            mInputFile.seekg(0, std::ios::beg);
+            mInputFile.read(reinterpret_cast<char*>(inputBuffer.data()), frameSize);
         }
 
-        /* Open the Decoder */
-        AUDIODECODER_OPEN_SUCCESS(mDecoderHandle, mTestConfiguration.codec, mSecureDecode, mControlListener, audioDecoderController, true);
-
-        /* Set AV Source */
-        AUDIODECODER_SETPROPERTY_SUCCESS(audioDecoderController, audiodecoder::Property::AV_SOURCE, avSourcePropertyValue);
-
-
-        /* Set audio format */
-        AUDIODECODER_SETAUDIOFORMAT_SUCCESS(audioDecoderController,
-                                            mTestConfiguration.numChannels,
-                                            mTestConfiguration.sampleRate);
-
-        /* Start the decoder */
-        AUDIODECODER_START_SUCCESS(mDecoderHandle, audioDecoderController, true);
-
-        /* Get decoder metrics before decoding */
-        UT_ASSERT_TRUE(getDecoderMetrics(startFramesDecoded, startFrameErrors, startFramesDropped));
-
-        for(const auto& [frameSize, framePTS, errorFrame]: mTestConfiguration.frameDetails)
+        if(mSecureDecode)
         {
-            vector<uint8_t> inputBuffer;
-            int32_t trimEndNs = mTestConfiguration.trimEndNs;
-            int32_t trimStartNs = mTestConfiguration.trimStartNs;
-            void *mapBuffer = nullptr;
-            uint32_t mapSize = 0;
-            InputAudioFrame_t inputFrame;
-            bool isValidBuffer = false;
-
-            /* Allocate the audio buffer */
-            AVBUFFER_ALLOC_SUCCESS(mAVBufferManager, audioPool, frameSize, audioBufferHandle);
-
-            inputBuffer.resize(frameSize);
-            inputFile.read(reinterpret_cast<char*>(inputBuffer.data()), frameSize);
-            if (inputFile.eof() || inputFile.gcount() < frameSize) {
-                inputFile.clear();
-                inputFile.seekg(0, std::ios::beg);
-                inputFile.read(reinterpret_cast<char*>(inputBuffer.data()), frameSize);
-            }
-
-            if(mSecureDecode)
+            if(!mAVbufferHelper->writeSecureHandle(audioBufferHandle, inputBuffer.data(), frameSize))
             {
-                if(!mAVbufferHelper->writeSecureHandle(audioBufferHandle, inputBuffer.data(), frameSize))
-                {
-                    UT_LOG_ERROR("[Audio DecoderID: %d] Failed to copy the data to secure buffer", mDecoderId.value);
-                    AVBUFFER_FREE_SUCCESS(mAVBufferManager, audioBufferHandle);
-                    continue;
-                }
+                UT_LOG_ERROR("[Audio DecoderID: %d] Failed to copy the data to secure buffer", mDecoderId.value);
+                AVBUFFER_FREE_SUCCESS(mAVBufferManager, audioBufferHandle);
+                continue;
+            }
+        }
+        else
+        {
+            mapBuffer = mAVbufferHelper->mapHandle(audioBufferHandle, &mapSize);
+            if (mapBuffer && mapSize >= frameSize)
+            {
+                memcpy(mapBuffer, inputBuffer.data(), frameSize);
+                mAVbufferHelper->unmapHandle(audioBufferHandle);
             }
             else
             {
-                mapBuffer = mAVbufferHelper->mapHandle(audioBufferHandle, &mapSize);
-                memcpy(mapBuffer, inputBuffer.data(), mapSize);
+                UT_LOG_ERROR("[Audio DecoderID: %d] Failed to map buffer or insufficient size (mapBuffer:%p, mapSize:%u, required:%u)",
+                             mDecoderId.value, mapBuffer, mapSize, frameSize);
+                if (mapBuffer)
+                {
+                    mAVbufferHelper->unmapHandle(audioBufferHandle);
+                }
+                AVBUFFER_FREE_SUCCESS(mAVBufferManager, audioBufferHandle);
+                continue;
             }
+        }
 
-            /* ReStart the decoder */
-            if(mTestConfiguration.stopPts == framePTS)
-            {
-                AUDIODECODER_STOP_SUCCESS(mDecoderHandle, audioDecoderController, true);
-                AUDIODECODER_START_SUCCESS(mDecoderHandle, audioDecoderController, true);
-            }
+        /* ReStart the decoder */
+        if(mTestConfiguration.stopPts == framePTS)
+        {
+            AUDIODECODER_STOP_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+            AUDIODECODER_START_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+        }
 
-            if(mTestConfiguration.discontinuityPts == framePTS)
-            {
-                AUDIODECODER_SIGNAL_DISCONTINUITY_SUCCESS(mDecoderHandle, audioDecoderController, true);
-            }
+        if(mTestConfiguration.discontinuityPts == framePTS)
+        {
+            AUDIODECODER_SIGNAL_DISCONTINUITY_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+        }
 
-            if(mTestConfiguration.flushPts == framePTS)
-            {
-                AUDIODECODER_FLUSH_SUCCESS(mDecoderHandle, audioDecoderController, false, true);
-            }
+        if(mTestConfiguration.flushPts == framePTS)
+        {
+            AUDIODECODER_FLUSH_SUCCESS(mDecoderHandle, mAudioDecoderController, false, true);
+            AUDIODECODER_SIGNAL_DISCONTINUITY_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+        }
 
-            if(mTestConfiguration.flushRestPts == framePTS)
-            {
-                AUDIODECODER_FLUSH_SUCCESS(mDecoderHandle, audioDecoderController, true, true);
-                AUDIODECODER_START_SUCCESS(mDecoderHandle, audioDecoderController, true);
-            }
+        if(mTestConfiguration.flushRestPts == framePTS)
+        {
+            AUDIODECODER_FLUSH_SUCCESS(mDecoderHandle, mAudioDecoderController, true, true);
+            AUDIODECODER_START_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+        }
 
-            inputFrame.sendTime = chrono::steady_clock::now();
-            inputFrame.framePTS = framePTS;
-            inputFrame.isErrorFrame = errorFrame;
+        /* Push input frame to shared queue for latency timing in validate thread */
+        inputFrame.sendTime = chrono::steady_clock::now();
+        inputFrame.framePTS = framePTS;
+        inputFrame.isErrorFrame = errorFrame;
+        {
+            lock_guard<mutex> lock(mInputFrameMutex);
             mInputFrame.push_back(inputFrame);
-
-            /* Send the buffer to decoder */
-            AUDIODECODER_DECODEBUFFER_SUCCESS(mDecoderId.value, audioDecoderController, framePTS, audioBufferHandle, trimStartNs, trimEndNs);
-
-            if(mTestConfiguration.eosPts == framePTS)
-            {
-                UT_LOG_INFO("Signaling EOS at PTS:%lld", framePTS);
-                AUDIODECODER_SIGNAL_EOS_SUCCESS(mDecoderHandle, audioDecoderController, true);
-            }
-
-            AVBUFFER_ISVALID_SUCCESS(mAVBufferManager, audioBufferHandle, isValidBuffer);
-            if(isValidBuffer)
-            {
-                UT_LOG_ERROR("output buffer not released by decoder [handle:0x%llx]", audioBufferHandle);
-            } else {
-                UT_LOG_INFO("output buffer released by decoder [handle:0x%llx]", audioBufferHandle);
-            }
-
-            /* wait time to next frames */
-            if(mTestConfiguration.decoderDelay > 0)
-                this_thread::sleep_for(chrono::milliseconds(mTestConfiguration.decoderDelay));
-
-            auto endPTS = std::get<1>(mTestConfiguration.frameDetails.back());
-
-            if(framePTS == endPTS)
-            {
-                UT_LOG_DEBUG("Signalled EOS after the last frame framePTS:%lld, endPTS:%lld", framePTS, endPTS);
-                AUDIODECODER_SIGNAL_EOS_SUCCESS(mDecoderHandle, audioDecoderController, true);
-            }
         }
 
-        if(validateMetrics)
+        if(mTestConfiguration.eosPts == framePTS)
         {
-            DecodedAudioFrame_t firstDecodedFrame;
-            bool haveFirst = mControlListener->getNextFrame(firstDecodedFrame, MAX_WAIT_TIME, false);
-            if (!haveFirst)
+            UT_LOG_INFO("Signaling EOS at PTS:%lld", framePTS);
+            AUDIODECODER_SIGNAL_EOS_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+
+            /* After EOS, decodeBuffer must be rejected — reuse the already-allocated
+             * audioBufferHandle so no extra alloc/free is needed. */
+            AUDIODECODER_DECODEBUFFER_FAILURE(mAudioDecoderController, framePTS, audioBufferHandle, trimStartNs, trimEndNs, Status::EX_NONE);
+
+            /* Decoder must be restarted after EOS */
+            AUDIODECODER_STOP_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+            AUDIODECODER_START_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+        }
+
+        /* Send the buffer to decoder */
+        AUDIODECODER_DECODEBUFFER_SUCCESS(mDecoderId.value, mAudioDecoderController, framePTS, audioBufferHandle, trimStartNs, trimEndNs);
+
+        /* wait time to next frames */
+        if(mTestConfiguration.decoderDelay > 0)
+            this_thread::sleep_for(chrono::milliseconds(mTestConfiguration.decoderDelay));
+
+        auto endPTS = std::get<1>(mTestConfiguration.frameDetails.back());
+
+        if(framePTS == endPTS)
+        {
+            UT_LOG_DEBUG("Signalled EOS after the last frame framePTS:%lld, endPTS:%lld", framePTS, endPTS);
+            AUDIODECODER_SIGNAL_EOS_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+        }
+    }
+
+    UT_LOG_INFO("[Audio DecoderID: %d] End of Testing Stream: %s",
+                mDecoderId.value, mTestConfiguration.input.c_str());
+}
+
+void AudioDecoderTest::teardownDecoder()
+{
+    /* Stop the decoder */
+    AUDIODECODER_STOP_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+
+    /* Close the decoder */
+    AUDIODECODER_CLOSE_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+}
+
+bool AudioDecoderTest::checkPassThrough(const DecodedAudioFrame_t& frame, int32_t framesDecoded, bool& isPassThrough)
+{
+    /* Latency measurement on first frame — common to passthrough and non-passthrough */
+    if (framesDecoded == 1)
+    {
+        lock_guard<mutex> lock(mInputFrameMutex);
+        auto inputIt = find_if(mInputFrame.begin(), mInputFrame.end(),
+            [&frame](const InputAudioFrame_t& f) {
+                return f.framePTS == frame.framePTS;
+            });
+        if (inputIt == mInputFrame.end())
+        {
+            UT_LOG_ERROR("[Audio DecoderID: %d] Out Frame [PTS: %lld] does not match any submitted Input Frame PTS",
+                         mDecoderId.value, frame.framePTS);
+            UT_ASSERT_TRUE(false);
+        }
+        else
+        {
+            auto duration = chrono::duration_cast<chrono::microseconds>(
+                frame.receiveTime - inputIt->sendTime);
+            UT_LOG_INFO("[Audio DecoderID: %d] Decode Time in micro second [PTS: %lld]: %lld",
+                        mDecoderId.value, frame.framePTS, duration.count());
+            UT_ASSERT_TRUE(duration.count() <= mTestConfiguration.decodeTime);
+        }
+    }
+
+    /* SOC_PROPRIETARY (pass-through): log once, skip decoded-frame validation */
+    if (frame.isMetaAvailable &&
+        frame.frameType == com::rdk::hal::audiodecoder::FrameType::SOC_PROPRIETARY)
+    {
+        if (!isPassThrough)
+        {
+            UT_LOG_WARNING("[Audio DecoderID: %d] SOC_PROPRIETARY(pass-through) output detected. "
+                           "Skipping decoded-frame validation.", mDecoderId.value);
+            isPassThrough = true;
+        }
+        return true;
+    }
+    return false;
+}
+
+void AudioDecoderTest::checkPTSSpacing(const DecodedAudioFrame_t& frame, int64_t frameBytes, FrameValidationState& state)
+{
+    int32_t frameSampleRate = (frame.isMetaAvailable && frame.metadata.pcm_metadata.sampleRate > 0)
+                              ? frame.metadata.pcm_metadata.sampleRate : state.decodedSampleRate;
+    int32_t frameChannels   = (frame.isMetaAvailable && frame.metadata.pcm_metadata.numChannels > 0)
+                              ? frame.metadata.pcm_metadata.numChannels : state.decodedChannels;
+    audiodecoder::PCMFormat frameFormat = frame.isMetaAvailable
+                              ? frame.metadata.pcm_metadata.format : state.decodedFormat;
+    int32_t bytesPerSample  = vts_bytesPerSample(frameFormat) * frameChannels;
+    int64_t numSamples      = (bytesPerSample > 0) ? frameBytes / bytesPerSample : 0;
+    int64_t frameDurationNs = (frameSampleRate > 0 && numSamples > 0)
+                              ? (numSamples * 1000000000LL) / frameSampleRate : 0;
+
+    if (state.prevPTS != -1)
+    {
+        int64_t delta = frame.framePTS - state.expectedNextPTS;
+        UT_LOG_INFO("[Audio DecoderID: %d] PTS spacing [frame: %d, expectedPTS: %lld, actualPTS: %lld, delta: %lld]",
+                    mDecoderId.value, state.framesDecoded, (long long)state.expectedNextPTS, (long long)frame.framePTS, (long long)delta);
+        UT_ASSERT_TRUE(delta >= -PTS_DELTA_NS && delta <= PTS_DELTA_NS);
+    }
+    state.prevPTS         = frame.framePTS;
+    state.expectedNextPTS = frame.framePTS + frameDurationNs;
+}
+
+void AudioDecoderTest::checkFrameMetadata(const DecodedAudioFrame_t& frame, FrameValidationState& state)
+{
+    UT_ASSERT_EQUAL(frame.metadata.sourceCodec, mTestConfiguration.codec);
+    UT_ASSERT_EQUAL(int32_t(static_cast<int32_t>(frame.metadata.source)),
+                    mAvSourcePropertyValue.value->get<PropertyValue::Value::Tag::intValue>());
+
+    if (frame.metadata.discontinuity)
+    {
+        state.discontinuityFramesReceived++;
+    }
+
+    if (frame.metadata.endOfStream)
+    {
+        state.eosFramesReceived++;
+    }
+
+/* TODO: Trim metadata validation disabled — contract not fully settled.
+ * trimStartNs/trimEndNs are per-frame durations (ns, invariant under resampling), but when one input frame
+ * produces multiple output frames the HAL must map trim to the first/last output frame derived from that input.
+ * An alternative of absolute PTS-based trim is under discussion, which would remove the remapping burden
+ * from the HAL since it already tracks PTS per output frame. Re-enable once the approach is agreed. */
+#if 0
+    if (mTestConfiguration.trimStartNs > 0 || mTestConfiguration.trimEndNs > 0)
+    {
+        int64_t expectedTrimStart = (state.framesDecoded == 1) ? mTestConfiguration.trimStartNs : 0LL;
+        int64_t expectedTrimEnd   = (state.framesDecoded == (int32_t)mTestConfiguration.frameDetails.size()) ? mTestConfiguration.trimEndNs : 0LL;
+        UT_ASSERT_EQUAL(expectedTrimStart, (int64_t)frame.metadata.trimStartNs);
+        UT_ASSERT_EQUAL(expectedTrimEnd,   (int64_t)frame.metadata.trimEndNs);
+    }
+#endif
+
+    if (state.decodedSampleRate == 0 && frame.metadata.pcm_metadata.sampleRate > 0)
+    {
+        state.decodedSampleRate = frame.metadata.pcm_metadata.sampleRate;
+        state.decodedChannels   = frame.metadata.pcm_metadata.numChannels;
+        state.decodedFormat     = frame.metadata.pcm_metadata.format;
+        UT_LOG_INFO("[Audio DecoderID: %d] PCM metadata: sampleRate=%d channels=%d format=%s",
+                    mDecoderId.value, state.decodedSampleRate, state.decodedChannels,
+                    ::com::rdk::hal::audiodecoder::toString(state.decodedFormat).c_str());
+    }
+}
+
+void AudioDecoderTest::validatePostLoopMetrics(const FrameValidationState& state)
+{
+    UT_LOG_INFO("[Audio DecoderID: %d] duration=%lld decodedSampleRate=%d decodedChannels=%d",
+                    mDecoderId.value, (long long)mTestConfiguration.duration, state.decodedSampleRate, state.decodedChannels);
+
+    if (mTestConfiguration.duration > 0 && state.decodedSampleRate > 0 && state.decodedChannels > 0)
+    {
+        int64_t expectedSamples     = static_cast<int64_t>(std::ceil(static_cast<double>(mTestConfiguration.duration) * state.decodedSampleRate / 1e9));
+        int64_t totalDecodedSamples = (int64_t)(state.accumulatedSize / ((int64_t)vts_bytesPerSample(state.decodedFormat) * state.decodedChannels));
+        UT_LOG_INFO("[Audio DecoderID: %d] Resampling validation: totalDecodedSamples=%lld expectedSamples=%lld decodeErrors=%d",
+                    mDecoderId.value, (long long)totalDecodedSamples, (long long)expectedSamples, state.decodeErrors);
+        if (state.decodeErrors > 0)
+        {
+            UT_ASSERT_TRUE(totalDecodedSamples <= expectedSamples);
+        }
+        else
+        {
+            UT_ASSERT_EQUAL(totalDecodedSamples, expectedSamples);
+        }
+    }
+
+    int32_t totalErrors = mEventListener->getErrorCount();
+
+    /* expectedFrames: passthrough counts all frames; non-passthrough subtracts error frames */
+    int32_t expectedFrames = state.isPassThrough ? mTestConfiguration.numOfFrames
+                                                 : mTestConfiguration.numOfFrames - state.decodeErrors;
+
+    /* Frame count check — common to both passthrough and non-passthrough.
+     * Flush discards queued frames mid-stream so use relaxed (<=) when flush is configured. */
+    if ((mTestConfiguration.flushPts == -1) && (mTestConfiguration.flushRestPts == -1))
+    {
+        UT_ASSERT_EQUAL(state.framesDecoded, expectedFrames);
+    }
+    else
+    {
+        UT_ASSERT_TRUE(state.framesDecoded <= expectedFrames);
+    }
+
+    /* SOC_PROPRIETARY pass-through: frame count already validated above, no further checks needed */
+    if (state.isPassThrough)
+    {
+        return;
+    }
+
+    /* Discontinuity/flush validation: at least one but not all frames should carry
+     * the discontinuity flag when a discontinuity or flush point is configured */
+    if ((mTestConfiguration.discontinuityPts != -1) || (mTestConfiguration.flushPts != -1))
+    {
+        UT_ASSERT_TRUE((state.discontinuityFramesReceived > 0 && state.discontinuityFramesReceived < expectedFrames));
+    }
+
+    /* EOS validation: one EOS always expected at stream end; a second when eosPts is configured */
+    int32_t expectedEOSFrames = 1;
+
+    if (mTestConfiguration.eosPts != -1)
+    {
+        expectedEOSFrames++;
+    }
+
+    UT_ASSERT_EQUAL(state.eosFramesReceived, expectedEOSFrames);
+
+    /* Error count validation */
+    UT_ASSERT_EQUAL(totalErrors, state.decodeErrors);
+
+    /* Decoder metrics validation — -1 means vendor has not implemented the metric, skip.
+     * When flush is configured use relaxed (<=) checks. */
+    int32_t metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped;
+
+    getDecoderMetrics(metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped);
+
+    UT_LOG_DEBUG("Final Decoder Metrics: Codec: %d, Frames Decoded=%d, Decode Errors=%d, Frames Dropped=%d",
+        mTestConfiguration.codec, metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped);
+
+    if ((mTestConfiguration.flushPts == -1) && (mTestConfiguration.flushRestPts == -1))
+    {
+        if (metricsFrameDecoded != -1)
+        {
+            UT_ASSERT_EQUAL(metricsFrameDecoded, expectedFrames);
+        }
+        if (metricsDecodeErrors != -1)
+        {
+            UT_ASSERT_EQUAL(metricsDecodeErrors, state.decodeErrors);
+        }
+        if (metricsFramesDropped != -1)
+        {
+            UT_ASSERT_EQUAL(metricsFramesDropped, 0);
+        }
+    }
+    else
+    {
+        if (metricsFrameDecoded != -1)
+        {
+            UT_ASSERT_TRUE(metricsFrameDecoded <= expectedFrames);
+        }
+        if (metricsDecodeErrors != -1)
+        {
+            UT_ASSERT_TRUE(metricsDecodeErrors <= state.decodeErrors);
+        }
+        if (metricsFramesDropped != -1)
+        {
+            UT_ASSERT_TRUE(metricsFramesDropped >= 0);
+        }
+    }
+}
+
+void AudioDecoderTest::validateDecodedFrame()
+{
+    DecodedAudioFrame_t decodedFrame;
+
+    FrameValidationState state;
+    state.decodeErrors = static_cast<int32_t>(count_if(
+        mTestConfiguration.frameDetails.begin(),
+        mTestConfiguration.frameDetails.end(),
+        [](const auto& f) { return get<2>(f); }));
+
+    int32_t samplesPerFrame = vts_audioDecoder_helper_getSamplesPerFrame(mTestConfiguration.codec);
+    state.validatePTS = (samplesPerFrame > 0 && state.decodeErrors == 0 &&
+                         mTestConfiguration.flushPts == -1 &&
+                         mTestConfiguration.flushRestPts == -1);
+
+    while (mControlListener->getNextFrame(decodedFrame, MAX_FRAME_WAIT_TIME, true))
+    {
+        /* Block 1: frame data — only when buffer is valid */
+        if (decodedFrame.frameBufferHandle != -1)
+        {
+            state.framesDecoded++;
+
+            int64_t frameBytes = mAVbufferHelper->getAllocationSize(decodedFrame.frameBufferHandle);
+
+            if (mTestConfiguration.duration > 0)
             {
-                UT_LOG_WARNING("[Audio DecoderID: %d] No initial decoded frame received... skipping decoded frame and metrics validation.", mDecoderId.value);
+                state.accumulatedSize += frameBytes;
             }
-            else
+
+            bool isPassThroughFrame = checkPassThrough(decodedFrame, state.framesDecoded, state.isPassThrough);
+
+            if (!isPassThroughFrame && state.validatePTS)
             {
-                // SOC_PROPRIETARY => pass-through => skip decoded-frame and metrics validation.
-                if (firstDecodedFrame.isMetaAvailable &&
-                    firstDecodedFrame.frameType == com::rdk::hal::audiodecoder::FrameType::SOC_PROPRIETARY)
-                {
-                    UT_LOG_WARNING("[Audio DecoderID: %d] SOC_PROPRIETARY(pass-through) output detected. "
-                                   "Skipping decoded-frame and metrics validation.",
-                                   mDecoderId.value);
+                checkPTSSpacing(decodedFrame, frameBytes, state);
+            }
 
-                    // Pop the peeked frame so queue doesn't grow.
-                    mControlListener->getNextFrame(firstDecodedFrame, MAX_WAIT_TIME, true);
-                }
-                else
-                {
-                    // Pop the peeked frame and reuse it as the first decoded output.
-                    mControlListener->getNextFrame(firstDecodedFrame, MAX_WAIT_TIME, true);
+            /* Free decoded output buffer — both SOC_PROPRIETARY and normal path */
+            bool isBufferValid;
 
-                    /* Validate the decoder */
-                    for (const auto& inputFrame : mInputFrame)
-                    {
-                        DecodedAudioFrame_t decodedFrame;
-                        chrono::steady_clock::time_point receiveTime;
-                        bool isBufferValid;
+            AVBUFFER_ISVALID_SUCCESS(mAVBufferManager, decodedFrame.frameBufferHandle, isBufferValid);
 
-                        inputFrameIndex++;
+            if (isBufferValid)
+            {
+                AVBUFFER_FREE_SUCCESS(mAVBufferManager, decodedFrame.frameBufferHandle);
+            }
 
-                        if (inputFrame.isErrorFrame)
-                        {
-                            ErrorDetails_t errorDetails;
-                            errorFrames++;
-                            if (!mEventListener->getNextError(errorDetails))
-                            {
-                                UT_ASSERT_TRUE(false);
-                                receiveTime = inputFrame.sendTime;
-                            }
-                            else
-                            {
-                                receiveTime = errorDetails.receiveTime;
-                            }
-                            auto duration = chrono::duration_cast<chrono::microseconds>(receiveTime - inputFrame.sendTime);
-                            UT_LOG_INFO("[Audio DecoderID: %d] Error Frame Decode Time in micro second [PTS: %lld]: %lld",
-                                        mDecoderId.value, inputFrame.framePTS, duration.count());
-                            continue;
-                        }
-
-                        // First input frame uses the already popped firstDecodedFrame.
-                        if (inputFrameIndex == 1)
-                        {
-                            decodedFrame = firstDecodedFrame;
-                        }
-                        else
-                        {
-                            if (!mControlListener->getNextFrame(decodedFrame, MAX_WAIT_TIME, false))
-                            {
-                                UT_LOG_ERROR("[Audio DecoderID: %d] onFrameOutput callback not received...", mDecoderId.value);
-                                UT_ASSERT_TRUE(false);
-                                break;
-                            }
-                        }
-
-                        /* Validate metadata */
-                        if (inputFrameIndex == 1)
-                        {
-                            UT_ASSERT_TRUE(decodedFrame.isMetaAvailable);
-                        }
-
-                        if (decodedFrame.isMetaAvailable)
-                        {
-                            UT_ASSERT_EQUAL(decodedFrame.metadata.sourceCodec, mTestConfiguration.codec);
-                            UT_ASSERT_EQUAL(int32_t(static_cast<int32_t>(decodedFrame.metadata.source)),
-                                            avSourcePropertyValue.value->get<PropertyValue::Value::Tag::intValue>());
-                        }
-
-                        if (mTestConfiguration.discontinuityPts == decodedFrame.framePTS)
-                        {
-                            UT_ASSERT_TRUE(decodedFrame.isMetaAvailable && decodedFrame.metadata.discontinuity);
-                        }
-
-                        if (mTestConfiguration.flushPts > 0 || mTestConfiguration.flushRestPts > 0)
-                        {
-                            if (inputFrame.framePTS < mTestConfiguration.flushPts)
-                            {
-                                if (inputFrame.framePTS < decodedFrame.framePTS)
-                                {
-                                    UT_LOG_INFO("[Audio DecoderID: %d] Frame [PTS: %lld] is flushed",
-                                                mDecoderId.value, inputFrame.framePTS);
-                                    continue;
-                                }
-                            }
-                        }
-
-                        if ((mTestConfiguration.trimEndNs - mTestConfiguration.trimStartNs) > 0)
-                        {
-                            UT_ASSERT_TRUE(decodedFrame.isMetaAvailable &&
-                                           (mTestConfiguration.trimStartNs == decodedFrame.metadata.trimStartNs));
-                            UT_ASSERT_TRUE(decodedFrame.isMetaAvailable &&
-                                           (mTestConfiguration.trimEndNs == decodedFrame.metadata.trimEndNs));
-
-                            if (inputFrame.framePTS < decodedFrame.framePTS)
-                            {
-                                UT_LOG_INFO("[Audio DecoderID: %d] Frame [PTS: %lld] is Trimmed",
-                                            mDecoderId.value, inputFrame.framePTS);
-                                continue;
-                            }
-                        }
-
-                        if (inputFrame.framePTS < decodedFrame.framePTS)
-                        {
-                            UT_LOG_ERROR("[Audio DecoderID: %d] Frame [PTS: %lld] is Missed",
-                                         mDecoderId.value, inputFrame.framePTS);
-                            UT_ASSERT_TRUE(false);
-                            continue;
-                        }
-
-                        if (mTestConfiguration.eosPts > 0 && inputFrameIndex > 1)
-                        {
-                            if (decodedFrame.isMetaAvailable)
-                            {
-                                UT_ASSERT_TRUE(decodedFrame.metadata.endOfStream);
-                            }
-                        }
-
-                        framesDecoded++;
-
-                        // Pop the frame only if it wasn't the already popped firstDecodedFrame.
-                        if (inputFrameIndex != 1)
-                        {
-                            mControlListener->getNextFrame(decodedFrame, MAX_WAIT_TIME, true);
-                        }
-
-                        if (inputFrame.framePTS != decodedFrame.framePTS)
-                        {
-                            UT_LOG_ERROR("[Audio DecoderID: %d] Input Frame [PTS: %lld] and Out Frame [PTS: %lld] are not matching",
-                                         mDecoderId.value, inputFrame.framePTS, decodedFrame.framePTS);
-                            UT_ASSERT_TRUE(false);
-                            continue;
-                        }
-
-                        auto duration = chrono::duration_cast<chrono::microseconds>(decodedFrame.receiveTime - inputFrame.sendTime);
-                        UT_LOG_INFO("[Audio DecoderID: %d] Decode Time in micro second [PTS: %lld]: %lld",
-                                    mDecoderId.value, decodedFrame.framePTS, duration.count());
-                        UT_ASSERT_TRUE(duration.count() <= mTestConfiguration.decodeTime);
-
-                        if (!mIsSinkAttached)
-                        {
-                            if (decodedFrame.frameBufferHandle != -1)
-                            {
-                                AVBUFFER_ISVALID_SUCCESS(mAVBufferManager, decodedFrame.frameBufferHandle, isBufferValid);
-                                if (isBufferValid)
-                                {
-                                    AVBUFFER_FREE_SUCCESS(mAVBufferManager, decodedFrame.frameBufferHandle);
-                                }
-                            }
-                        }
-                    }
-
-                    /* Get decoder metrics after decoding */
-                    UT_ASSERT_TRUE(getDecoderMetrics(endFramesDecoded, endFrameErrors, endFramesDropped));
-
-                    /* Validate decoder metrics */
-                    if (startFramesDecoded >= 0 && endFramesDecoded >= 0)
-                    {
-                        UT_ASSERT_TRUE((endFramesDecoded - startFramesDecoded) == framesDecoded);
-                    }
-                    if (startFrameErrors >= 0 && endFrameErrors >= 0)
-                    {
-                        UT_ASSERT_TRUE((endFrameErrors - startFrameErrors) == errorFrames);
-                    }
-                    if (startFramesDropped >= 0 && endFramesDropped >= 0)
-                    {
-                        UT_ASSERT_TRUE((endFramesDropped - startFramesDropped) == 0);
-                    }
-                }
+            if (isPassThroughFrame)
+            {
+                continue;
             }
         }
 
-        /* Stop the decoder */
-        AUDIODECODER_STOP_SUCCESS(mDecoderHandle, audioDecoderController, true);
-
-        /* Close the decoder */
-        AUDIODECODER_CLOSE_SUCCESS(mDecoderHandle, audioDecoderController, true);
-
-        /* Destroy audio pool */
-        AVBUFFER_DESTROY_POOL_SUCCESS(mAVBufferManager, audioPool);
-
-        UT_LOG_INFO("[Audio DecoderID: %d] End of Testing Stream: %s",
-                    mDecoderId.value, mTestConfiguration.input.c_str());
+        /* Block 2: metadata — separate from buffer handling */
+        if (decodedFrame.isMetaAvailable)
+        {
+            checkFrameMetadata(decodedFrame, state);
+        }
     }
-    catch (const std::exception& ex) {
-        UT_LOG_ERROR("[Audio DecoderID: %d] Exception in decodeAndConsumeAudioStreams: %s",
-                     mDecoderId.value, ex.what());
-        UT_ASSERT_TRUE(false);
-    }
-    catch (...) {
-        UT_LOG_ERROR("[Audio DecoderID: %d] Unknown exception in decodeAndConsumeAudioStreams",
-                     mDecoderId.value);
-        UT_ASSERT_TRUE(false);
-    }
+
+    validatePostLoopMetrics(state);
 }
 
 /** @} */ // End of AUDIO_DECODER_HALTEST_HEADER

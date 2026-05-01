@@ -29,6 +29,7 @@ AudioStreams:
     channels: 2
     format: S16LE
     num_of_frames: 10
+    duration: 1280000000 # (2048 samples/frame x 10 frames x 1e9) / 16000 Hz
     frame_size:
       - 512
       - 603
@@ -49,6 +50,7 @@ AudioStreams:
     channels: 2
     format: S16LE
     num_of_frames: 10
+    duration: 928798185 # (2048 samples/frame x 10 frames x 1e9) / 22050 Hz
     frame_size:
       - 371
       - 583
@@ -69,6 +71,7 @@ AudioStreams:
     channels: 2
     format: S16LE
     num_of_frames: 10
+    duration: 853333333 # (2048 samples/frame x 10 frames x 1e9) / 24000 Hz
     frame_size:
       - 341
       - 406
@@ -89,6 +92,7 @@ AudioStreams:
     channels: 2
     format: S16LE
     num_of_frames: 10
+    duration: 640000000 # (2048 samples/frame x 10 frames x 1e9) / 32000 Hz
     frame_size:
       - 256
       - 326
@@ -109,6 +113,7 @@ AudioStreams:
     channels: 2
     format: S16LE
     num_of_frames: 10
+    duration: 464399092 # (2048 samples/frame x 10 frames x 1e9) / 44100 Hz
     frame_size:
       - 371
       - 457
@@ -129,6 +134,7 @@ AudioStreams:
     channels: 2
     format: S16LE
     num_of_frames: 10
+    duration: 426666666 # (2048 samples/frame x 10 frames x 1e9) / 48000 Hz
     frame_size:
       - 341
       - 416
@@ -149,6 +155,7 @@ AudioStreams:
     channels: 6
     format: S16LE
     num_of_frames: 10
+    duration: 426666666 # (2048 samples/frame x 10 frames x 1e9) / 48000 Hz
     frame_size:
       - 682
       - 878
@@ -169,6 +176,7 @@ AudioStreams:
     channels: 2
     format: S16LE
     num_of_frames: 10
+    duration: 320000000 # (2048 samples/frame x 10 frames x 1e9) / 64000 Hz
     frame_size:
       - 384
       - 384
@@ -189,6 +197,7 @@ AudioStreams:
     channels: 2
     format: S16LE
     num_of_frames: 10
+    duration: 232199546 # (2048 samples/frame x 10 frames x 1e9) / 88200 Hz
     frame_size:
       - 278
       - 348
@@ -209,6 +218,7 @@ AudioStreams:
     channels: 2
     format: S16LE
     num_of_frames: 10
+    duration: 213333333 # (2048 samples/frame x 10 frames x 1e9) / 96000 Hz
     frame_size:
       - 341
       - 452
@@ -229,6 +239,7 @@ AudioStreams:
     channels: 6
     format: S16LE
     num_of_frames: 10
+    duration: 213333333 # (2048 samples/frame x 10 frames x 1e9) / 96000 Hz
     frame_size:
       - 682
       - 1014
@@ -250,6 +261,7 @@ AudioStreams:
     channels: 2
     format: S16LE
     num_of_frames: 10
+    duration: 426666666 # (2048 samples/frame x 10 frames x 1e9) / 48000 Hz
     frame_size:
       - 340
       - 376
@@ -271,6 +283,7 @@ AudioStreams:
     channels: 2
     format: S16LE
     num_of_frames: 10
+    duration: 426666666 # (2048 samples/frame x 10 frames x 1e9) / 48000 Hz
     frame_size:
       - 341
       - 416

@@ -174,13 +174,18 @@ public:
                 continue;
             }
 
+            /* Reset per-stream state so each stream's errors and frames are validated independently */
+            resetDecodeSession(eventListener, controlListener);
+
             /* Get heap metrics */
             AVBUFFER_GETMETRICS(mAVBufferManager, secureDecode, beforeHeapMetrics);
 
-            AudioDecoderTest decodeTest(_decoderId, decoderHandle, controlListener,
-                                    eventListener, mAVBufferManager, mAVbufferHelper, secureDecode, testConfig, isSinkAttached);
+            {
+                AudioDecoderTest decodeTest(_decoderId, decoderHandle, controlListener,
+                                        eventListener, mAVBufferManager, mAVbufferHelper, secureDecode, testConfig, isSinkAttached);
 
-            decodeTest.run(true);
+                decodeTest.run(true);
+            } /* decodeTest destructor called here — destroyPool fires before metrics check */
 
             /* Get heap metrics */
             AVBUFFER_GETMETRICS(mAVBufferManager, secureDecode, afterHeapMetrics);
@@ -207,27 +212,33 @@ public:
             /* Get heap metrics */
             AVBUFFER_GETMETRICS(mAVBufferManager, secureDecode, beforeHeapMetrics);
 
-            std::vector<std::unique_ptr<AudioDecoderTest>> decoderTests;
-            for (const auto& [_decoderId, decoderHandle, controlListener, eventListener, capabilities] : mAudioDecoderList)
             {
-                if (!isDecoderUsable(_decoderId, capabilities, testConfig, secureDecode))
+                std::vector<std::unique_ptr<AudioDecoderTest>> decoderTests;
+                for (const auto& [_decoderId, decoderHandle, controlListener, eventListener, capabilities] : mAudioDecoderList)
                 {
-                    continue;
+                    if (!isDecoderUsable(_decoderId, capabilities, testConfig, secureDecode))
+                    {
+                        continue;
+                    }
+
+                    /* Reset per-stream state so each decoder's errors and frames are validated independently */
+                    resetDecodeSession(eventListener, controlListener);
+
+                    auto decoderTest = std::make_unique<AudioDecoderTest>(_decoderId, decoderHandle,
+                                                                    controlListener, eventListener,
+                                                                    mAVBufferManager, mAVbufferHelper,
+                                                                    secureDecode, testConfig, isSinkAttached);
+                    threads.emplace_back(&AudioDecoderTest::run, decoderTest.get(), true);
+
+                    decoderTests.push_back(std::move(decoderTest));
                 }
+                for (auto& t : threads)
+                {
+                    if (t.joinable())
+                        t.join();
+                }
+            } /* all AudioDecoderTest destructors called here — destroyPool fires before metrics check */
 
-                auto decoderTest = std::make_unique<AudioDecoderTest>(_decoderId, decoderHandle,
-                                                                controlListener, eventListener,
-                                                                mAVBufferManager, mAVbufferHelper,
-                                                                secureDecode, testConfig, isSinkAttached);
-                threads.emplace_back(&AudioDecoderTest::run, decoderTest.get(), true);
-
-                decoderTests.push_back(std::move(decoderTest));
-            }
-            for (auto& t : threads)
-            {
-                if (t.joinable())
-                    t.join();
-            }
             /* Get heap metrics */
             AVBUFFER_GETMETRICS(mAVBufferManager, secureDecode, afterHeapMetrics);
 
@@ -324,6 +335,12 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Error)
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
 
+/* TODO: Trim test cases disabled — contract not fully settled.
+ * trimStartNs/trimEndNs are per-frame durations (ns, invariant under resampling), but when one input frame
+ * produces multiple output frames the HAL must map trim to the first/last output frame derived from that input.
+ * An alternative of absolute PTS-based trim is under discussion, which would remove the remapping burden
+ * from the HAL since it already tracks PTS per output frame. Re-enable once the approach is agreed. */
+#if 0
 /**
  * @brief Test trimming functionality during sequential decoding
  *        Modes: Non-Tunnel, Non-Secure
@@ -341,6 +358,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Trim)
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
+#endif
 
 /**
  * @brief Test handling of discontinuity signal in sequential decode
@@ -470,6 +488,8 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Error)
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
 
+/* TODO: Trim test disabled — see ambiguity note above. */
+#if 0
 /**
  * @brief Test trimming functionality during sequential decoding
  *        Modes: Non-Tunnel, Secure
@@ -487,6 +507,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Trim)
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
+#endif
 
 /**
  * @brief Test handling of discontinuity signal in sequential decode
@@ -614,6 +635,8 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Error)
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
 
+/* TODO: Trim test disabled — see ambiguity note above. */
+#if 0
 /**
  * @brief Test trimming functionality in tunnel mode (Non-Secure)
  *        Modes: Tunnel, Non-Secure
@@ -631,6 +654,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Trim)
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
+#endif
 
 /**
  * @brief Test handling of discontinuity in tunnel mode (Non-Secure)
@@ -758,6 +782,8 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Error)
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
 
+/* TODO: Trim test disabled — see ambiguity note above. */
+#if 0
 /**
  * @brief Test trimming functionality in sequential decode (Tunnel, Secure)
  *        Modes: Tunnel, Secure, Sequential
@@ -775,6 +801,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Trim)
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
+#endif
 
 /**
  * @brief Test handling of discontinuity in sequential decode (Tunnel, Secure)
@@ -902,6 +929,8 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Error)
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
 
+/* TODO: Trim test disabled — see ambiguity note above. */
+#if 0
 /**
  * @brief Test trimming functionality in concurrent decode (Non-Tunnel, Non-Secure)
  *        Modes: Non-Tunnel, Non-Secure, Concurrent
@@ -919,6 +948,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Trim)
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
+#endif
 
 /**
  * @brief Test handling of discontinuity in concurrent decode (Non-Tunnel, Non-Secure)
@@ -1047,6 +1077,8 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Error)
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
 
+/* TODO: Trim test disabled — see ambiguity note above. */
+#if 0
 /**
  * @brief Test trimming functionality in concurrent decode (Non-Tunnel, Secure)
  *        Modes: Non-Tunnel, Secure, Concurrent
@@ -1064,6 +1096,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Trim)
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
+#endif
 
 /**
  * @brief Test handling of discontinuity in concurrent decode (Non-Tunnel, Secure)
@@ -1191,6 +1224,8 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Error)
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
 
+/* TODO: Trim test disabled — see ambiguity note above. */
+#if 0
 /**
  * @brief Test trimming functionality in concurrent decode (Tunnel, Non-Secure)
  *        Modes: Tunnel, Non-Secure, Concurrent
@@ -1208,6 +1243,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Trim)
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
+#endif
 
 /**
  * @brief Test handling of discontinuity in concurrent decode (Tunnel, Non-Secure)
@@ -1335,6 +1371,8 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Error)
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
 
+/* TODO: Trim test disabled — see ambiguity note above. */
+#if 0
 /**
  * @brief Test trimming functionality in concurrent decode (Tunnel, Secure)
  *        Modes: Tunnel, Secure, Concurrent
@@ -1352,6 +1390,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Trim)
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
+#endif
 
 /**
  * @brief Test handling of discontinuity in concurrent decode (Tunnel, Secure)

@@ -1,0 +1,106 @@
+#** *****************************************************************************
+# *
+# * If not stated otherwise in this file or this component's LICENSE file the
+# * following copyright and licenses apply:
+# *
+# * Copyright 2025 RDK Management
+# *
+# * Licensed under the Apache License, Version 2.0 (the "License");
+# * you may not use this file except in compliance with the License.
+# * You may obtain a copy of the License at
+# *
+# *
+# * http://www.apache.org/licenses/LICENSE-2.0
+# *
+# * Unless required by applicable law or agreed to in writing, software
+# * distributed under the License is distributed on an "AS IS" BASIS,
+# * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# * See the License for the specific language governing permissions and
+# * limitations under the License.
+# *
+#** ******************************************************************************
+
+AudioStreams:
+  vts_eac3_48k_1ch_64k_eac3:
+    input: vts_eac3_48k_1ch_64k.eac3            # Stream name
+    reference: vts_eac3_48k_1ch_64k_ref.pcm      # Reference stream name
+    codec: EAC3                                  # audio codec information (E-AC-3)
+    sample_rate: 48000                           # Sample rate in Hz
+    channels: 1                                  # Number of audio channels (mono)
+    format: S16LE                                # PCM format of the reference stream
+    num_of_frames: 10                            # Total number of E-AC-3 syncframes
+    duration: 320000000 # (1536 samples/frame x 10 frames x 1e9) / 48000 Hz
+    frame_size:                                 # Byte size for each E-AC-3 syncframe
+      - 256
+      - 256
+      - 256
+      - 256
+      - 256
+      - 256
+      - 256
+      - 256
+      - 256
+      - 256
+
+  vts_eac3_48k_2ch_128k_eac3:
+    input: vts_eac3_48k_2ch_128k.eac3            # Stream name
+    reference: vts_eac3_48k_2ch_128k_ref.pcm      # Reference stream name
+    codec: EAC3                                  # audio codec information (E-AC-3)
+    sample_rate: 48000                           # Sample rate in Hz
+    channels: 2                                  # Number of audio channels (stereo)
+    format: S16LE                                # PCM format of the reference stream
+    num_of_frames: 10                            # Total number of E-AC-3 syncframes
+    duration: 320000000 # (1536 samples/frame x 10 frames x 1e9) / 48000 Hz
+    frame_size:                                 # Byte size for each E-AC-3 syncframe
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+
+  vts_eac3_48k_6ch_256k_eac3:
+    input: vts_eac3_48k_6ch_256k.eac3            # Stream name
+    reference: vts_eac3_48k_6ch_256k_ref.pcm      # Reference stream name
+    codec: EAC3                                  # audio codec information (E-AC-3)
+    sample_rate: 48000                           # Sample rate in Hz
+    channels: 6                                  # Number of audio channels (5.1)
+    format: S16LE                                # PCM format of the reference stream
+    num_of_frames: 10                            # Total number of E-AC-3 syncframes
+    duration: 320000000 # (1536 samples/frame x 10 frames x 1e9) / 48000 Hz
+    frame_size:                                 # Byte size for each E-AC-3 syncframe
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+      - 1024
+
+  vts_eac3_48k_6ch_512k_eac3:
+    input: vts_eac3_48k_6ch_512k.eac3            # Stream name
+    reference: vts_eac3_48k_6ch_512k_ref.pcm      # Reference stream name
+    codec: EAC3                                  # audio codec information (E-AC-3)
+    sample_rate: 48000                           # Sample rate in Hz
+    channels: 6                                  # Number of audio channels (5.1)
+    format: S16LE                                # PCM format of the reference stream
+    num_of_frames: 10                            # Total number of E-AC-3 syncframes
+    duration: 320000000 # (1536 samples/frame x 10 frames x 1e9) / 48000 Hz
+    frame_size:                                 # Byte size for each E-AC-3 syncframe
+      - 2048
+      - 2048
+      - 2048
+      - 2048
+      - 2048
+      - 2048
+      - 2048
+      - 2048
+      - 2048
+      - 2048
