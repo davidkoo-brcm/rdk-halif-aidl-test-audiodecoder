@@ -335,6 +335,12 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Error)
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
 
+/* TODO: Trim test cases disabled — contract not fully settled.
+ * trimStartNs/trimEndNs are per-frame durations (ns, invariant under resampling), but when one input frame
+ * produces multiple output frames the HAL must map trim to the first/last output frame derived from that input.
+ * An alternative of absolute PTS-based trim is under discussion, which would remove the remapping burden
+ * from the HAL since it already tracks PTS per output frame. Re-enable once the approach is agreed. */
+#if 0
 /**
  * @brief Test trimming functionality during sequential decoding
  *        Modes: Non-Tunnel, Non-Secure
@@ -352,6 +358,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Trim)
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
+#endif
 
 /**
  * @brief Test handling of discontinuity signal in sequential decode
@@ -481,6 +488,8 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Error)
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
 
+/* TODO: Trim test disabled — see ambiguity note above. */
+#if 0
 /**
  * @brief Test trimming functionality during sequential decoding
  *        Modes: Non-Tunnel, Secure
@@ -498,6 +507,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Trim)
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
+#endif
 
 /**
  * @brief Test handling of discontinuity signal in sequential decode
@@ -625,6 +635,8 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Error)
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
 
+/* TODO: Trim test disabled — see ambiguity note above. */
+#if 0
 /**
  * @brief Test trimming functionality in tunnel mode (Non-Secure)
  *        Modes: Tunnel, Non-Secure
@@ -642,6 +654,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Trim)
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
+#endif
 
 /**
  * @brief Test handling of discontinuity in tunnel mode (Non-Secure)
@@ -769,6 +782,8 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Error)
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
 
+/* TODO: Trim test disabled — see ambiguity note above. */
+#if 0
 /**
  * @brief Test trimming functionality in sequential decode (Tunnel, Secure)
  *        Modes: Tunnel, Secure, Sequential
@@ -786,6 +801,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Trim)
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
+#endif
 
 /**
  * @brief Test handling of discontinuity in sequential decode (Tunnel, Secure)
@@ -913,6 +929,8 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Error)
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
 
+/* TODO: Trim test disabled — see ambiguity note above. */
+#if 0
 /**
  * @brief Test trimming functionality in concurrent decode (Non-Tunnel, Non-Secure)
  *        Modes: Non-Tunnel, Non-Secure, Concurrent
@@ -930,6 +948,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Trim)
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
+#endif
 
 /**
  * @brief Test handling of discontinuity in concurrent decode (Non-Tunnel, Non-Secure)
@@ -1058,6 +1077,8 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Error)
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
 
+/* TODO: Trim test disabled — see ambiguity note above. */
+#if 0
 /**
  * @brief Test trimming functionality in concurrent decode (Non-Tunnel, Secure)
  *        Modes: Non-Tunnel, Secure, Concurrent
@@ -1075,6 +1096,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Trim)
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
+#endif
 
 /**
  * @brief Test handling of discontinuity in concurrent decode (Non-Tunnel, Secure)
@@ -1202,6 +1224,8 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Error)
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
 
+/* TODO: Trim test disabled — see ambiguity note above. */
+#if 0
 /**
  * @brief Test trimming functionality in concurrent decode (Tunnel, Non-Secure)
  *        Modes: Tunnel, Non-Secure, Concurrent
@@ -1219,6 +1243,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Trim)
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
+#endif
 
 /**
  * @brief Test handling of discontinuity in concurrent decode (Tunnel, Non-Secure)
@@ -1346,6 +1371,8 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Error)
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
 
+/* TODO: Trim test disabled — see ambiguity note above. */
+#if 0
 /**
  * @brief Test trimming functionality in concurrent decode (Tunnel, Secure)
  *        Modes: Tunnel, Secure, Concurrent
@@ -1363,6 +1390,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Trim)
     bool concurrentMode = true;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
+#endif
 
 /**
  * @brief Test handling of discontinuity in concurrent decode (Tunnel, Secure)
