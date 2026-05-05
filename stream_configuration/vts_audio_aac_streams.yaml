@@ -231,6 +231,67 @@ AudioStreams:
       - 355
       - 334
 
+  tones_48k_2_256_long_aac:
+    input: tones_48k_2_256.aac
+    reference: tones_48k_2_256_ref.pcm
+    codec: AAC_LC
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 50
+    duration: 1066666666 # (1024 samples/frame x 50 frames x 1e9) / 48000 Hz
+    frame_size:
+      - 288
+      - 312
+      - 372
+      - 370
+      - 344
+      - 362
+      - 360
+      - 356
+      - 355
+      - 334
+      - 288
+      - 312
+      - 372
+      - 370
+      - 344
+      - 362
+      - 360
+      - 356
+      - 355
+      - 334
+      - 288
+      - 312
+      - 372
+      - 370
+      - 344
+      - 362
+      - 360
+      - 356
+      - 355
+      - 334
+      - 288
+      - 312
+      - 372
+      - 370
+      - 344
+      - 362
+      - 360
+      - 356
+      - 355
+      - 334
+      - 288
+      - 312
+      - 372
+      - 370
+      - 344
+      - 362
+      - 360
+      - 356
+      - 355
+      - 334
+
   tones_48k_5_1_384_aac:
     input: tones_48k_5.1_384.aac
     reference: tones_48k_5.1_384_ref.pcm
