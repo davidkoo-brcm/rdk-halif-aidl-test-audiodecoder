@@ -449,6 +449,31 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_StopStart
     bool concurrentMode = false;
     runSingleProcessTest(testName, secureMode, concurrentMode);
 }
+
+/**
+ * @brief Test back-pressure handling via onDecodeBufferAvailable callback in sequential decode.
+ *        Modes: Non-Tunnel, Non-Secure
+ *
+ * When the HAL input queue is full, decodeBufferWithMetadata() returns false with status ok.
+ * The HAL must call onDecodeBufferAvailable() once when input queue space becomes available.
+ * The startDecoding() function in AudioDecoderTest automatically retries on back-pressure
+ * (waits for onDecodeBufferAvailable, then retries decodeBufferWithMetadata).
+ * This test exercises that back-pressure retry path over a real decode stream.
+ *
+ * **Test Group ID:** 003@n
+ * **Test Case ID:** 009@n
+ *
+ * **Test Procedure:**
+ * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
+ */
+UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_BackPressure)
+{
+    const char *testName = "Decode_BackPressure";
+    bool secureMode = false;
+    bool concurrentMode = false;
+    runSingleProcessTest(testName, secureMode, concurrentMode);
+}
+
 /*commenting out tunnel and secure cases*/
 #if 0
 /**

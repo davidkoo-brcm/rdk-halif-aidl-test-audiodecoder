@@ -30,6 +30,7 @@
 #include <com/rdk/hal/audiodecoder/BnAudioDecoder.h>
 #include <com/rdk/hal/audiodecoder/IAudioDecoder.h>
 #include <com/rdk/hal/audiodecoder/BnAudioDecoderController.h>
+#include <com/rdk/hal/audiodecoder/InputBufferMetadata.h>
 #include <binder/BinderService.h>
 #include <optional>
 #include <string>
@@ -114,10 +115,9 @@ namespace com {
 
                     android::binder::Status start() override;
                     android::binder::Status stop() override;
-                    android::binder::Status decodeBuffer( int64_t nsPresentationTime, int64_t bufferHandle, int32_t trimStartNs, int32_t trimEndNs, bool* _aidl_return ) override;
+                    android::binder::Status decodeBufferWithMetadata( int64_t bufferHandle, const audiodecoder::InputBufferMetadata& metadata, bool* _aidl_return ) override;
                     android::binder::Status flush( bool reset ) override;
                     android::binder::Status signalDiscontinuity() override;
-                    android::binder::Status signalEOS() override;
                     android::binder::Status parseCodecSpecificData( rdk::hal::audiodecoder::CSDAudioFormat csdAudioFormat, const std::vector<uint8_t>& codecData, bool* _aidl_return ) override;
                     android::binder::Status setProperty( audiodecoder::Property property, const PropertyValue& propertyValue, bool* _aidl_return ) override;
                 };

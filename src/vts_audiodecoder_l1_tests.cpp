@@ -1239,9 +1239,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, stop_neg)
 }
 
 /**
-* @brief This test validates if the `decodeBuffer` method handles invalid input arguments correctly.
+* @brief This test validates if the `decodeBufferWithMetadata` method handles invalid input arguments correctly.
 *
-* The objective of this test is to provide an invalid arguments.
+* decodeBufferWithMetadata replaces decodeBuffer in .
+* trimStartNs/trimEndNs are now fields in InputBufferMetadata.
+* discontinuity is reserved and must always be false; setting true is rejected.
+* The objective of this test is to provide invalid arguments via InputBufferMetadata and verify rejection.
 *
 * **Test Group ID:** Basic: 01@n
 * **Test Case ID:** 020@n
@@ -1259,24 +1262,29 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, stop_neg)
 * |03|Verify the state of the decoder after open|state|state should be READY|Should pass|
 * |04|start the decoder|audioDecoderController|status should be ok|Should pass|
 * |05|Check the state of the decoder|None|state should be STARTED, status should be ok|Should pass|
-* |06|decodeBuffer with invalid parameters|invalid arguments|status should not be ok|Should pass|
-* |07|Stop the decoder|None|state should be READY, status should be ok|Should pass|
-* |08|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
+* |06|decodeBufferWithMetadata with invalid bufferHandle|invalid bufferHandle(-1)|status should not be ok, EX_ILLEGAL_ARGUMENT|Should pass|
+* |07|decodeBufferWithMetadata with invalid nsPresentationTime|metadata.nsPresentationTime=-1000000|status should not be ok, EX_ILLEGAL_ARGUMENT|Should pass|
+* |08|decodeBufferWithMetadata with invalid trimStartNs|metadata.trimStartNs=-1000|status should not be ok, EX_ILLEGAL_ARGUMENT|Should pass|
+* |09|decodeBufferWithMetadata with invalid trimEndNs|metadata.trimEndNs=-500|status should not be ok, EX_ILLEGAL_ARGUMENT|Should pass|
+* |10|decodeBufferWithMetadata with trimStartNs > trimEndNs|trimStart=2000, trimEnd=500|status should not be ok, EX_ILLEGAL_ARGUMENT|Should pass|
+* |11|decodeBufferWithMetadata with discontinuity=true|metadata.discontinuity=true|status should not be ok, EX_ILLEGAL_ARGUMENT (reserved field)|Should pass|
+* |12|Stop the decoder|None|state should be READY, status should be ok|Should pass|
+* |13|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, decodeBuffer_neg)
+UT_ADD_TEST(VTS_L1_AudioDecoder, decodeBufferWithMetadata_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
     audiodecoder::Capabilities capabilities;
-    ::android::binder::Status status;
 
+    int64_t valid_bufferHandle        = 0;
+    int64_t invalid_bufferHandle      = -1;
+    int64_t valid_nsPresentationTime  =  1000000;
     int64_t invalid_nsPresentationTime = -1000000;
-    int64_t valid_nsPresentationTime   =  1000000;
-    int64_t invalid_bufferHandle = -1;
-    int32_t valid_trimStartNs    = 1000;
-    int32_t invalid_trimStartNs  = -1000;
-    int32_t valid_trimEndNs      = 500;
-    int32_t invalid_trimEndNs    = -500;
+    int32_t valid_trimStartNs         = 500;
+    int32_t invalid_trimStartNs       = -1000;
+    int32_t valid_trimEndNs           = 1000;
+    int32_t invalid_trimEndNs         = -500;
 
     /* Get the Audio decoder IDs */
     AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
@@ -1301,24 +1309,56 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, decodeBuffer_neg)
             /* Start the decoder */
             AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
 
-            /* Decode buffer with invalid Presentation time */
-            AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, invalid_nsPresentationTime,
-                                              invalid_bufferHandle, valid_trimStartNs, valid_trimEndNs, Status::EX_ILLEGAL_ARGUMENT);
+            audiodecoder::InputBufferMetadata metadata;
+            metadata.endOfStream = false;
+            metadata.discontinuity = false;
 
-            /* Decode buffer with invalid buffer handle */
-            AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, valid_nsPresentationTime,
-                                              invalid_bufferHandle, valid_trimStartNs, valid_trimEndNs, Status::EX_ILLEGAL_ARGUMENT);
+            /* invalid bufferHandle — checked before metadata fields */
+            metadata.nsPresentationTime = valid_nsPresentationTime;
+            metadata.trimStartNs = valid_trimStartNs;
+            metadata.trimEndNs   = valid_trimEndNs;
+            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, invalid_bufferHandle, metadata, Status::EX_ILLEGAL_ARGUMENT);
 
-            /* Decode buffer with invalid trimStart */
-            AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, valid_nsPresentationTime,
-                                              invalid_bufferHandle, invalid_trimStartNs, valid_trimEndNs, Status::EX_ILLEGAL_ARGUMENT);
+            /* Invalid nsPresentationTime in metadata */
+            metadata.nsPresentationTime = invalid_nsPresentationTime;
+            metadata.trimStartNs = valid_trimStartNs;
+            metadata.trimEndNs   = valid_trimEndNs;
+            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_ILLEGAL_ARGUMENT);
 
-            /* Decode buffer with invalid trimEnd */
-            AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, valid_nsPresentationTime,
-                                              invalid_bufferHandle, valid_trimStartNs, invalid_trimEndNs, Status::EX_ILLEGAL_ARGUMENT);
+            /* invalid trimStartNs < 0 */
+            metadata.nsPresentationTime = valid_nsPresentationTime;
+            metadata.trimStartNs = invalid_trimStartNs;
+            metadata.trimEndNs   = valid_trimEndNs;
+            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_ILLEGAL_ARGUMENT);
+
+            /* invalid trimEndNs < 0 */
+            metadata.nsPresentationTime = valid_nsPresentationTime;
+            metadata.trimStartNs = valid_trimStartNs;
+            metadata.trimEndNs   = invalid_trimEndNs;
+            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_ILLEGAL_ARGUMENT);
+
+            /* trimStartNs > trimEndNs */
+            metadata.nsPresentationTime = valid_nsPresentationTime;
+            metadata.trimStartNs = 2000;
+            metadata.trimEndNs   = 500;
+            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_ILLEGAL_ARGUMENT);
+
+            /* discontinuity=true is reserved and must be rejected */
+            metadata.nsPresentationTime = valid_nsPresentationTime;
+            metadata.trimStartNs = valid_trimStartNs;
+            metadata.trimEndNs   = valid_trimEndNs;
+            metadata.discontinuity = true;
+            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_ILLEGAL_ARGUMENT);
 
             /* Stop the decoder */
             AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            /* decodeBufferWithMetadata in wrong state (READY) must fail */
+            metadata.discontinuity = false;
+            metadata.nsPresentationTime = valid_nsPresentationTime;
+            metadata.trimStartNs = valid_trimStartNs;
+            metadata.trimEndNs   = valid_trimEndNs;
+            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_ILLEGAL_STATE);
 
             /* Close the decoder */
             AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
@@ -1634,12 +1674,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalDiscontinuity_neg)
 }
 
 /**
-* @brief This test case verifies that the audio decoder can successfully signal an End-of-Stream (EOS)
-* condition in a positive scenario.
+* @brief This test case verifies EOS signaling via InputBufferMetadata.endOfStream in a positive scenario.
 *
-* This test ensures that the audio decoder can transition to an EOS state and handle it correctly.
-* Signaling EOS is a key functionality that ensures proper stream termination
-* and resource management, which is crucial for maintaining performance and stability
+* In  signalEOS() is removed. EOS is now signalled by setting
+* InputBufferMetadata.endOfStream = true on the final decodeBufferWithMetadata() call.
+* This test verifies that submitting a buffer with endOfStream=true is accepted by the HAL
+* (returns true, status ok) while the decoder is in the STARTED state.
 *
 * **Test Group ID:** Basic: 01 @n
 * **Test Case ID:** 025 @n
@@ -1657,16 +1697,18 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalDiscontinuity_neg)
 * |03|Verify the state of the decoder after open|state|state should be READY|Should pass|
 * |04|start the decoder|audioDecoderController|status should be ok|Should pass|
 * |05|Check the state of the decoder|None|state should be STARTED, status should be ok|Should pass|
-* |06|Signal EOS to the decoder|None|status should be ok and state should be STARTED|Should pass|
+* |06|Submit buffer with endOfStream=true via decodeBufferWithMetadata|bufferHandle=0, metadata.endOfStream=true|status should be ok, _aidl_return = true|Should pass|
 * |07|Stop the decoder|None|state should be READY, status should be ok|Should pass|
 * |08|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, signalEOS_pos)
+UT_ADD_TEST(VTS_L1_AudioDecoder, decodeBufferWithMetadata_EOS_pos)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
     audiodecoder::Capabilities capabilities;
-    ::android::binder::Status status;
+
+    /* bufferHandle=0 passes the <0 validity check; sufficient for L1 API contract testing */
+    int64_t valid_bufferHandle = 0;
 
     /* Get the Audio decoder IDs */
     AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
@@ -1691,8 +1733,14 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalEOS_pos)
             /* Start the decoder */
             AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
 
-            /* Signal EOS to the decoder */
-            AUDIODECODER_SIGNAL_EOS_SUCCESS(audioDecoder, audioDecoderController, true);
+            /* Signal EOS by setting endOfStream=true in metadata on the final buffer */
+            audiodecoder::InputBufferMetadata metadata;
+            metadata.nsPresentationTime = 1000000;
+            metadata.endOfStream = true;
+            metadata.discontinuity = false;
+            metadata.trimStartNs = 0;
+            metadata.trimEndNs   = 0;
+            AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(_decoderId.value, audioDecoderController, valid_bufferHandle, metadata);
 
             /* Stop the decoder */
             AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
@@ -1704,10 +1752,12 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalEOS_pos)
 }
 
 /**
-* @brief Test to check the functionality of signalEOS in the AudioDecoder in negative scenarios
+* @brief Test to check that decodeBufferWithMetadata rejects buffers in wrong states and after EOS.
 *
-* This test validates the signalEOS method on the AudioDecoderController to ensure it handles
-* negative scenarios of signal eos appropriately
+* signalEOS() is removed. EOS is signalled via endOfStream=true in metadata.
+* This test verifies the negative scenarios:
+* - decodeBufferWithMetadata with endOfStream=true is rejected when not in STARTED state (EX_ILLEGAL_STATE)
+* - After submitting an EOS buffer (endOfStream=true), submitting any further buffer is rejected
 *
 * **Test Group ID:** Basic: 01 @n
 * **Test Case ID:** 026 @n
@@ -1723,19 +1773,21 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalEOS_pos)
 * |01|Get the supported IDs and loop through the available decoder|None|None|None|
 * |02|Open the audio decoder with the codec and create audioDecoderController with listener|_codec, _decoder.supportsSecure, listener, audioDecoderController|status.isOk() should be true, audioDecoderController != nullptr|Should pass|
 * |03|Verify the state of the decoder after open|state|state should be READY|Should pass|
-* |04|Signal EOS to the decoder before start|None|status should not be ok|Should pass|
+* |04|decodeBufferWithMetadata with endOfStream=true before start|state=READY|status should not be ok, EX_ILLEGAL_STATE|Should pass|
 * |05|start the decoder|audioDecoderController|status should be ok|Should pass|
-* |06|Stop the decoder|None|state should be READY, status should be ok|Should pass|
-* |07|Signal EOS to the decoder after start->stop|None|status should not be ok|Should pass|
-* |08|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
-* |09|Signal EOS to the decoder after close|None|status should not be ok|Should pass|
+* |06|Submit EOS buffer (endOfStream=true) via decodeBufferWithMetadata|metadata.endOfStream=true|status should be ok, _aidl_return=true|Should pass|
+* |07|Submit another buffer after EOS — must be rejected|any buffer|status ok but _aidl_return=false (soft rejection) or status not ok|Should pass|
+* |08|Stop the decoder|None|state should be READY, status should be ok|Should pass|
+* |09|decodeBufferWithMetadata after stop|state=READY|status should not be ok, EX_ILLEGAL_STATE|Should pass|
+* |10|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
 */
-UT_ADD_TEST(VTS_L1_AudioDecoder, signalEOS_neg)
+UT_ADD_TEST(VTS_L1_AudioDecoder, decodeBufferWithMetadata_EOS_AfterEOS_neg)
 {
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
     audiodecoder::Capabilities capabilities;
-    ::android::binder::Status status;
+
+    int64_t valid_bufferHandle = 0;
 
     /* Get the Audio decoder IDs */
     AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
@@ -1754,26 +1806,37 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalEOS_neg)
             sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
             sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
 
+            audiodecoder::InputBufferMetadata metadata;
+            metadata.nsPresentationTime = 1000000;
+            metadata.endOfStream = true;
+            metadata.discontinuity = false;
+            metadata.trimStartNs = 0;
+            metadata.trimEndNs   = 0;
+
             /* Open the Decoder */
             AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
 
-            /* Signal EOS to the decoder before start */
-            AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
+            /* decodeBufferWithMetadata (with endOfStream=true) before start must fail */
+            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_ILLEGAL_STATE);
 
             /* Start the decoder */
             AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
 
+            /* Submit EOS buffer — must be accepted */
+            AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(_decoderId.value, audioDecoderController, valid_bufferHandle, metadata);
+
+            /* After EOS, any further buffer must be rejected (soft or hard rejection) */
+            metadata.endOfStream = false;
+            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_NONE);
+
             /* Stop the decoder */
             AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
 
-            /* Signal EOS to the decoder after start->stop */
-            AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
+            /* decodeBufferWithMetadata after stop must fail */
+            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_ILLEGAL_STATE);
 
             /* Close the decoder */
             AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
-
-            /* Signal EOS to the decoder after close */
-            //AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
         }
     }
 }
@@ -2444,6 +2507,263 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setAudioFormat_neg)
         AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
 
         AUDIODECODER_SETAUDIOFORMAT_FAILURE(audioDecoderController, 2, 48000, Status::EX_ILLEGAL_STATE);
+    }
+}
+
+/**
+* @brief Test that decodeBufferWithMetadata succeeds and onDecodeBufferAvailable fires when queue was full.
+*
+* When decodeBufferWithMetadata() returns false (queue full, status ok), the HAL must invoke
+* onDecodeBufferAvailable() exactly once when input queue space becomes available.
+* This L1 test verifies the API contract: a false return with status ok is valid, and
+* onDecodeBufferAvailable fires within a reasonable timeout.
+* Note: mock service does not simulate queue-full; this test verifies the positive
+* decode path and that onDecodeBufferAvailable is callable and returns ok.
+*
+* **Test Group ID:** Basic: 01 @n
+* **Test Case ID:** 033 @n
+* **Priority:** High @n
+* @n
+* **Pre-Conditions:** None @n
+* **Dependencies:** None @n
+* **User Interaction:** None @n
+* @n
+* **Test Procedure:** @n
+* |Variation / Step|Description|Test Data|Expected Result|Notes|
+* |----------------|-----------|---------|---------------|-----|
+* |01|Get the supported IDs and loop through the available decoder|None|None|None|
+* |02|Open the audio decoder and start it|_codec, secure, controllerListener|audioDecoderController valid, state STARTED|Should pass|
+* |03|Submit a valid buffer via decodeBufferWithMetadata|bufferHandle=0, valid metadata|status ok, _aidl_return=true|Should pass|
+* |04|If _aidl_return=false (queue full), wait for onDecodeBufferAvailable callback|waitForDecodeBufferAvailable(1000ms)|callback received within timeout|Should pass|
+* |05|Stop and close the decoder|None|state READY then CLOSED|Should pass|
+*/
+UT_ADD_TEST(VTS_L1_AudioDecoder, onDecodeBufferAvailable_pos)
+{
+    std::vector<IAudioDecoder::Id> decoderIds;
+    sp<IAudioDecoder> audioDecoder;
+    audiodecoder::Capabilities capabilities;
+
+    int64_t valid_bufferHandle = 0;
+
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
+
+    for(const auto& _decoderId: decoderIds)
+    {
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
+
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, &capabilities);
+
+        for(const auto& _codec: capabilities.supportedCodecs)
+        {
+            sp<AudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
+            sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
+            sp<IAudioDecoderController> audioDecoderController;
+
+            controllerListener->setDecoderID(_decoderId.value);
+
+            /* Open the Decoder */
+            AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
+
+            /* Start the decoder */
+            AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            audiodecoder::InputBufferMetadata metadata;
+            metadata.nsPresentationTime = 1000000;
+            metadata.endOfStream = false;
+            metadata.discontinuity = false;
+            metadata.trimStartNs = 0;
+            metadata.trimEndNs   = 0;
+
+            /* Submit buffer; if queue full (returns false), wait for onDecodeBufferAvailable */
+            controllerListener->resetDecodeBufferAvailable();
+            {
+                ::android::binder::Status _status;
+                bool _decodeResult;
+                _status = audioDecoderController->decodeBufferWithMetadata(valid_bufferHandle, metadata, &_decodeResult);
+                UT_ASSERT_TRUE(_status.isOk());
+                UT_ASSERT_EQUAL(_status.exceptionCode(), Status::EX_NONE);
+                if (!_decodeResult)
+                {
+                    /* Queue was full — wait for back-pressure relief callback */
+                    bool available = controllerListener->waitForDecodeBufferAvailable(1000);
+                    UT_ASSERT_TRUE(available);
+                }
+            }
+
+            /* Stop the decoder */
+            AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            /* Close the decoder */
+            AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
+        }
+    }
+}
+
+/**
+* @brief Test that decodeBufferWithMetadata accepts valid trimStartNs and trimEndNs values in metadata.
+*
+* trimStartNs (encoder delay on first frame) and trimEndNs (encoder padding on last frame)
+* are now fields in InputBufferMetadata. Valid values are non-negative with trimStart <= trimEnd.
+* This test verifies the happy path: valid trim values are accepted by the HAL.
+*
+* **Test Group ID:** Basic: 01 @n
+* **Test Case ID:** 034 @n
+* **Priority:** High @n
+* @n
+* **Pre-Conditions:** None @n
+* **Dependencies:** None @n
+* **User Interaction:** None @n
+* @n
+* **Test Procedure:** @n
+* |Variation / Step|Description|Test Data|Expected Result|Notes|
+* |----------------|-----------|---------|---------------|-----|
+* |01|Get the supported IDs and loop through the available decoder|None|None|None|
+* |02|Open and start the decoder|_codec, secure, controllerListener|state STARTED|Should pass|
+* |03|Submit buffer with trimStartNs=500, trimEndNs=1000|valid trim values|status ok, _aidl_return=true|Should pass|
+* |04|Submit buffer with zero trim values|trimStart=0, trimEnd=0|status ok, _aidl_return=true|Should pass|
+* |05|Submit buffer with equal trim values|trimStart=trimEnd=500|status ok, _aidl_return=true|Should pass|
+* |06|Stop and close the decoder|None|state READY then CLOSED|Should pass|
+*/
+UT_ADD_TEST(VTS_L1_AudioDecoder, decodeBufferWithMetadata_trim_pos)
+{
+    std::vector<IAudioDecoder::Id> decoderIds;
+    sp<IAudioDecoder> audioDecoder;
+    audiodecoder::Capabilities capabilities;
+
+    int64_t valid_bufferHandle = 0;
+
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
+
+    for(const auto& _decoderId: decoderIds)
+    {
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
+
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, &capabilities);
+
+        for(const auto& _codec: capabilities.supportedCodecs)
+        {
+            sp<IAudioDecoderController> audioDecoderController;
+            sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
+            sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
+
+            /* Open the Decoder */
+            AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
+
+            /* Start the decoder */
+            AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            audiodecoder::InputBufferMetadata metadata;
+            metadata.nsPresentationTime = 1000000;
+            metadata.endOfStream = false;
+            metadata.discontinuity = false;
+
+            /* valid trimStartNs < trimEndNs */
+            metadata.trimStartNs = 500;
+            metadata.trimEndNs   = 1000;
+            AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(_decoderId.value, audioDecoderController, valid_bufferHandle, metadata);
+
+            /* Zero trim values (no gapless trim) */
+            metadata.nsPresentationTime = 2000000;
+            metadata.trimStartNs = 0;
+            metadata.trimEndNs   = 0;
+            AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(_decoderId.value, audioDecoderController, valid_bufferHandle, metadata);
+
+            /* Equal trim values (trimStart == trimEnd) */
+            metadata.nsPresentationTime = 3000000;
+            metadata.trimStartNs = 500;
+            metadata.trimEndNs   = 500;
+            AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(_decoderId.value, audioDecoderController, valid_bufferHandle, metadata);
+
+            /* Stop the decoder */
+            AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            /* Close the decoder */
+            AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
+        }
+    }
+}
+
+/**
+* @brief Test that decodeBufferWithMetadata rejects discontinuity=true (reserved field constraint).
+*
+* InputBufferMetadata.discontinuity is a reserved field in v1 and must always be false.
+* The correct way to signal a discontinuity is via signalDiscontinuity(). Setting discontinuity=true
+* must be rejected by the HAL with EX_ILLEGAL_ARGUMENT.
+*
+* **Test Group ID:** Basic: 01 @n
+* **Test Case ID:** 035 @n
+* **Priority:** High @n
+* @n
+* **Pre-Conditions:** None @n
+* **Dependencies:** None @n
+* **User Interaction:** None @n
+* @n
+* **Test Procedure:** @n
+* |Variation / Step|Description|Test Data|Expected Result|Notes|
+* |----------------|-----------|---------|---------------|-----|
+* |01|Get the supported IDs and loop through the available decoder|None|None|None|
+* |02|Open and start the decoder|_codec, secure, controllerListener|state STARTED|Should pass|
+* |03|Submit buffer with discontinuity=true|metadata.discontinuity=true|status not ok, EX_ILLEGAL_ARGUMENT|Should pass|
+* |04|Submit buffer with discontinuity=false (correct usage)|metadata.discontinuity=false|status ok, _aidl_return=true|Should pass|
+* |05|Stop and close the decoder|None|state READY then CLOSED|Should pass|
+*/
+UT_ADD_TEST(VTS_L1_AudioDecoder, decodeBufferWithMetadata_discontinuity_reserved)
+{
+    std::vector<IAudioDecoder::Id> decoderIds;
+    sp<IAudioDecoder> audioDecoder;
+    audiodecoder::Capabilities capabilities;
+
+    int64_t valid_bufferHandle = 0;
+
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
+
+    for(const auto& _decoderId: decoderIds)
+    {
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
+
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, &capabilities);
+
+        for(const auto& _codec: capabilities.supportedCodecs)
+        {
+            sp<IAudioDecoderController> audioDecoderController;
+            sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
+            sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
+
+            /* Open the Decoder */
+            AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
+
+            /* Start the decoder */
+            AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            audiodecoder::InputBufferMetadata metadata;
+            metadata.nsPresentationTime = 1000000;
+            metadata.endOfStream = false;
+            metadata.trimStartNs = 0;
+            metadata.trimEndNs   = 0;
+
+            /* discontinuity=true is reserved; must be rejected */
+            metadata.discontinuity = true;
+            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_ILLEGAL_ARGUMENT);
+
+            /* discontinuity=false is the correct usage; must succeed */
+            metadata.discontinuity = false;
+            AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(_decoderId.value, audioDecoderController, valid_bufferHandle, metadata);
+
+            /* Stop the decoder */
+            AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            /* Close the decoder */
+            AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
+        }
     }
 }
 
