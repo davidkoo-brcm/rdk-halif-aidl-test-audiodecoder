@@ -280,7 +280,7 @@ bool AudioDecoderControllerListener::waitForDecodeBufferAvailable(int32_t waitTi
     return mDecodeBufferCV.wait_for(
         lock,
         chrono::milliseconds(waitTimeMs),
-        [this]() { return mDecodeBufferAvailableFlag.load(); }
+        [this]() { return mDecodeBufferAvailableFlag.load() || mShutdownFlag.load(); }
     );
 }
 
@@ -607,6 +607,13 @@ bool AudioDecoderTest::prepareInputBuffer(int32_t frameSize, int64_t& audioBuffe
         mInputFile.clear();
         mInputFile.seekg(0, std::ios::beg);
         mInputFile.read(reinterpret_cast<char*>(inputBuffer.data()), frameSize);
+        if (mInputFile.gcount() < frameSize)
+        {
+            UT_LOG_ERROR("[Audio DecoderID: %d] Input file too small for frame (need %d, got %zd)",
+                         mDecoderId.value, frameSize, (size_t)mInputFile.gcount());
+            AVBUFFER_FREE_SUCCESS(mAVBufferManager, audioBufferHandle);
+            return false;
+        }
     }
 
     if (mSecureDecode)
@@ -678,8 +685,9 @@ audiodecoder::InputBufferMetadata AudioDecoderTest::buildMetadata(size_t frameIn
 {
     audiodecoder::InputBufferMetadata metadata;
     metadata.nsPresentationTime = framePTS;
-    metadata.trimStartNs   = (frameIndex == 0) ? mTestConfiguration.trimStartNs : 0;
-    metadata.trimEndNs     = (frameIndex == mTestConfiguration.frameDetails.size() - 1) ? mTestConfiguration.trimEndNs : 0;
+    bool isLastFrame = (frameIndex == mTestConfiguration.frameDetails.size() - 1);
+    metadata.trimStartNs = isLastFrame ? mTestConfiguration.trimStartNs : 0;
+    metadata.trimEndNs   = isLastFrame ? mTestConfiguration.trimEndNs   : 0;
     metadata.discontinuity = false;
     metadata.endOfStream   = isEosPtsFrame || (framePTS == endPTS);
 

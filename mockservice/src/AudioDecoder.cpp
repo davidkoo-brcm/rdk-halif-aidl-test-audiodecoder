@@ -242,7 +242,7 @@ namespace com
 
                     std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-                    *_aidl_return = new AudioDecoderController(this->mId, this);
+                    *_aidl_return = new AudioDecoderController(this->mId, this, audioDecoderControllerListener);
 
                     if (this->mEventListener)
                         this->mAudioDecoderEventListener->onStateChanged(State::OPENING, State::READY);
@@ -311,10 +311,14 @@ namespace com
                     return android::binder::Status::ok();
                 }
 
-                AudioDecoderController::AudioDecoderController(IAudioDecoder::Id id, AudioDecoder *parentDecoder)
+                AudioDecoderController::AudioDecoderController(IAudioDecoder::Id id, AudioDecoder *parentDecoder,
+                                                               android::sp<audiodecoder::IAudioDecoderControllerListener> listener)
                 {
                     this->mId = id;
                     this->mParentDecoder = parentDecoder;
+                    this->mEosReceived = false;
+                    this->mControllerListener = listener;
+                    this->mQueueCount = 0;
                 }
 
                 AudioDecoderController::~AudioDecoderController()
@@ -355,6 +359,9 @@ namespace com
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
 
+                    this->mEosReceived = false;
+                    this->mQueueCount = 0;
+
                     /* To simulate State Transitions */
                     std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
@@ -385,6 +392,11 @@ namespace com
                         *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
+                    if(this->mEosReceived)
+                    {
+                        *_aidl_return = false;
+                        return android::binder::Status::ok();
+                    }
                     if(metadata.nsPresentationTime < 0)
                     {
                         *_aidl_return = false;
@@ -405,11 +417,27 @@ namespace com
                         *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                     }
-
                     if(metadata.discontinuity)
                     {
                         *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
+                    }
+                    this->mQueueCount++;
+                    if(this->mQueueCount >= kQueueDepth)
+                    {
+                        this->mQueueCount = 0;
+                        *_aidl_return = false;
+                        android::sp<audiodecoder::IAudioDecoderControllerListener> listener = this->mControllerListener;
+                        std::thread([listener]() {
+                            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                            if (listener)
+                                listener->onDecodeBufferAvailable();
+                        }).detach();
+                        return android::binder::Status::ok();
+                    }
+                    if(metadata.endOfStream)
+                    {
+                        this->mEosReceived = true;
                     }
                     *_aidl_return = true;
                     return android::binder::Status::ok();
@@ -422,6 +450,9 @@ namespace com
                     {
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
+
+                    this->mEosReceived = false;
+                    this->mQueueCount = 0;
 
                     /* To simulate State Transitions */
                     std::this_thread::sleep_for(std::chrono::milliseconds(5));

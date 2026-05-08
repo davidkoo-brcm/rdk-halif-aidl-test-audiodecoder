@@ -513,7 +513,7 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_ASSERT_FALSE(status.isOk()); \
     } while (0)
 
-/* decodeBufferWithMetadata replaces decodeBuffer; EOS carried in metadata.endOfStream */
+/* EOS is signalled via metadata.endOfStream on the final decodeBufferWithMetadata() call */
 #define AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(decoderID, audioDecoderController, bufferHandle, metadata) \
     do { \
         ::android::binder::Status status; \
@@ -639,7 +639,7 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_ASSERT_FALSE(status.isOk()); \
     } while (0)
 
-/* signalEOS() is removed in EOS is now signalled via
+/* signalEOS() is removed; EOS is now signalled via
  * InputBufferMetadata.endOfStream = true on the final decodeBufferWithMetadata() call.
  * Use AUDIODECODER_DECODE_WITH_METADATA_SUCCESS with metadata.endOfStream = true instead. */
 
@@ -844,22 +844,25 @@ public:
 
     string formatChannelVector(const std::vector<ChannelType>& channels);
 
-    /* frameAVBufferHandle — parameter rename only; ownership: caller frees on callback */
+    /* Caller owns frameAVBufferHandle and must free it after consuming the decoded output */
     ::android::binder::Status onFrameOutput(
         int64_t nsPresentationTime,
         int64_t frameAVBufferHandle,
         const std::optional<com::rdk::hal::audiodecoder::FrameMetadata>& metadata
     ) override;
 
-    /* onDecodeBufferAvailable — fires once when input queue transitions full→available */
+    /* Fires once when the HAL input queue transitions from full to available */
     ::android::binder::Status onDecodeBufferAvailable() override;
 
     bool getNextFrame(DecodedAudioFrame_t &frameInfo, int32_t waitTime, bool popFrame);
     void resetFrames();
 
-    /* wait for back-pressure relief; returns true if callback fired within waitTimeMs */
+    /* Returns true if onDecodeBufferAvailable fired within waitTimeMs, false on timeout */
     bool waitForDecodeBufferAvailable(int32_t waitTimeMs);
     void resetDecodeBufferAvailable();
+
+    int32_t getDecodeBufferAvailableCount() const { return mDecodeBufferAvailableCount.load(); }
+    void resetDecodeBufferAvailableCount()         { mDecodeBufferAvailableCount = 0; }
 
     void shutdown();
     void setDecoderID(int32_t id);
@@ -870,8 +873,8 @@ private:
     atomic<bool> mShutdownFlag;
     int32_t mDecoderID;
 
-    /* back-pressure tracking */
-    atomic<bool> mDecodeBufferAvailableFlag;
+    atomic<bool>    mDecodeBufferAvailableFlag;
+    atomic<int32_t> mDecodeBufferAvailableCount{0};
     mutex mDecodeBufferMutex;
     condition_variable mDecodeBufferCV;
 };
@@ -985,6 +988,13 @@ private:
     void startDecoding();
     void teardownDecoder();
     void validateDecodedFrame();
+
+    bool prepareInputBuffer(int32_t frameSize, int64_t& audioBufferHandle);
+    void handleControlPoints(int64_t framePTS);
+    void trackInputFrame(int64_t framePTS, bool errorFrame);
+    audiodecoder::InputBufferMetadata buildMetadata(size_t frameIndex, int64_t framePTS, int64_t endPTS, bool isEosPtsFrame);
+    void submitFrame(int64_t audioBufferHandle, const audiodecoder::InputBufferMetadata& metadata);
+    void handleMidStreamEOS(int64_t audioBufferHandle, int64_t framePTS);
 
     bool checkPassThrough   (const DecodedAudioFrame_t& frame, int32_t framesDecoded, bool& isPassThrough);
     void checkPTSSpacing    (const DecodedAudioFrame_t& frame, int64_t frameBytes, FrameValidationState& state);

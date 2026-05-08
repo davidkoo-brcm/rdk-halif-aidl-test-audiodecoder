@@ -109,8 +109,13 @@ namespace com {
                 private:
                     IAudioDecoder::Id mId;
                     AudioDecoder *mParentDecoder;
+                    bool mEosReceived;
+                    android::sp<audiodecoder::IAudioDecoderControllerListener> mControllerListener;
+                    int32_t mQueueCount;
+                    static constexpr int32_t kQueueDepth = 4;
                 public:
-                    AudioDecoderController(IAudioDecoder::Id id, AudioDecoder *parentDecoder);
+                    AudioDecoderController(IAudioDecoder::Id id, AudioDecoder *parentDecoder,
+                                           android::sp<audiodecoder::IAudioDecoderControllerListener> listener);
                     virtual ~AudioDecoderController();
 
                     android::binder::Status start() override;

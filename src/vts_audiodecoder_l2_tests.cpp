@@ -561,6 +561,131 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, StateTransitions_mutipleInstance)
     }
 }
 
+/**
+ * @brief Test that trim values in InputBufferMetadata are accepted through the full state machine.
+ *
+ * trimStartNs and trimEndNs in InputBufferMetadata control gapless playback trim.
+ * trimStartNs on the first frame removes encoder delay; trimEndNs on the last frame removes
+ * encoder padding. This test verifies that valid trim values are accepted by the HAL
+ * through the complete Open -> Start -> decode -> Stop -> Close flow.
+ *
+ * **Test Group ID:** 02@n
+ * **Test Case ID:** 007@n
+ *
+ * **Test Procedure:**
+ * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
+ */
+UT_ADD_TEST(VTS_L2_AudioDecoder, DecodeBufferWithMetadata_TrimValues)
+{
+    int64_t valid_bufferHandle = 0;
+
+    for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
+    {
+        for(const auto& _codec: capabilities->supportedCodecs)
+        {
+            sp<IAudioDecoderController> audioDecoderController;
+
+            /* Open -> state: READY */
+            AUDIODECODER_OPEN_SUCCESS(decoder, _codec, false, controlListener, audioDecoderController, false);
+            checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::CLOSED, AudioDecoderState::OPENING, AudioDecoderState::READY);
+
+            /* Start -> state: STARTED */
+            AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
+            checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::READY, AudioDecoderState::STARTING, AudioDecoderState::STARTED);
+
+            audiodecoder::InputBufferMetadata metadata;
+            metadata.endOfStream = false;
+            metadata.discontinuity = false;
+
+            /* First frame — trimStartNs carries encoder delay */
+            metadata.nsPresentationTime = 1000000;
+            metadata.trimStartNs = 576000;  /* typical AAC encoder delay: 576 samples @ 1kHz = 576000ns */
+            metadata.trimEndNs   = 0;
+            AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(0, audioDecoderController, valid_bufferHandle, metadata);
+
+            /* Middle frame — no trim */
+            metadata.nsPresentationTime = 2000000;
+            metadata.trimStartNs = 0;
+            metadata.trimEndNs   = 0;
+            AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(0, audioDecoderController, valid_bufferHandle, metadata);
+
+            /* Last frame — trimEndNs carries encoder padding, endOfStream=true signals EOS */
+            metadata.nsPresentationTime = 3000000;
+            metadata.trimStartNs = 0;
+            metadata.trimEndNs   = 290000;  /* typical AAC encoder padding */
+            metadata.endOfStream = true;
+            AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(0, audioDecoderController, valid_bufferHandle, metadata);
+
+            /* Stop -> state: READY */
+            AUDIODECODER_STOP_SUCCESS(decoder, audioDecoderController, false);
+            checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::STARTED, AudioDecoderState::STOPPING, AudioDecoderState::READY);
+
+            /* Close -> state: CLOSED */
+            AUDIODECODER_CLOSE_SUCCESS(decoder, audioDecoderController, false);
+            checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::READY, AudioDecoderState::CLOSING, AudioDecoderState::CLOSED);
+        }
+    }
+}
+
+/**
+ * @brief Test that discontinuity=false constraint is enforced and signalDiscontinuity() still works.
+ *
+ * InputBufferMetadata.discontinuity is a reserved field and must always be false.
+ * A discontinuity must be signalled via signalDiscontinuity() before submitting the first buffer
+ * of the resumed segment. This test verifies:
+ * 1. Submit with discontinuity=true is rejected (EX_ILLEGAL_ARGUMENT)
+ * 2. signalDiscontinuity() followed by submit with discontinuity=false succeeds
+ *
+ * **Test Group ID:** 02@n
+ * **Test Case ID:** 008@n
+ *
+ * **Test Procedure:**
+ * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
+ */
+UT_ADD_TEST(VTS_L2_AudioDecoder, DecodeBufferWithMetadata_DiscontinuityReservedFalse)
+{
+    int64_t valid_bufferHandle = 0;
+
+    for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
+    {
+        for(const auto& _codec: capabilities->supportedCodecs)
+        {
+            sp<IAudioDecoderController> audioDecoderController;
+
+            /* Open -> state: READY */
+            AUDIODECODER_OPEN_SUCCESS(decoder, _codec, false, controlListener, audioDecoderController, false);
+            checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::CLOSED, AudioDecoderState::OPENING, AudioDecoderState::READY);
+
+            /* Start -> state: STARTED */
+            AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
+            checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::READY, AudioDecoderState::STARTING, AudioDecoderState::STARTED);
+
+            audiodecoder::InputBufferMetadata metadata;
+            metadata.nsPresentationTime = 1000000;
+            metadata.endOfStream = false;
+            metadata.trimStartNs = 0;
+            metadata.trimEndNs   = 0;
+
+            /* Discontinuity must be signalled via signalDiscontinuity() before submitting the first buffer of the resumed segment */
+            metadata.discontinuity = true;
+            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_ILLEGAL_ARGUMENT);
+
+            /* Correct usage — signalDiscontinuity() then submit with discontinuity=false */
+            AUDIODECODER_SIGNAL_DISCONTINUITY_SUCCESS(decoder, audioDecoderController, false);
+            metadata.discontinuity = false;
+            AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(0, audioDecoderController, valid_bufferHandle, metadata);
+
+            /* Stop -> state: READY */
+            AUDIODECODER_STOP_SUCCESS(decoder, audioDecoderController, false);
+            checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::STARTED, AudioDecoderState::STOPPING, AudioDecoderState::READY);
+
+            /* Close -> state: CLOSED */
+            AUDIODECODER_CLOSE_SUCCESS(decoder, audioDecoderController, false);
+            checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::READY, AudioDecoderState::CLOSING, AudioDecoderState::CLOSED);
+        }
+    }
+}
+
 /** @} */ // End of AUDIO_DECODER_HALTEST L2 File
 /** @} */ // End of AUDIO_DECODER_HALTEST
 /** @} */ // End of AUDIO_DECODER Module

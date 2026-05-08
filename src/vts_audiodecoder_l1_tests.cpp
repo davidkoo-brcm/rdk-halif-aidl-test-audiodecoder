@@ -1241,9 +1241,8 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, stop_neg)
 /**
 * @brief This test validates if the `decodeBufferWithMetadata` method handles invalid input arguments correctly.
 *
-* decodeBufferWithMetadata replaces decodeBuffer in .
-* trimStartNs/trimEndNs are now fields in InputBufferMetadata.
-* discontinuity is reserved and must always be false; setting true is rejected.
+* trimStartNs/trimEndNs are fields in InputBufferMetadata.
+* InputBufferMetadata.discontinuity is a reserved field and must always be false; setting true is rejected.
 * The objective of this test is to provide invalid arguments via InputBufferMetadata and verify rejection.
 *
 * **Test Group ID:** Basic: 01@n
@@ -2692,7 +2691,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, decodeBufferWithMetadata_trim_pos)
 /**
 * @brief Test that decodeBufferWithMetadata rejects discontinuity=true (reserved field constraint).
 *
-* InputBufferMetadata.discontinuity is a reserved field in v1 and must always be false.
+* InputBufferMetadata.discontinuity is a reserved field and must always be false.
 * The correct way to signal a discontinuity is via signalDiscontinuity(). Setting discontinuity=true
 * must be rejected by the HAL with EX_ILLEGAL_ARGUMENT.
 *
