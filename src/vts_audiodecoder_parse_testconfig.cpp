@@ -109,15 +109,17 @@ UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *m
         string decodeTime  = streamList + "." + to_string(i) + "." +"decode_time_threshold";
         string trimStart   = streamList + "." + to_string(i) + "." +"trim.0";
         string trimEnd     = streamList + "." + to_string(i) + "." +"trim.1";
-        string decoderDelay = controlList + "." +"delay_between_decode_calls";
-        string stopPts      = controlList + "." + "stop_start_pts";
-        string discontinuityPts = controlList + "." + "signal_discontinuity_pts";
-        string flushPts     = controlList + "." + "flush_pts";
-        string flushRestPts = controlList + "." + "flush_reset_pts";
-        string eosPts       = controlList + "." + "eos_pts";
-        string sinkEosPts       = controlList + "." + "sink_eos_pts";
-        string sinkFlushPts       = controlList + "." + "sink_flush_pts";
-        string streamDuration = streamsDetails + "." + string(resultKVP) + "." + "duration";
+        string decoderDelay         = controlList + "." + "delay_between_decode_calls";
+        string stopPts              = controlList + "." + "stop_start_pts";
+        string discontinuityPts     = controlList + "." + "signal_discontinuity_pts";
+        string flushPts             = controlList + "." + "flush_pts";
+        string flushRestPts         = controlList + "." + "flush_reset_pts";
+        string eosPts               = controlList + "." + "eos_pts";
+        string sinkEosPts           = controlList + "." + "sink_eos_pts";
+        string sinkFlushPts         = controlList + "." + "sink_flush_pts";
+        string numFramesOverrideKey = controlList + "." + "num_frames_override";
+        string onDecodeBufAvailKey  = controlList + "." + "on_decode_buf_avail_test";
+        string streamDuration       = streamsDetails + "." + string(resultKVP) + "." + "duration";
 
         ut_kvp_getStringField(kvpTestInstance, input.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
         fullPath = currentPath;
@@ -141,7 +143,16 @@ UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *m
         ut_kvp_getStringField(kvpTestInstance, format.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
         testDetails.format = vts_audioDecoder_helper_StringToPCMFormat(string(resultKVP));
 
-        testDetails.numOfFrames = ut_kvp_getUInt32Field(kvpTestInstance, numOfFrames.c_str());
+        int32_t streamFrameCount = ut_kvp_getUInt32Field(kvpTestInstance, numOfFrames.c_str());
+        testDetails.numOfFrames  = streamFrameCount;
+
+        int32_t numFramesOverride = ut_kvp_getUInt32Field(kvpTestInstance, numFramesOverrideKey.c_str());
+        if (numFramesOverride > 0)
+        {
+            if (streamFrameCount > 0 && testDetails.duration > 0)
+                testDetails.duration = (testDetails.duration * numFramesOverride) / streamFrameCount;
+            testDetails.numOfFrames = numFramesOverride;
+        }
 
         if(ut_kvp_fieldPresent(kvpTestInstance, errorFrames.c_str()))
         {
@@ -158,8 +169,8 @@ UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *m
         {
             bool errorFrame = false;
 
-            string eachFrame = frameSize + "." + to_string(j);
-            string eachPTS = framePTS + "." + to_string(j);
+            string eachFrame = frameSize + "." + to_string(j % streamFrameCount);
+            string eachPTS   = framePTS  + "." + to_string(j);
             int32_t size = ut_kvp_getUInt32Field(kvpTestInstance, eachFrame.c_str());
             int64_t PTS = ut_kvp_getUInt64Field(kvpTestInstance, eachPTS.c_str());
             if(errorFrameNum.size() > 0)
@@ -182,8 +193,9 @@ UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *m
         testDetails.flushPts     = ut_kvp_getUInt64Field(kvpTestInstance, flushPts.c_str());
         testDetails.flushRestPts = ut_kvp_getUInt64Field(kvpTestInstance, flushRestPts.c_str());
         testDetails.eosPts       = ut_kvp_getUInt64Field(kvpTestInstance, eosPts.c_str());
-        testDetails.sinkEosPts   = ut_kvp_getUInt64Field(kvpTestInstance, sinkEosPts.c_str());
-        testDetails.sinkFlushPts = ut_kvp_getUInt64Field(kvpTestInstance, sinkFlushPts.c_str());
+        testDetails.sinkEosPts          = ut_kvp_getUInt64Field(kvpTestInstance, sinkEosPts.c_str());
+        testDetails.sinkFlushPts        = ut_kvp_getUInt64Field(kvpTestInstance, sinkFlushPts.c_str());
+        testDetails.onDecodeBufAvailTest = (ut_kvp_getUInt32Field(kvpTestInstance, onDecodeBufAvailKey.c_str()) != 0);
 
         testConfiguration.push_back(testDetails);
     }

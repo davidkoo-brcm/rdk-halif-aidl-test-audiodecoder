@@ -252,6 +252,67 @@ AudioStreams:
       - 2560
       - 2560
 
+  tones_48k_2_192_long_ac3:
+    input: tones_48k_2_192.ac3
+    reference: tones_48k_2_192_ref.pcm
+    codec: DOLBY_AC3
+    sample_rate: 48000
+    channels: 2
+    format: S16LE
+    num_of_frames: 50
+    duration: 1600000000 # (1536 samples/frame x 50 frames x 1e9) / 48000 Hz
+    frame_size:
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+      - 768
+
   # Error Streams
   tones_48k_2_192_header_ac3:
     input: tones_48k_2_192_header.ac3
