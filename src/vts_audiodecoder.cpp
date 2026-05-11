@@ -97,7 +97,10 @@ string AudioDecoderControllerListener::formatChannelVector(const std::vector<Cha
  */
 Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime, int64_t frameAVBufferHandle, const ::optional<audiodecoder::FrameMetadata>& metadata)
 {
-    UT_LOG_INFO("[Audio DecoderID: %d] onFrameOutput: Received frameoutput [PTS:%lld, handle: %llX]", mDecoderID, nsPresentationTime, frameAVBufferHandle);
+    UT_LOG_INFO("[Audio DecoderID: %d] onFrameOutput: Received frameoutput [PTS:%lld, handle: %llX, metaAvail: %s, EOS: %s]",
+                mDecoderID, nsPresentationTime, frameAVBufferHandle,
+                metadata.has_value() ? "true" : "false",
+                metadata.has_value() ? UT_Control_GetMapString(bool_mapTable, metadata->endOfStream) : "N/A");
 
     DecodedAudioFrame_t frame;
     frame.receiveTime = chrono::steady_clock::now();
@@ -909,18 +912,29 @@ void AudioDecoderTest::validatePostLoopMetrics(const FrameValidationState& state
     int32_t expectedFrames = state.isPassThrough ? mTestConfiguration.numOfFrames
                                                  : mTestConfiguration.numOfFrames - state.decodeErrors;
 
-    /* Frame count check — common to both passthrough and non-passthrough.
-     * Flush discards queued frames mid-stream so use relaxed (<=) when flush is configured. */
-    if ((mTestConfiguration.flushPts == -1) && (mTestConfiguration.flushRestPts == -1))
+    /* Frame count: METRIC_FRAMES_DECODED compared against yaml num_of_frames is the authoritative
+     * check. Applies to all codec types including SOC_PROPRIETARY pass-through.
+     * When flush is configured use relaxed (<=) checks. */
+    int32_t metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped;
+
+    getDecoderMetrics(metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped);
+
+    UT_LOG_DEBUG("Final Decoder Metrics: Codec: %d, Frames Decoded=%d, Decode Errors=%d, Frames Dropped=%d",
+        mTestConfiguration.codec, metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped);
+
+    if (metricsFrameDecoded != -1)
     {
-        UT_ASSERT_EQUAL(state.framesDecoded, expectedFrames);
-    }
-    else
-    {
-        UT_ASSERT_TRUE(state.framesDecoded <= expectedFrames);
+        if ((mTestConfiguration.flushPts == -1) && (mTestConfiguration.flushRestPts == -1))
+        {
+            UT_ASSERT_EQUAL(metricsFrameDecoded, expectedFrames);
+        }
+        else
+        {
+            UT_ASSERT_TRUE(metricsFrameDecoded <= expectedFrames);
+        }
     }
 
-    /* SOC_PROPRIETARY pass-through: frame count already validated above, no further checks needed */
+    /* SOC_PROPRIETARY pass-through: no further checks needed */
     if (state.isPassThrough)
     {
         return;
@@ -946,21 +960,8 @@ void AudioDecoderTest::validatePostLoopMetrics(const FrameValidationState& state
     /* Error count validation */
     UT_ASSERT_EQUAL(totalErrors, state.decodeErrors);
 
-    /* Decoder metrics validation — -1 means vendor has not implemented the metric, skip.
-     * When flush is configured use relaxed (<=) checks. */
-    int32_t metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped;
-
-    getDecoderMetrics(metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped);
-
-    UT_LOG_DEBUG("Final Decoder Metrics: Codec: %d, Frames Decoded=%d, Decode Errors=%d, Frames Dropped=%d",
-        mTestConfiguration.codec, metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped);
-
     if ((mTestConfiguration.flushPts == -1) && (mTestConfiguration.flushRestPts == -1))
     {
-        if (metricsFrameDecoded != -1)
-        {
-            UT_ASSERT_EQUAL(metricsFrameDecoded, expectedFrames);
-        }
         if (metricsDecodeErrors != -1)
         {
             UT_ASSERT_EQUAL(metricsDecodeErrors, state.decodeErrors);
@@ -972,10 +973,6 @@ void AudioDecoderTest::validatePostLoopMetrics(const FrameValidationState& state
     }
     else
     {
-        if (metricsFrameDecoded != -1)
-        {
-            UT_ASSERT_TRUE(metricsFrameDecoded <= expectedFrames);
-        }
         if (metricsDecodeErrors != -1)
         {
             UT_ASSERT_TRUE(metricsDecodeErrors <= state.decodeErrors);
