@@ -54,7 +54,7 @@ IAudioDecoderManager:
       Controls:
         delay_between_decode_calls: 5 #Time in milli seconds
         stop_start_pts: 106666665
-        signal_discontinuity_pts: 149333331
+        discontinuity_pts: 149333331
         flush_pts: 170666664
         flush_reset_pts: 191999997
         eos_pts: 191999997
@@ -103,7 +103,7 @@ IAudioDecoderManager:
 - reference_streams_path: Target path for reference PCM streams
 - delay_between_decode_calls: insert delay in msec between each `decodeBuffer()` call
 - stop_start_pts: `pts` value in nano seconds at which the decoder should be stopped and restarted during the test. -1 indicates that decoder should not be restarted
-- signal_discontinuity_pts: `pts` value in nano seconds at which the test should signal discontinuity to the decoder. -1 indicates that no discontinuity signal should be sent
+- discontinuity_pts: `pts` value in nano seconds at which the test should signal discontinuity to the decoder. -1 indicates that no discontinuity signal should be sent
 - flush_pts - `pts` value in nano seconds that determine when the test should flush the decoder. -1 indicates that test should not flush
 - flush_reset_pts - `pts` value in nano seconds that determine when the test should flush with reset the decoder. -1 indicates that test should not flush
 - eos_pts - `pts` value in nano seconds that determine when the test should sent `eos` signal to decoder. -1 indicates that test should not signal `eos`
@@ -514,7 +514,7 @@ The L3 tests validate the functional correctness and performance of the AudioDec
 | 1| Decode_Sequential_NonTunnel_NonSecure             | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams                             |
 | 2| Decode_Sequential_NonTunnel_NonSecure_Error       | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams                             |
 | 3| Decode_Sequential_NonTunnel_NonSecure_Trim        | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Inputs.Streams.trim      |
-| 4| Decode_Sequential_NonTunnel_NonSecure_Discontinuity| runSingleProcessTest| secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+| 4| Decode_Sequential_NonTunnel_NonSecure_Discontinuity| runSingleProcessTest| secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.discontinuity_pts |
 | 5| Decode_Sequential_NonTunnel_NonSecure_EOS         | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.eos_pts         |
 | 6| Decode_Sequential_NonTunnel_NonSecure_Flush       | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.flush_pts       |
 | 7| Decode_Sequential_NonTunnel_NonSecure_FlushReset  | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.flush_reset_pts |
@@ -522,7 +522,7 @@ The L3 tests validate the functional correctness and performance of the AudioDec
 | 9| Decode_Sequential_NonTunnel_Secure                | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams                             |
 |10| Decode_Sequential_NonTunnel_Secure_Error          | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams                             |
 |11| Decode_Sequential_NonTunnel_Secure_Trim           | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Inputs.Streams.trim      |
-|12| Decode_Sequential_NonTunnel_Secure_Discontinuity  | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|12| Decode_Sequential_NonTunnel_Secure_Discontinuity  | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.discontinuity_pts |
 |13| Decode_Sequential_NonTunnel_Secure_EOS            | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.eos_pts         |
 |14| Decode_Sequential_NonTunnel_Secure_Flush          | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.flush_pts       |
 |15| Decode_Sequential_NonTunnel_Secure_FlushReset     | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.flush_reset_pts |
@@ -530,7 +530,7 @@ The L3 tests validate the functional correctness and performance of the AudioDec
 |17| Decode_Sequential_Tunnel_NonSecure                | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams                             |
 |18| Decode_Sequential_Tunnel_NonSecure_Error          | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams                             |
 |19| Decode_Sequential_Tunnel_NonSecure_Trim           | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Inputs.Streams.trim      |
-|20| Decode_Sequential_Tunnel_NonSecure_Discontinuity  | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|20| Decode_Sequential_Tunnel_NonSecure_Discontinuity  | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.discontinuity_pts |
 |21| Decode_Sequential_Tunnel_NonSecure_EOS            | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.eos_pts         |
 |22| Decode_Sequential_Tunnel_NonSecure_Flush          | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.flush_pts       |
 |23| Decode_Sequential_Tunnel_NonSecure_FlushReset     | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.flush_reset_pts |
@@ -538,7 +538,7 @@ The L3 tests validate the functional correctness and performance of the AudioDec
 |25| Decode_Sequential_Tunnel_Secure                   | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams                             |
 |26| Decode_Sequential_Tunnel_Secure_Error             | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams                             |
 |27| Decode_Sequential_Tunnel_Secure_Trim              | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Inputs.Streams.trim      |
-|28| Decode_Sequential_Tunnel_Secure_Discontinuity     | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|28| Decode_Sequential_Tunnel_Secure_Discontinuity     | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.discontinuity_pts |
 |29| Decode_Sequential_Tunnel_Secure_EOS               | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.eos_pts         |
 |30| Decode_Sequential_Tunnel_Secure_Flush             | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.flush_pts       |
 |31| Decode_Sequential_Tunnel_Secure_FlushReset        | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.flush_reset_pts |
@@ -546,7 +546,7 @@ The L3 tests validate the functional correctness and performance of the AudioDec
 |33| Decode_Concurrent_NonTunnel_NonSecure             | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams                             |
 |34| Decode_Concurrent_NonTunnel_NonSecure_Error       | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams                             |
 |35| Decode_Concurrent_NonTunnel_NonSecure_Trim        | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Inputs.Streams.trim      |
-|36| Decode_Concurrent_NonTunnel_NonSecure_Discontinuity| runSingleProcessTest| secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|36| Decode_Concurrent_NonTunnel_NonSecure_Discontinuity| runSingleProcessTest| secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.discontinuity_pts |
 |37| Decode_Concurrent_NonTunnel_NonSecure_EOS         | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.eos_pts         |
 |38| Decode_Concurrent_NonTunnel_NonSecure_Flush       | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.flush_pts       |
 |39| Decode_Concurrent_NonTunnel_NonSecure_FlushReset  | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.flush_reset_pts |
@@ -554,7 +554,7 @@ The L3 tests validate the functional correctness and performance of the AudioDec
 |41| Decode_Concurrent_NonTunnel_Secure                | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams                             |
 |42| Decode_Concurrent_NonTunnel_Secure_Error          | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams                             |
 |43| Decode_Concurrent_NonTunnel_Secure_Trim           | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Inputs.Streams.trim      |
-|44| Decode_Concurrent_NonTunnel_Secure_Discontinuity  | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|44| Decode_Concurrent_NonTunnel_Secure_Discontinuity  | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.discontinuity_pts |
 |45| Decode_Concurrent_NonTunnel_Secure_EOS            | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.eos_pts         |
 |46| Decode_Concurrent_NonTunnel_Secure_Flush          | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.flush_pts       |
 |47| Decode_Concurrent_NonTunnel_Secure_FlushReset     | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.flush_reset_pts |
@@ -562,7 +562,7 @@ The L3 tests validate the functional correctness and performance of the AudioDec
 |49| Decode_Concurrent_Tunnel_NonSecure                | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams                             |
 |50| Decode_Concurrent_Tunnel_NonSecure_Error          | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams                             |
 |51| Decode_Concurrent_Tunnel_NonSecure_Trim           | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Inputs.Streams.trim      |
-|52| Decode_Concurrent_Tunnel_NonSecure_Discontinuity  | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|52| Decode_Concurrent_Tunnel_NonSecure_Discontinuity  | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.discontinuity_pts |
 |53| Decode_Concurrent_Tunnel_NonSecure_EOS            | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.eos_pts         |
 |54| Decode_Concurrent_Tunnel_NonSecure_Flush          | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.flush_pts       |
 |55| Decode_Concurrent_Tunnel_NonSecure_FlushReset     | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.flush_reset_pts |
@@ -570,7 +570,7 @@ The L3 tests validate the functional correctness and performance of the AudioDec
 |57| Decode_Concurrent_Tunnel_Secure                   | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams                             |
 |58| Decode_Concurrent_Tunnel_Secure_Error             | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams                             |
 |59| Decode_Concurrent_Tunnel_Secure_Trim              | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Inputs.Streams.trim      |
-|60| Decode_Concurrent_Tunnel_Secure_Discontinuity     | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|60| Decode_Concurrent_Tunnel_Secure_Discontinuity     | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.discontinuity_pts |
 |61| Decode_Concurrent_Tunnel_Secure_EOS               | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.eos_pts         |
 |62| Decode_Concurrent_Tunnel_Secure_Flush             | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.flush_pts       |
 |63| Decode_Concurrent_Tunnel_Secure_FlushReset        | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.flush_reset_pts |

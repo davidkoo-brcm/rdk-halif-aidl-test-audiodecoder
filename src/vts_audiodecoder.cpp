@@ -654,13 +654,9 @@ void AudioDecoderTest::handleControlPoints(int64_t framePTS)
         AUDIODECODER_START_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
     }
 
-    if (mTestConfiguration.discontinuityPts == framePTS)
-        AUDIODECODER_SIGNAL_DISCONTINUITY_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
-
     if (mTestConfiguration.flushPts == framePTS)
     {
         AUDIODECODER_FLUSH_SUCCESS(mDecoderHandle, mAudioDecoderController, false, true);
-        AUDIODECODER_SIGNAL_DISCONTINUITY_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
     }
 
     if (mTestConfiguration.flushRestPts == framePTS)
@@ -688,7 +684,7 @@ audiodecoder::InputBufferMetadata AudioDecoderTest::buildMetadata(size_t frameIn
     bool isLastFrame = (frameIndex == mTestConfiguration.frameDetails.size() - 1);
     metadata.trimStartNs = isLastFrame ? mTestConfiguration.trimStartNs : 0;
     metadata.trimEndNs   = isLastFrame ? mTestConfiguration.trimEndNs   : 0;
-    metadata.discontinuity = false;
+    metadata.discontinuity = (mTestConfiguration.discontinuityPts != -1 && mTestConfiguration.discontinuityPts == framePTS);
     metadata.endOfStream   = isEosPtsFrame || (framePTS == endPTS);
 
     if (metadata.endOfStream)

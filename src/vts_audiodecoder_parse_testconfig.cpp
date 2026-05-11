@@ -111,7 +111,7 @@ UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *m
         string trimEnd     = streamList + "." + to_string(i) + "." +"trim.1";
         string decoderDelay         = controlList + "." + "delay_between_decode_calls";
         string stopPts              = controlList + "." + "stop_start_pts";
-        string discontinuityPts     = controlList + "." + "signal_discontinuity_pts";
+        string discontinuityPts     = controlList + "." + "discontinuity_pts";
         string flushPts             = controlList + "." + "flush_pts";
         string flushRestPts         = controlList + "." + "flush_reset_pts";
         string eosPts               = controlList + "." + "eos_pts";

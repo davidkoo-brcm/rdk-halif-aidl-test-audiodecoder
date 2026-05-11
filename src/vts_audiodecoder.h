@@ -609,35 +609,8 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_ASSERT_FALSE(status.isOk()); \
     } while (0)
 
-#define AUDIODECODER_SIGNAL_DISCONTINUITY_SUCCESS(audioDecoder, audioDecoderController, stateCheck) \
-    do { \
-        ::android::binder::Status status; \
-        UT_LOG_INFO("Calling signalDiscontinuity()"); \
-        status = audioDecoderController->signalDiscontinuity(); \
-        UT_LOG_INFO("Result signalDiscontinuity(), status:[isOK:%s, exception:%s]", \
-            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
-            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
-        if (stateCheck) \
-        { \
-            AudioDecoderState lastState; \
-            AUDIODECODER_WAIT_FOR_STATE(audioDecoder, AudioDecoderState::STARTED, lastState); \
-            UT_ASSERT_EQUAL(lastState, AudioDecoderState::STARTED); \
-        } \
-    } while (0)
-
-#define AUDIODECODER_SIGNAL_DISCONTINUITY_FAILURE(audioDecoderController, exception) \
-    do { \
-        ::android::binder::Status status; \
-        UT_LOG_INFO("Calling signalDiscontinuity()"); \
-        status = audioDecoderController->signalDiscontinuity(); \
-        UT_LOG_INFO("Result signalDiscontinuity(), status:[isOK:%s, exception:%s]", \
-            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
-            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
-        UT_ASSERT_FALSE(status.isOk()); \
-    } while (0)
+/* signalDiscontinuity() is removed; discontinuity is now signalled via
+ * InputBufferMetadata.discontinuity = true on the relevant decodeBufferWithMetadata() call. */
 
 /* signalEOS() is removed; EOS is now signalled via
  * InputBufferMetadata.endOfStream = true on the final decodeBufferWithMetadata() call.
