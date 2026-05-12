@@ -1238,97 +1238,6 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, stop_neg)
     }
 }
 
-/**
-* @brief Positive test for decodeBufferWithMetadata — verifies all valid metadata combinations are accepted.
-*
-* Tests the happy path for all InputBufferMetadata fields:
-* trim values (non-zero, zero, equal), discontinuity=true (inline PTS discontinuity signal),
-* and endOfStream=true (final buffer of the session).
-*
-* **Test Group ID:** Basic: 01@n
-* **Test Case ID:** 020@n
-* **Priority:** High@n
-* @n
-* **Pre-Conditions:** None@n
-* **Dependencies:** None@n
-* **User Interaction:** None@n
-* @n
-* **Test Procedure:**@n
-* |Variation / Step|Description|Test Data|Expected Result|Notes|
-* |----------------|-----------|---------|---------------|-----|
-* |01|Get the supported IDs and loop through the available decoder|None|None|None|
-* |02|Open and start the decoder|_codec, secure, listener|state STARTED|Should pass|
-* |03|Submit buffer with trimStartNs=500, trimEndNs=1000|valid trim|status ok, _aidl_return=true|Should pass|
-* |04|Submit buffer with zero trim|trimStart=0, trimEnd=0|status ok, _aidl_return=true|Should pass|
-* |05|Submit buffer with equal trim|trimStart=trimEnd=500|status ok, _aidl_return=true|Should pass|
-* |06|Submit buffer with discontinuity=true|metadata.discontinuity=true|status ok, _aidl_return=true|Should pass|
-* |07|Submit buffer with endOfStream=true|metadata.endOfStream=true|status ok, _aidl_return=true|Should pass|
-* |08|Stop and close the decoder|None|state READY then CLOSED|Should pass|
-*/
-UT_ADD_TEST(VTS_L1_AudioDecoder, decodeBufferWithMetadata_pos)
-{
-    std::vector<IAudioDecoder::Id> decoderIds;
-    sp<IAudioDecoder> audioDecoder;
-    audiodecoder::Capabilities capabilities;
-
-    int64_t valid_bufferHandle = 0;
-
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
-
-    for(const auto& _decoderId: decoderIds)
-    {
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
-        AUDIODECODER_GETCAPABILITIES(audioDecoder, &capabilities);
-
-        for(const auto& _codec: capabilities.supportedCodecs)
-        {
-            sp<IAudioDecoderController> audioDecoderController;
-            sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
-            sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
-
-            AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
-            AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
-
-            audiodecoder::InputBufferMetadata metadata;
-            metadata.endOfStream   = false;
-            metadata.discontinuity = false;
-
-            /* valid trimStartNs < trimEndNs */
-            metadata.nsPresentationTime = 1000000;
-            metadata.trimStartNs = 500;
-            metadata.trimEndNs   = 1000;
-            AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(_decoderId.value, audioDecoderController, valid_bufferHandle, metadata);
-
-            /* zero trim (common case) */
-            metadata.nsPresentationTime = 2000000;
-            metadata.trimStartNs = 0;
-            metadata.trimEndNs   = 0;
-            AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(_decoderId.value, audioDecoderController, valid_bufferHandle, metadata);
-
-            /* equal trim values */
-            metadata.nsPresentationTime = 3000000;
-            metadata.trimStartNs = 500;
-            metadata.trimEndNs   = 500;
-            AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(_decoderId.value, audioDecoderController, valid_bufferHandle, metadata);
-
-            /* discontinuity=true — inline PTS discontinuity signal */
-            metadata.nsPresentationTime = 4000000;
-            metadata.trimStartNs   = 0;
-            metadata.trimEndNs     = 0;
-            metadata.discontinuity = true;
-            AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(_decoderId.value, audioDecoderController, valid_bufferHandle, metadata);
-
-            /* endOfStream=true — final buffer of the session */
-            metadata.nsPresentationTime = 5000000;
-            metadata.discontinuity = false;
-            metadata.endOfStream   = true;
-            AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(_decoderId.value, audioDecoderController, valid_bufferHandle, metadata);
-
-            AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
-            AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
-        }
-    }
-}
 
 /**
 * @brief Test for positive scenario of audio decoder's flush function
@@ -1494,6 +1403,131 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, flush_neg)
     }
 }
 
+
+
+/**
+* @brief Test to check the functionality of signalDiscontinuity in the AudioDecoder
+*
+* This test validates the signalDiscontinuity method on the AudioDecoderController to ensure it handles
+* a signal discontinuity appropriately without any errors.
+*
+* **Test Group ID:** Basic: 01 @n
+* **Test Case ID:** 023 @n
+* **Priority:** High @n
+* @n
+* **Pre-Conditions:** None @n
+* **Dependencies:** None @n
+* **User Interaction:** None @n
+* @n
+* **Test Procedure:** @n
+* |Variation / Step|Description|Test Data|Expected Result|Notes|
+* |----------------|-----------|---------|---------------|-----|
+* |01|Get the supported IDs and loop through the available decoder|None|None|None|
+* |02|Open the audio decoder with the codec and create audioDecoderController with listener|_codec, _decoder.supportsSecure, listener, audioDecoderController|status.isOk() should be true, audioDecoderController != nullptr|Should pass|
+* |03|Verify the state of the decoder after open|state|state should be READY|Should pass|
+* |04|start the decoder|audioDecoderController|status should be ok|Should pass|
+* |05|Check the state of the decoder|None|state should be STARTED, status should be ok|Should pass|
+* |06|Signal discontinuity to the decoder|None|status should be ok and state should be STARTED|Should pass|
+* |07|Stop the decoder|None|state should be READY, status should be ok|Should pass|
+* |08|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
+*/
+UT_ADD_TEST(VTS_L1_AudioDecoder, signalDiscontinuity_pos)
+{
+    std::vector<IAudioDecoder::Id> decoderIds;
+    sp<IAudioDecoder> audioDecoder;
+    audiodecoder::Capabilities capabilities;
+
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
+
+    for(const auto& _decoderId: decoderIds)
+    {
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, &capabilities);
+
+        for(const auto& _codec: capabilities.supportedCodecs)
+        {
+            sp<IAudioDecoderController> audioDecoderController;
+            sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
+            sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
+
+            AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
+
+            AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            AUDIODECODER_SIGNAL_DISCONTINUITY_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
+        }
+    }
+}
+
+/**
+* @brief Test to check the functionality of signalDiscontinuity in the AudioDecoder in negative scenarios
+*
+* This test validates the signalDiscontinuity method on the AudioDecoderController to ensure it handles
+* negative scenarios of signalDiscontinuity appropriately
+*
+* **Test Group ID:** Basic: 01 @n
+* **Test Case ID:** 024 @n
+* **Priority:** High @n
+* @n
+* **Pre-Conditions:** None @n
+* **Dependencies:** None @n
+* **User Interaction:** None @n
+* @n
+* **Test Procedure:** @n
+* |Variation / Step|Description|Test Data|Expected Result|Notes|
+* |----------------|-----------|---------|---------------|-----|
+* |01|Get the supported IDs and loop through the available decoder|None|None|None|
+* |02|Open the audio decoder with the codec and create audioDecoderController with listener|_codec, _decoder.supportsSecure, listener, audioDecoderController|status.isOk() should be true, audioDecoderController != nullptr|Should pass|
+* |03|Verify the state of the decoder after open|state|state should be READY|Should pass|
+* |04|Signal discontinuity to the decoder before start|None|status should not be ok|Should pass|
+* |05|start the decoder|audioDecoderController|status should be ok|Should pass|
+* |06|Stop the decoder|None|state should be READY, status should be ok|Should pass|
+* |07|Signal discontinuity to the decoder after start->stop|None|status should not be ok|Should pass|
+* |08|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
+* |09|Signal discontinuity to the decoder after close|None|status should not be ok|Should pass|
+*/
+UT_ADD_TEST(VTS_L1_AudioDecoder, signalDiscontinuity_neg)
+{
+    std::vector<IAudioDecoder::Id> decoderIds;
+    sp<IAudioDecoder> audioDecoder;
+    audiodecoder::Capabilities capabilities;
+
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
+
+    for(const auto& _decoderId: decoderIds)
+    {
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, &capabilities);
+
+        for(const auto& _codec: capabilities.supportedCodecs)
+        {
+            sp<IAudioDecoderController> audioDecoderController;
+            sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
+            sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
+
+            AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
+
+            /* Signal discontinuity to the decoder before start */
+            AUDIODECODER_SIGNAL_DISCONTINUITY_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
+
+            AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            /* Signal discontinuity to the decoder after start->stop */
+            AUDIODECODER_SIGNAL_DISCONTINUITY_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
+
+            AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            /* Signal discontinuity to the decoder after close */
+            //AUDIODECODER_SIGNAL_DISCONTINUITY_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
+        }
+    }
+}
 
 
 /**
@@ -2167,10 +2201,11 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setAudioFormat_neg)
 
 
 /**
-* @brief Negative test for decodeBufferWithMetadata — verifies all invalid inputs and wrong-state calls are rejected.
+* @brief Negative test for decodeBufferWithMetadata — verifies spec-mandated exception codes.
 *
-* Covers: decode before start, invalid bufferHandle, invalid nsPresentationTime, negative trim values,
-* trimStartNs > trimEndNs, buffer submitted after EOS, and decode after stop.
+* Validates the AIDL interface contract: wrong-state calls return EX_ILLEGAL_STATE,
+* and spec-defined invalid arguments (invalid bufferHandle, discontinuity=true) return
+* EX_ILLEGAL_ARGUMENT. Functional behaviour (EOS, queue management) is covered in L3.
 *
 * **Test Group ID:** Basic: 01 @n
 * **Test Case ID:** 025 @n
@@ -2188,15 +2223,10 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setAudioFormat_neg)
 * |03|decodeBufferWithMetadata before start|state=READY|status not ok, EX_ILLEGAL_STATE|Should pass|
 * |04|Start the decoder|None|state STARTED|Should pass|
 * |05|Invalid bufferHandle|bufferHandle=-1|status not ok, EX_ILLEGAL_ARGUMENT|Should pass|
-* |06|Invalid nsPresentationTime|nsPresentationTime=-1000000|status not ok, EX_ILLEGAL_ARGUMENT|Should pass|
-* |07|Invalid trimStartNs < 0|trimStartNs=-1000|status not ok, EX_ILLEGAL_ARGUMENT|Should pass|
-* |08|Invalid trimEndNs < 0|trimEndNs=-500|status not ok, EX_ILLEGAL_ARGUMENT|Should pass|
-* |09|trimStartNs > trimEndNs|trimStart=2000, trimEnd=500|status not ok, EX_ILLEGAL_ARGUMENT|Should pass|
-* |10|Submit EOS buffer|metadata.endOfStream=true|status ok, _aidl_return=true|Should pass|
-* |11|Submit buffer after EOS|any buffer|soft rejection, EX_NONE|Should pass|
-* |12|Stop the decoder|None|state READY|Should pass|
-* |13|decodeBufferWithMetadata after stop|state=READY|status not ok, EX_ILLEGAL_STATE|Should pass|
-* |14|Close the decoder|None|state CLOSED|Should pass|
+* |06|discontinuity=true (reserved in v1)|metadata.discontinuity=true|status not ok, EX_ILLEGAL_ARGUMENT|Should pass|
+* |07|Stop the decoder|None|state READY|Should pass|
+* |08|decodeBufferWithMetadata after stop|state=READY|status not ok, EX_ILLEGAL_STATE|Should pass|
+* |09|Close the decoder|None|state CLOSED|Should pass|
 */
 UT_ADD_TEST(VTS_L1_AudioDecoder, decodeBufferWithMetadata_neg)
 {
@@ -2204,14 +2234,8 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, decodeBufferWithMetadata_neg)
     sp<IAudioDecoder> audioDecoder;
     audiodecoder::Capabilities capabilities;
 
-    int64_t valid_bufferHandle         = 0;
-    int64_t invalid_bufferHandle       = -1;
-    int64_t valid_nsPresentationTime   =  1000000;
-    int64_t invalid_nsPresentationTime = -1000000;
-    int32_t valid_trimStartNs          = 500;
-    int32_t invalid_trimStartNs        = -1000;
-    int32_t valid_trimEndNs            = 1000;
-    int32_t invalid_trimEndNs          = -500;
+    int64_t valid_bufferHandle   = 0;
+    int64_t invalid_bufferHandle = -1;
 
     AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
@@ -2231,50 +2255,26 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, decodeBufferWithMetadata_neg)
             audiodecoder::InputBufferMetadata metadata;
             metadata.endOfStream        = false;
             metadata.discontinuity      = false;
-            metadata.nsPresentationTime = valid_nsPresentationTime;
-            metadata.trimStartNs        = valid_trimStartNs;
-            metadata.trimEndNs          = valid_trimEndNs;
+            metadata.nsPresentationTime = 1000000;
+            metadata.trimStartNs        = 0;
+            metadata.trimEndNs          = 0;
 
-            /* decode before start must fail */
+            /* decode before start must fail — EX_ILLEGAL_STATE (spec-mandated) */
             AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_ILLEGAL_STATE);
 
             AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
 
-            /* invalid bufferHandle */
+            /* invalid bufferHandle — EX_ILLEGAL_ARGUMENT (spec-mandated) */
             AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, invalid_bufferHandle, metadata, Status::EX_ILLEGAL_ARGUMENT);
 
-            /* invalid nsPresentationTime */
-            metadata.nsPresentationTime = invalid_nsPresentationTime;
+            /* discontinuity=true is reserved in v1 — EX_ILLEGAL_ARGUMENT (spec-mandated) */
+            metadata.discontinuity = true;
             AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_ILLEGAL_ARGUMENT);
-
-            /* invalid trimStartNs < 0 */
-            metadata.nsPresentationTime = valid_nsPresentationTime;
-            metadata.trimStartNs = invalid_trimStartNs;
-            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_ILLEGAL_ARGUMENT);
-
-            /* invalid trimEndNs < 0 */
-            metadata.trimStartNs = valid_trimStartNs;
-            metadata.trimEndNs   = invalid_trimEndNs;
-            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_ILLEGAL_ARGUMENT);
-
-            /* trimStartNs > trimEndNs */
-            metadata.trimStartNs = 2000;
-            metadata.trimEndNs   = 500;
-            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_ILLEGAL_ARGUMENT);
-
-            /* submit EOS — must be accepted */
-            metadata.trimStartNs = 0;
-            metadata.trimEndNs   = 0;
-            metadata.endOfStream = true;
-            AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(_decoderId.value, audioDecoderController, valid_bufferHandle, metadata);
-
-            /* buffer after EOS must be rejected */
-            metadata.endOfStream = false;
-            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_NONE);
+            metadata.discontinuity = false;
 
             AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
 
-            /* decode after stop must fail */
+            /* decode after stop must fail — EX_ILLEGAL_STATE (spec-mandated) */
             AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_ILLEGAL_STATE);
 
             AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);

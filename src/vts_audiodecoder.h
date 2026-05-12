@@ -76,6 +76,7 @@
 #include <deque>
 #include <queue>
 #include <condition_variable>
+#include <memory>
 #include <tuple>
 #include <fstream>
 #include <cmath>
@@ -554,7 +555,7 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
     do { \
         ::android::binder::Status status; \
         bool _aidl_return = false; \
-        UT_LOG_INFO("Calling decodeBufferWithMetadata(IN:bufferHandle[0x%016" PRIx64 "], IN:PTS[%" PRId64"]) expecting failure", \
+        UT_LOG_INFO("Calling decodeBufferWithMetadata(IN:bufferHandle[0x%016" PRIx64 "], IN:PTS[%" PRId64"])", \
             (uint64_t)(bufferHandle), (int64_t)(metadata).nsPresentationTime); \
         status = (audioDecoderController)->decodeBufferWithMetadata(bufferHandle, metadata, &_aidl_return); \
         UT_LOG_INFO("Result decodeBufferWithMetadata(...), status:[isOK:%s, exception:%s]", \
@@ -609,8 +610,35 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_ASSERT_FALSE(status.isOk()); \
     } while (0)
 
-/* signalDiscontinuity() is removed; discontinuity is now signalled via
- * InputBufferMetadata.discontinuity = true on the relevant decodeBufferWithMetadata() call. */
+#define AUDIODECODER_SIGNAL_DISCONTINUITY_SUCCESS(audioDecoder, audioDecoderController, stateCheck) \
+    do { \
+        ::android::binder::Status status; \
+        UT_LOG_INFO("Calling signalDiscontinuity()"); \
+        status = audioDecoderController->signalDiscontinuity(); \
+        UT_LOG_INFO("Result signalDiscontinuity(), status:[isOK:%s, exception:%s]", \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        if (stateCheck) \
+        { \
+            AudioDecoderState lastState; \
+            AUDIODECODER_WAIT_FOR_STATE(audioDecoder, AudioDecoderState::STARTED, lastState); \
+            UT_ASSERT_EQUAL(lastState, AudioDecoderState::STARTED); \
+        } \
+    } while (0)
+
+#define AUDIODECODER_SIGNAL_DISCONTINUITY_FAILURE(audioDecoderController, exception) \
+    do { \
+        ::android::binder::Status status; \
+        UT_LOG_INFO("Calling signalDiscontinuity()"); \
+        status = audioDecoderController->signalDiscontinuity(); \
+        UT_LOG_INFO("Result signalDiscontinuity(), status:[isOK:%s, exception:%s]", \
+            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
+        UT_ASSERT_FALSE(status.isOk()); \
+    } while (0)
 
 /* signalEOS() is removed; EOS is now signalled via
  * InputBufferMetadata.endOfStream = true on the final decodeBufferWithMetadata() call.
@@ -744,38 +772,6 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
 
 
 
-struct PCM_Metadata
-{
-    int32_t numChannels{};
-    int32_t sampleRate{};
-
-    // Enum from AIDL: com.rdk.hal.audiodecoder.PcmFormat
-    com::rdk::hal::audiodecoder::PCMFormat format{};
-
-    // Channel layout info from AIDL: audiodecoder.ChannelType
-    std::vector<audiodecoder::ChannelType> channelTypes;
-
-    bool planarFormat{};      // true if planar audio format
-};
-
-
-
-/* Stream metadata */
-struct AudioMetatData
-{
-    com::rdk::hal::audiodecoder::Codec sourceCodec;
-    bool isDolbyAtmos;
-    bool planarFormat;
-    int32_t trimStartNs;
-    int32_t trimEndNs;
-    bool lowLatency;
-    bool endOfStream;
-    bool discontinuity;
-    PCM_Metadata pcm_metadata;
-    vector<audiodecoder::ChannelType> channelTypes;
-    AVSource source;
-};
-
 /* Decoded Frame details */
 typedef struct DecodedAudioFrame
 {
@@ -784,7 +780,7 @@ typedef struct DecodedAudioFrame
     bool isTunnel;
     com::rdk::hal::audiodecoder::FrameType frameType { com::rdk::hal::audiodecoder::FrameType::PCM };
     int64_t frameBufferHandle;
-    struct AudioMetatData metadata;
+    std::shared_ptr<const audiodecoder::FrameMetadata> frameMetadata;
     std::vector<uint8_t> socPrivate;
     chrono::steady_clock::time_point receiveTime;
 }DecodedAudioFrame_t;

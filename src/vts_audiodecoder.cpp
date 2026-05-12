@@ -128,12 +128,6 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
                         ::com::rdk::hal::audiodecoder::toString(pcm.format).c_str(),
                         UT_Control_GetMapString(bool_mapTable, pcm.planarFormat),
                         UT_Control_GetMapString(bool_mapTable, metadata->isDolbyAtmos));
-            // Copy PCM fields into your local metadata struct
-            frame.metadata.channelTypes = pcm.channelTypes;
-            frame.metadata.pcm_metadata.numChannels  = pcm.numChannels;
-            frame.metadata.planarFormat = pcm.planarFormat;
-            frame.metadata.pcm_metadata.sampleRate   = pcm.sampleRate;
-            frame.metadata.pcm_metadata.format = pcm.format;
         }
         else
         {
@@ -141,26 +135,14 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
                         mDecoderID,
                         audiodecoder::toString(metadata->sourceCodec).c_str(),
                         UT_Control_GetMapString(bool_mapTable, metadata->isDolbyAtmos));
-            frame.metadata.pcm_metadata.numChannels  = 0;
-            frame.metadata.pcm_metadata.sampleRate   = 0;
-            frame.metadata.planarFormat = false;
-            frame.metadata.channelTypes.clear();
         }
 
         UT_LOG_INFO("[Audio DecoderID: %d] Control Parameters [PTS: %lld, discontinuity: %d, EOS: %d, LowLatency: %d, Source: %d, Trim(%lld-%lld)]",
                     mDecoderID, nsPresentationTime, metadata->discontinuity, metadata->endOfStream, metadata->lowLatency,
                     metadata->source, metadata->trimStartNs, metadata->trimEndNs);
 
+        frame.frameMetadata = std::make_shared<audiodecoder::FrameMetadata>(*metadata);
         frame.isMetaAvailable = true;
-
-        frame.metadata.sourceCodec = metadata->sourceCodec;
-        frame.metadata.isDolbyAtmos = metadata->isDolbyAtmos;
-        frame.metadata.trimStartNs = metadata->trimStartNs;
-        frame.metadata.trimEndNs = metadata->trimEndNs;
-        frame.metadata.lowLatency = metadata->lowLatency;
-        frame.metadata.endOfStream = metadata->endOfStream;
-        frame.metadata.discontinuity = metadata->discontinuity;
-        frame.metadata.source = metadata->source;
 
         frame.frameType = metadata->type;
 
@@ -657,9 +639,15 @@ void AudioDecoderTest::handleControlPoints(int64_t framePTS)
         AUDIODECODER_START_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
     }
 
+    if (mTestConfiguration.discontinuityPts == framePTS)
+    {
+        AUDIODECODER_SIGNAL_DISCONTINUITY_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+    }
+
     if (mTestConfiguration.flushPts == framePTS)
     {
         AUDIODECODER_FLUSH_SUCCESS(mDecoderHandle, mAudioDecoderController, false, true);
+        AUDIODECODER_SIGNAL_DISCONTINUITY_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
     }
 
     if (mTestConfiguration.flushRestPts == framePTS)
@@ -687,7 +675,7 @@ audiodecoder::InputBufferMetadata AudioDecoderTest::buildMetadata(size_t frameIn
     bool isLastFrame = (frameIndex == mTestConfiguration.frameDetails.size() - 1);
     metadata.trimStartNs = isLastFrame ? mTestConfiguration.trimStartNs : 0;
     metadata.trimEndNs   = isLastFrame ? mTestConfiguration.trimEndNs   : 0;
-    metadata.discontinuity = (mTestConfiguration.discontinuityPts != -1 && mTestConfiguration.discontinuityPts == framePTS);
+    metadata.discontinuity = false;
     metadata.endOfStream   = isEosPtsFrame || (framePTS == endPTS);
 
     if (metadata.endOfStream)
@@ -733,6 +721,30 @@ void AudioDecoderTest::handleMidStreamEOS(int64_t audioBufferHandle, int64_t fra
 
     UT_LOG_INFO("[Audio DecoderID: %d] Restarting decoder after mid-stream EOS at PTS:%lld",
                 mDecoderId.value, framePTS);
+
+    /* Validate HAL metrics before stop() resets them */
+    {
+        int32_t metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped;
+        getDecoderMetrics(metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped);
+
+        int32_t eosErrorFrames = static_cast<int32_t>(count_if(
+            mTestConfiguration.frameDetails.begin(), mTestConfiguration.frameDetails.end(),
+            [&](const auto& f) { return get<2>(f) && get<1>(f) <= framePTS; }));
+        int32_t eosExpectedDecoded = static_cast<int32_t>(count_if(
+            mTestConfiguration.frameDetails.begin(), mTestConfiguration.frameDetails.end(),
+            [&](const auto& f) { return get<1>(f) <= framePTS; })) - eosErrorFrames;
+
+        UT_LOG_DEBUG("[Audio DecoderID: %d] EOS Metrics: FramesDecoded=%d (expected=%d), DecodeErrors=%d, FramesDropped=%d",
+            mDecoderId.value, metricsFrameDecoded, eosExpectedDecoded, metricsDecodeErrors, metricsFramesDropped);
+
+        if (metricsFrameDecoded != -1)
+            UT_ASSERT_EQUAL(metricsFrameDecoded, eosExpectedDecoded);
+        if (metricsDecodeErrors != -1)
+            UT_ASSERT_EQUAL(metricsDecodeErrors, eosErrorFrames);
+        if (metricsFramesDropped != -1)
+            UT_ASSERT_EQUAL(metricsFramesDropped, 0);
+    }
+
     AUDIODECODER_STOP_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
     AUDIODECODER_START_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
 }
@@ -821,12 +833,14 @@ bool AudioDecoderTest::checkPassThrough(const DecodedAudioFrame_t& frame, int32_
 
 void AudioDecoderTest::checkPTSSpacing(const DecodedAudioFrame_t& frame, int64_t frameBytes, FrameValidationState& state)
 {
-    int32_t frameSampleRate = (frame.isMetaAvailable && frame.metadata.pcm_metadata.sampleRate > 0)
-                              ? frame.metadata.pcm_metadata.sampleRate : state.decodedSampleRate;
-    int32_t frameChannels   = (frame.isMetaAvailable && frame.metadata.pcm_metadata.numChannels > 0)
-                              ? frame.metadata.pcm_metadata.numChannels : state.decodedChannels;
-    audiodecoder::PCMFormat frameFormat = frame.isMetaAvailable
-                              ? frame.metadata.pcm_metadata.format : state.decodedFormat;
+    const auto& pcm = (frame.frameMetadata && frame.frameMetadata->metadata.has_value())
+                      ? frame.frameMetadata->metadata : std::optional<audiodecoder::PCMMetadata>{};
+    int32_t frameSampleRate = (pcm.has_value() && pcm->sampleRate > 0)
+                              ? pcm->sampleRate : state.decodedSampleRate;
+    int32_t frameChannels   = (pcm.has_value() && pcm->numChannels > 0)
+                              ? pcm->numChannels : state.decodedChannels;
+    audiodecoder::PCMFormat frameFormat = pcm.has_value()
+                              ? pcm->format : state.decodedFormat;
     int32_t bytesPerSample  = vts_bytesPerSample(frameFormat) * frameChannels;
     int64_t numSamples      = (bytesPerSample > 0) ? frameBytes / bytesPerSample : 0;
     int64_t frameDurationNs = (frameSampleRate > 0 && numSamples > 0)
@@ -845,16 +859,17 @@ void AudioDecoderTest::checkPTSSpacing(const DecodedAudioFrame_t& frame, int64_t
 
 void AudioDecoderTest::checkFrameMetadata(const DecodedAudioFrame_t& frame, FrameValidationState& state)
 {
-    UT_ASSERT_EQUAL(frame.metadata.sourceCodec, mTestConfiguration.codec);
-    UT_ASSERT_EQUAL(int32_t(static_cast<int32_t>(frame.metadata.source)),
+    const auto& fm = *frame.frameMetadata;
+    UT_ASSERT_EQUAL(fm.sourceCodec, mTestConfiguration.codec);
+    UT_ASSERT_EQUAL(int32_t(static_cast<int32_t>(fm.source)),
                     mAvSourcePropertyValue.value->get<PropertyValue::Value::Tag::intValue>());
 
-    if (frame.metadata.discontinuity)
+    if (fm.discontinuity)
     {
         state.discontinuityFramesReceived++;
     }
 
-    if (frame.metadata.endOfStream)
+    if (fm.endOfStream)
     {
         state.eosFramesReceived++;
     }
@@ -869,16 +884,16 @@ void AudioDecoderTest::checkFrameMetadata(const DecodedAudioFrame_t& frame, Fram
     {
         int64_t expectedTrimStart = (state.framesDecoded == 1) ? mTestConfiguration.trimStartNs : 0LL;
         int64_t expectedTrimEnd   = (state.framesDecoded == (int32_t)mTestConfiguration.frameDetails.size()) ? mTestConfiguration.trimEndNs : 0LL;
-        UT_ASSERT_EQUAL(expectedTrimStart, (int64_t)frame.metadata.trimStartNs);
-        UT_ASSERT_EQUAL(expectedTrimEnd,   (int64_t)frame.metadata.trimEndNs);
+        UT_ASSERT_EQUAL(expectedTrimStart, (int64_t)fm.trimStartNs);
+        UT_ASSERT_EQUAL(expectedTrimEnd,   (int64_t)fm.trimEndNs);
     }
 #endif
 
-    if (state.decodedSampleRate == 0 && frame.metadata.pcm_metadata.sampleRate > 0)
+    if (state.decodedSampleRate == 0 && fm.metadata.has_value() && fm.metadata->sampleRate > 0)
     {
-        state.decodedSampleRate = frame.metadata.pcm_metadata.sampleRate;
-        state.decodedChannels   = frame.metadata.pcm_metadata.numChannels;
-        state.decodedFormat     = frame.metadata.pcm_metadata.format;
+        state.decodedSampleRate = fm.metadata->sampleRate;
+        state.decodedChannels   = fm.metadata->numChannels;
+        state.decodedFormat     = fm.metadata->format;
         UT_LOG_INFO("[Audio DecoderID: %d] PCM metadata: sampleRate=%d channels=%d format=%s",
                     mDecoderId.value, state.decodedSampleRate, state.decodedChannels,
                     ::com::rdk::hal::audiodecoder::toString(state.decodedFormat).c_str());
@@ -914,7 +929,9 @@ void AudioDecoderTest::validatePostLoopMetrics(const FrameValidationState& state
 
     /* Frame count: METRIC_FRAMES_DECODED compared against yaml num_of_frames is the authoritative
      * check. Applies to all codec types including SOC_PROPRIETARY pass-through.
-     * When flush is configured use relaxed (<=) checks. */
+     * When flush is configured use relaxed (<=) checks.
+     * When eosPts is configured, start() resets HAL metrics so they only reflect frames after
+     * the EOS stop; frames before EOS were validated in handleMidStreamEOS(). */
     int32_t metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped;
 
     getDecoderMetrics(metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped);
@@ -922,15 +939,30 @@ void AudioDecoderTest::validatePostLoopMetrics(const FrameValidationState& state
     UT_LOG_DEBUG("Final Decoder Metrics: Codec: %d, Frames Decoded=%d, Decode Errors=%d, Frames Dropped=%d",
         mTestConfiguration.codec, metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped);
 
+    int32_t metricsExpectedDecoded = expectedFrames;
+    int32_t metricsExpectedErrors  = state.decodeErrors;
+
+    if (mTestConfiguration.eosPts != -1)
+    {
+        int32_t errorsAfterEos = static_cast<int32_t>(count_if(
+            mTestConfiguration.frameDetails.begin(), mTestConfiguration.frameDetails.end(),
+            [&](const auto& f) { return get<2>(f) && get<1>(f) > mTestConfiguration.eosPts; }));
+        int32_t totalAfterEos  = static_cast<int32_t>(count_if(
+            mTestConfiguration.frameDetails.begin(), mTestConfiguration.frameDetails.end(),
+            [&](const auto& f) { return get<1>(f) > mTestConfiguration.eosPts; }));
+        metricsExpectedDecoded = totalAfterEos - errorsAfterEos;
+        metricsExpectedErrors  = errorsAfterEos;
+    }
+
     if (metricsFrameDecoded != -1)
     {
         if ((mTestConfiguration.flushPts == -1) && (mTestConfiguration.flushRestPts == -1))
         {
-            UT_ASSERT_EQUAL(metricsFrameDecoded, expectedFrames);
+            UT_ASSERT_EQUAL(metricsFrameDecoded, metricsExpectedDecoded);
         }
         else
         {
-            UT_ASSERT_TRUE(metricsFrameDecoded <= expectedFrames);
+            UT_ASSERT_TRUE(metricsFrameDecoded <= metricsExpectedDecoded);
         }
     }
 
@@ -964,7 +996,7 @@ void AudioDecoderTest::validatePostLoopMetrics(const FrameValidationState& state
     {
         if (metricsDecodeErrors != -1)
         {
-            UT_ASSERT_EQUAL(metricsDecodeErrors, state.decodeErrors);
+            UT_ASSERT_EQUAL(metricsDecodeErrors, metricsExpectedErrors);
         }
         if (metricsFramesDropped != -1)
         {
@@ -975,7 +1007,7 @@ void AudioDecoderTest::validatePostLoopMetrics(const FrameValidationState& state
     {
         if (metricsDecodeErrors != -1)
         {
-            UT_ASSERT_TRUE(metricsDecodeErrors <= state.decodeErrors);
+            UT_ASSERT_TRUE(metricsDecodeErrors <= metricsExpectedErrors);
         }
         if (metricsFramesDropped != -1)
         {
