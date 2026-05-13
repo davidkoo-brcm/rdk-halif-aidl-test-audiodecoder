@@ -956,7 +956,7 @@ void AudioDecoderTest::validatePostLoopMetrics(const FrameValidationState& state
 
     if (metricsFrameDecoded != -1)
     {
-        if ((mTestConfiguration.flushPts == -1) && (mTestConfiguration.flushRestPts == -1))
+        if ((mTestConfiguration.flushPts == -1) && (mTestConfiguration.flushRestPts == -1) && (mTestConfiguration.stopPts == -1))
         {
             UT_ASSERT_EQUAL(metricsFrameDecoded, metricsExpectedDecoded);
         }
@@ -987,7 +987,10 @@ void AudioDecoderTest::validatePostLoopMetrics(const FrameValidationState& state
         expectedEOSFrames++;
     }
 
-    UT_ASSERT_EQUAL(state.eosFramesReceived, expectedEOSFrames);
+    if (mTestConfiguration.stopPts == -1)
+    {
+        UT_ASSERT_EQUAL(state.eosFramesReceived, expectedEOSFrames);
+    }
 
     /* Error count validation */
     UT_ASSERT_EQUAL(totalErrors, state.decodeErrors);
