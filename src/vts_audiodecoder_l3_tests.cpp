@@ -256,8 +256,22 @@ public:
         }
     }
 
-    void runSingleProcessTest(const char *testName, bool secureMode, bool concurrentMode)
+    void runSingleProcessTest(const char *testName, bool secureMode, bool tunnelMode, bool concurrentMode)
     {
+        if (tunnelMode && !isTunnelModeSupported())
+        {
+            UT_LOG_INFO("Skipping test '%s': Tunnel mode is not supported", testName);
+            GTEST_SKIP() << "Tunnel mode is not supported";
+            return;
+        }
+
+        if (secureMode && !isSecureModeSupported())
+        {
+            UT_LOG_INFO("Skipping test '%s': Secure mode is not supported", testName);
+            GTEST_SKIP() << "Secure mode is not supported";
+            return;
+        }
+
         vector<testConfiguration_t> testConfiguration;
 
         vts_audiodecoder_parse_testconfig(gAudioDecoderTestConfiguration, gModuleName, gTestGroup, testName, testConfiguration);
@@ -313,8 +327,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure)
 {
     const char *testName = "Decode";
     bool secureMode = false;
+    bool tunnelMode = false;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -331,8 +346,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Error)
 {
     const char *testName = "Decode_Error";
     bool secureMode = false;
+    bool tunnelMode = false;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /* TODO: Trim test cases disabled — contract not fully settled.
@@ -355,8 +371,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Trim)
 {
     const char *testName = "Decode_Trim";
     bool secureMode = false;
+    bool tunnelMode = false;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 #endif
 
@@ -374,8 +391,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Discontin
 {
     const char *testName = "Decode_Discontinuity";
     bool secureMode = false;
+    bool tunnelMode = false;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -392,8 +410,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_EOS)
 {
     const char *testName = "Decode_EOS";
     bool secureMode = false;
+    bool tunnelMode = false;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -410,8 +429,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Flush)
 {
     const char *testName = "Decode_Flush";
     bool secureMode = false;
+    bool tunnelMode = false;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -428,8 +448,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_FlushRese
 {
     const char *testName = "Decode_FlushReset";
     bool secureMode = false;
+    bool tunnelMode = false;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -446,17 +467,24 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_StopStart
 {
     const char *testName = "Decode_Stop_Start";
     bool secureMode = false;
+    bool tunnelMode = false;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
- * @brief Verify onDecodeBufferAvailable callback fires when the HAL input queue transitions
- *        from full to available. Modes: Non-Tunnel, Non-Secure
+ * @brief Positive stress test verifying the HAL decodes without input queue back-pressure.
+ *        Modes: Non-Tunnel, Non-Secure
  *
- * The validate thread is held until all input frames are submitted, causing output buffers
- * to accumulate and the HAL input queue to fill. Once the validate thread starts consuming,
- * the HAL signals onDecodeBufferAvailable and submission resumes.
+ * Submits a larger stream at delay=0 to stress the HAL's input pipeline.
+ * The HAL must accept all frames without filling its internal input queue.
+ * Both decodeBufferWithMetadata returning false (queueFullCount) and
+ * onDecodeBufferAvailable firing (decodeBufferAvailCount) must remain at zero.
+ * A non-zero count indicates the decoder is too slow relative to the submission
+ * rate — the HAL's input queue filled during decode.
+ *
+ * This check runs on all decode tests. The dedicated test uses more frames and
+ * delay=0 to maximise input queue pressure.
  *
  * **Test Group ID:** 003@n
  * **Test Case ID:** 009@n
@@ -468,12 +496,11 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_OnDecodeB
 {
     const char *testName = "Decode_OnDecodeBufAvail";
     bool secureMode = false;
+    bool tunnelMode = false;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
-/*commenting out tunnel and secure cases*/
-#if 0
 /**
  * @brief Test the ability to decode audio frames
  *        Decoding type: Sequential
@@ -489,8 +516,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure)
 {
     const char *testName = "Decode";
     bool secureMode = true;
+    bool tunnelMode = false;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -507,8 +535,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Error)
 {
     const char *testName = "Decode_Error";
     bool secureMode = true;
+    bool tunnelMode = false;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /* TODO: Trim test disabled — see ambiguity note above. */
@@ -527,8 +556,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Trim)
 {
     const char *testName = "Decode_Trim";
     bool secureMode = true;
+    bool tunnelMode = false;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 #endif
 
@@ -546,8 +576,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Discontinuit
 {
     const char *testName = "Decode_Discontinuity";
     bool secureMode = true;
+    bool tunnelMode = false;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -564,8 +595,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_EOS)
 {
     const char *testName = "Decode_EOS";
     bool secureMode = true;
+    bool tunnelMode = false;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -582,8 +614,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Flush)
 {
     const char *testName = "Decode_Flush";
     bool secureMode = true;
+    bool tunnelMode = false;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -600,8 +633,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_FlushReset)
 {
     const char *testName = "Decode_FlushReset";
     bool secureMode = true;
+    bool tunnelMode = false;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -618,8 +652,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_StopStart)
 {
     const char *testName = "Decode_Stop_Start";
     bool secureMode = true;
+    bool tunnelMode = false;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -636,8 +671,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure)
 {
     const char *testName = "Decode";
     bool secureMode = false;
+    bool tunnelMode = true;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -654,8 +690,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Error)
 {
     const char *testName = "Decode_Error";
     bool secureMode = false;
+    bool tunnelMode = true;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /* TODO: Trim test disabled — see ambiguity note above. */
@@ -674,8 +711,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Trim)
 {
     const char *testName = "Decode_Trim";
     bool secureMode = false;
+    bool tunnelMode = true;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 #endif
 
@@ -693,8 +731,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Discontinuit
 {
     const char *testName = "Decode_Discontinuity";
     bool secureMode = false;
+    bool tunnelMode = true;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -711,8 +750,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_EOS)
 {
     const char *testName = "Decode_EOS";
     bool secureMode = false;
+    bool tunnelMode = true;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -729,8 +769,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Flush)
 {
     const char *testName = "Decode_Flush";
     bool secureMode = false;
+    bool tunnelMode = true;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -747,8 +788,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_FlushReset)
 {
     const char *testName = "Decode_FlushReset";
     bool secureMode = false;
+    bool tunnelMode = true;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -765,8 +807,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_StopStart)
 {
     const char *testName = "Decode_Stop_Start";
     bool secureMode = false;
+    bool tunnelMode = true;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -783,8 +826,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure)
 {
     const char *testName = "Decode";
     bool secureMode = true;
+    bool tunnelMode = true;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -801,8 +845,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Error)
 {
     const char *testName = "Decode_Error";
     bool secureMode = true;
+    bool tunnelMode = true;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /* TODO: Trim test disabled — see ambiguity note above. */
@@ -821,8 +866,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Trim)
 {
     const char *testName = "Decode_Trim";
     bool secureMode = true;
+    bool tunnelMode = true;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 #endif
 
@@ -840,8 +886,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Discontinuity)
 {
     const char *testName = "Decode_Discontinuity";
     bool secureMode = true;
+    bool tunnelMode = true;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -858,8 +905,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_EOS)
 {
     const char *testName = "Decode_EOS";
     bool secureMode = true;
+    bool tunnelMode = true;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -876,8 +924,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Flush)
 {
     const char *testName = "Decode_Flush";
     bool secureMode = true;
+    bool tunnelMode = true;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -894,8 +943,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_FlushReset)
 {
     const char *testName = "Decode_FlushReset";
     bool secureMode = true;
+    bool tunnelMode = true;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -912,10 +962,11 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_StopStart)
 {
     const char *testName = "Decode_Stop_Start";
     bool secureMode = true;
+    bool tunnelMode = true;
     bool concurrentMode = false;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
-#endif
+
 /**
  * @brief Test concurrent decode in non-tunnel mode (Non-Secure)
  *        Modes: Non-Tunnel, Non-Secure, Concurrent
@@ -930,8 +981,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure)
 {
     const char *testName = "Decode";
     bool secureMode = false;
+    bool tunnelMode = false;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -948,8 +1000,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Error)
 {
     const char *testName = "Decode_Error";
     bool secureMode = false;
+    bool tunnelMode = false;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /* TODO: Trim test disabled — see ambiguity note above. */
@@ -968,8 +1021,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Trim)
 {
     const char *testName = "Decode_Trim";
     bool secureMode = false;
+    bool tunnelMode = false;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 #endif
 
@@ -987,8 +1041,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Discontin
 {
     const char *testName = "Decode_Discontinuity";
     bool secureMode = false;
+    bool tunnelMode = false;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1005,8 +1060,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_EOS)
 {
     const char *testName = "Decode_EOS";
     bool secureMode = false;
+    bool tunnelMode = false;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1023,8 +1079,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Flush)
 {
     const char *testName = "Decode_Flush";
     bool secureMode = false;
+    bool tunnelMode = false;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1041,8 +1098,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_FlushRese
 {
     const char *testName = "Decode_FlushReset";
     bool secureMode = false;
+    bool tunnelMode = false;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1059,11 +1117,10 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_StopStart
 {
     const char *testName = "Decode_Stop_Start";
     bool secureMode = false;
+    bool tunnelMode = false;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
-/*Commenting out Tunnel and secure cases */
-#if 0
 /**
  * @brief Test concurrent decode in secure mode (Non-Tunnel)
  *        Modes: Non-Tunnel, Secure, Concurrent
@@ -1078,8 +1135,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure)
 {
     const char *testName = "Decode_Secure";
     bool secureMode = true;
+    bool tunnelMode = false;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1096,8 +1154,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Error)
 {
     const char *testName = "Decode_Error";
     bool secureMode = true;
+    bool tunnelMode = false;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /* TODO: Trim test disabled — see ambiguity note above. */
@@ -1116,8 +1175,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Trim)
 {
     const char *testName = "Decode_Trim";
     bool secureMode = true;
+    bool tunnelMode = false;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 #endif
 
@@ -1135,8 +1195,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Discontinuit
 {
     const char *testName = "Decode_Discontinuity";
     bool secureMode = true;
+    bool tunnelMode = false;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1153,8 +1214,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_EOS)
 {
     const char *testName = "Decode_EOS";
     bool secureMode = true;
+    bool tunnelMode = false;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1171,8 +1233,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Flush)
 {
     const char *testName = "Decode_Flush";
     bool secureMode = true;
+    bool tunnelMode = false;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1189,8 +1252,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_FlushReset)
 {
     const char *testName = "Decode_FlushReset";
     bool secureMode = true;
+    bool tunnelMode = false;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1207,8 +1271,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_StopStart)
 {
     const char *testName = "Decode_Stop_Start";
     bool secureMode = true;
+    bool tunnelMode = false;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1225,8 +1290,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure)
 {
     const char *testName = "Decode";
     bool secureMode = false;
+    bool tunnelMode = true;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1243,8 +1309,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Error)
 {
     const char *testName = "Decode_Error";
     bool secureMode = false;
+    bool tunnelMode = true;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /* TODO: Trim test disabled — see ambiguity note above. */
@@ -1263,8 +1330,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Trim)
 {
     const char *testName = "Decode_Trim";
     bool secureMode = false;
+    bool tunnelMode = true;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 #endif
 
@@ -1282,8 +1350,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Discontinuit
 {
     const char *testName = "Decode_Discontinuity";
     bool secureMode = false;
+    bool tunnelMode = true;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1300,8 +1369,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_EOS)
 {
     const char *testName = "Decode_EOS";
     bool secureMode = false;
+    bool tunnelMode = true;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1318,8 +1388,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Flush)
 {
     const char *testName = "Decode_Flush";
     bool secureMode = false;
+    bool tunnelMode = true;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1336,8 +1407,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_FlushReset)
 {
     const char *testName = "Decode_FlushReset";
     bool secureMode = false;
+    bool tunnelMode = true;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1354,8 +1426,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_StopStart)
 {
     const char *testName = "Decode_Stop_Start";
     bool secureMode = false;
+    bool tunnelMode = true;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1372,8 +1445,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure)
 {
     const char *testName = "Decode";
     bool secureMode = true;
+    bool tunnelMode = true;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1390,8 +1464,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Error)
 {
     const char *testName = "Decode_Error";
     bool secureMode = true;
+    bool tunnelMode = true;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /* TODO: Trim test disabled — see ambiguity note above. */
@@ -1410,8 +1485,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Trim)
 {
     const char *testName = "Decode_Trim";
     bool secureMode = true;
+    bool tunnelMode = true;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 #endif
 
@@ -1429,8 +1505,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Discontinuity)
 {
     const char *testName = "Decode_Discontinuity";
     bool secureMode = true;
+    bool tunnelMode = true;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1447,8 +1524,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_EOS)
 {
     const char *testName = "Decode_EOS";
     bool secureMode = true;
+    bool tunnelMode = true;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1465,8 +1543,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Flush)
 {
     const char *testName = "Decode_Flush";
     bool secureMode = true;
+    bool tunnelMode = true;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1483,8 +1562,9 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_FlushReset)
 {
     const char *testName = "Decode_FlushReset";
     bool secureMode = true;
+    bool tunnelMode = true;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
 
 /**
@@ -1501,10 +1581,11 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_StopStart)
 {
     const char *testName = "Decode_Stop_Start";
     bool secureMode = true;
+    bool tunnelMode = true;
     bool concurrentMode = true;
-    runSingleProcessTest(testName, secureMode, concurrentMode);
+    runSingleProcessTest(testName, secureMode, tunnelMode, concurrentMode);
 }
-#endif
+
 /** @} */ // End of AUDIO_DECODER_HALTEST L3 File
 /** @} */ // End of AUDIO_DECODER_HALTEST
 /** @} */ // End of AUDIO_DECODER Module

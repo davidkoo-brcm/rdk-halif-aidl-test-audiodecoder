@@ -936,6 +936,8 @@ private:
     sp<IAudioDecoderController> mAudioDecoderController;
     PropertyValue mAvSourcePropertyValue;
     ifstream mInputFile;
+    int32_t mDecodeQueueFullCount = 0;
+    bool    mEosSubmitted         = false;
 
     struct FrameValidationState
     {

@@ -80,12 +80,23 @@ struct audioDecoder
     bool isAvailable;
 };
 
+struct audioDecoderModes
+{
+    std::vector<Codec> tunnelModeCodecs;
+    std::vector<Codec> nonTunnelModeCodecs;
+};
+
 extern std::vector<audioDecoder> gAudiodecoders_hfp;
+extern audioDecoderModes gAudioDecoderModes_hfp;
 
 #define AUDIODECODERMGR_AVAILABLEDECODERS "audiodecoder.availableDecoders"
 #define AUDIODECODERMGR_IAUDIODECODER     "audiodecoder.IAudioDecoder"
+#define AUDIODECODERMGR_TUNNELMODE        "audiodecoder.TunnelMode"
+#define AUDIODECODERMGR_NONTUNNELMODE     "audiodecoder.NonTunnelMode"
 
 UT_status_t vts_audiodecoder_parseAudioDecoderHFP();
+bool isTunnelModeSupported();
+bool isSecureModeSupported();
 
 #endif //__VTS_AUDIODECODER_PARSE_HFP_H__
 

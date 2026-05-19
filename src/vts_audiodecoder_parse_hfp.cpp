@@ -69,6 +69,7 @@
 using namespace std;
 
 vector<audioDecoder> gAudiodecoders_hfp;
+audioDecoderModes gAudioDecoderModes_hfp;
 
 UT_status_t vts_audiodecoder_parseAudioDecoderHFP()
 {
@@ -136,7 +137,43 @@ UT_status_t vts_audiodecoder_parseAudioDecoderHFP()
         gAudiodecoders_hfp.push_back(temporary);
     }
 
+    gAudioDecoderModes_hfp.tunnelModeCodecs.clear();
+    gAudioDecoderModes_hfp.nonTunnelModeCodecs.clear();
+
+    int32_t tunnelCodecCount = UT_KVP_PROFILE_GET_LIST_COUNT(AUDIODECODERMGR_TUNNELMODE);
+    for (int32_t i = 0; i < tunnelCodecCount; ++i)
+    {
+        char result_kvp[UT_KVP_MAX_ELEMENT_SIZE] = {0};
+        std::string codecpath = std::string(AUDIODECODERMGR_TUNNELMODE) + "." + std::to_string(i);
+        UT_KVP_PROFILE_GET_STRING(codecpath.c_str(), result_kvp);
+        gAudioDecoderModes_hfp.tunnelModeCodecs.push_back(vts_audioDecoder_helper_StringToCodec(std::string(result_kvp)));
+    }
+
+    int32_t nonTunnelCodecCount = UT_KVP_PROFILE_GET_LIST_COUNT(AUDIODECODERMGR_NONTUNNELMODE);
+    for (int32_t i = 0; i < nonTunnelCodecCount; ++i)
+    {
+        char result_kvp[UT_KVP_MAX_ELEMENT_SIZE] = {0};
+        std::string codecpath = std::string(AUDIODECODERMGR_NONTUNNELMODE) + "." + std::to_string(i);
+        UT_KVP_PROFILE_GET_STRING(codecpath.c_str(), result_kvp);
+        gAudioDecoderModes_hfp.nonTunnelModeCodecs.push_back(vts_audioDecoder_helper_StringToCodec(std::string(result_kvp)));
+    }
+
     return UT_STATUS_OK;
+}
+
+bool isTunnelModeSupported()
+{
+    return !gAudioDecoderModes_hfp.tunnelModeCodecs.empty();
+}
+
+bool isSecureModeSupported()
+{
+    for (const auto& decoder : gAudiodecoders_hfp)
+    {
+        if (decoder.supportsSecure)
+            return true;
+    }
+    return false;
 }
 /** @} */ // End of AUDIO_DECODER_HALTEST_PARSE_HFP
 /** @} */ // End of AUDIO_DECODER_HALTEST

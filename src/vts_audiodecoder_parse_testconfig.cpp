@@ -118,7 +118,6 @@ UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *m
         string sinkEosPts           = controlList + "." + "sink_eos_pts";
         string sinkFlushPts         = controlList + "." + "sink_flush_pts";
         string numFramesOverrideKey = controlList + "." + "num_frames_override";
-        string onDecodeBufAvailKey  = controlList + "." + "on_decode_buf_avail_test";
         string streamDuration       = streamsDetails + "." + string(resultKVP) + "." + "duration";
 
         ut_kvp_getStringField(kvpTestInstance, input.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
@@ -146,12 +145,15 @@ UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *m
         int32_t streamFrameCount = ut_kvp_getUInt32Field(kvpTestInstance, numOfFrames.c_str());
         testDetails.numOfFrames  = streamFrameCount;
 
-        int32_t numFramesOverride = ut_kvp_getUInt32Field(kvpTestInstance, numFramesOverrideKey.c_str());
-        if (numFramesOverride > 0)
+        if (ut_kvp_fieldPresent(kvpTestInstance, numFramesOverrideKey.c_str()))
         {
-            if (streamFrameCount > 0 && testDetails.duration > 0)
-                testDetails.duration = (testDetails.duration * numFramesOverride) / streamFrameCount;
-            testDetails.numOfFrames = numFramesOverride;
+            int32_t numFramesOverride = ut_kvp_getUInt32Field(kvpTestInstance, numFramesOverrideKey.c_str());
+            if (numFramesOverride > 0)
+            {
+                if (streamFrameCount > 0 && testDetails.duration > 0)
+                    testDetails.duration = (testDetails.duration * numFramesOverride) / streamFrameCount;
+                testDetails.numOfFrames = numFramesOverride;
+            }
         }
 
         if(ut_kvp_fieldPresent(kvpTestInstance, errorFrames.c_str()))
@@ -195,7 +197,6 @@ UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *m
         testDetails.eosPts       = ut_kvp_getUInt64Field(kvpTestInstance, eosPts.c_str());
         testDetails.sinkEosPts          = ut_kvp_getUInt64Field(kvpTestInstance, sinkEosPts.c_str());
         testDetails.sinkFlushPts        = ut_kvp_getUInt64Field(kvpTestInstance, sinkFlushPts.c_str());
-        testDetails.onDecodeBufAvailTest = (ut_kvp_getUInt32Field(kvpTestInstance, onDecodeBufAvailKey.c_str()) != 0);
 
         testConfiguration.push_back(testDetails);
     }

@@ -44,3 +44,7 @@ audiodecoder:           # Component object begins
       - 0
       - 1
       - 2
+    NonTunnelMode:
+      - AAC_LC
+      - DOLBY_AC3
+    TunnelMode:        # Empty - tunnel mode not yet supported

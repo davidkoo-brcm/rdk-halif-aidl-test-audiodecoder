@@ -37,3 +37,8 @@ audiodecoder:           # Component object begins
            - DOLBY_AC3_PLUS_JOC
            - MP3
          supportsSecure: true
+    NonTunnelMode:
+      - PCM
+      - DOLBY_AC3_PLUS_JOC
+      - MP3
+    TunnelMode:        # Empty - tunnel mode not yet supported
