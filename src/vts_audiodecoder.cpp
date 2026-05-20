@@ -689,9 +689,10 @@ audiodecoder::InputBufferMetadata AudioDecoderTest::buildMetadata(size_t frameIn
 {
     audiodecoder::InputBufferMetadata metadata;
     metadata.nsPresentationTime = framePTS;
-    bool isLastFrame = (frameIndex == mTestConfiguration.frameDetails.size() - 1);
-    metadata.trimStartNs = isLastFrame ? mTestConfiguration.trimStartNs : 0;
-    metadata.trimEndNs   = isLastFrame ? mTestConfiguration.trimEndNs   : 0;
+    bool isFirstFrame = (frameIndex == 0);
+    bool isLastFrame  = (frameIndex == mTestConfiguration.frameDetails.size() - 1);
+    metadata.trimStartNs = isFirstFrame ? mTestConfiguration.trimStartNs : 0;
+    metadata.trimEndNs   = isLastFrame  ? mTestConfiguration.trimEndNs   : 0;
     metadata.discontinuity = false;
     metadata.endOfStream   = isEosPtsFrame || (framePTS == endPTS);
 
@@ -924,12 +925,6 @@ void AudioDecoderTest::checkFrameMetadata(const DecodedAudioFrame_t& frame, Fram
         state.eosFramesReceived++;
     }
 
-/* TODO: Trim metadata validation disabled — contract not fully settled.
- * trimStartNs/trimEndNs are per-frame durations (ns, invariant under resampling), but when one input frame
- * produces multiple output frames the HAL must map trim to the first/last output frame derived from that input.
- * An alternative of absolute PTS-based trim is under discussion, which would remove the remapping burden
- * from the HAL since it already tracks PTS per output frame. Re-enable once the approach is agreed. */
-#if 0
     if (mTestConfiguration.trimStartNs > 0 || mTestConfiguration.trimEndNs > 0)
     {
         int64_t expectedTrimStart = (state.framesDecoded == 1) ? mTestConfiguration.trimStartNs : 0LL;
@@ -937,7 +932,6 @@ void AudioDecoderTest::checkFrameMetadata(const DecodedAudioFrame_t& frame, Fram
         UT_ASSERT_EQUAL(expectedTrimStart, (int64_t)fm.trimStartNs);
         UT_ASSERT_EQUAL(expectedTrimEnd,   (int64_t)fm.trimEndNs);
     }
-#endif
 
     if (state.decodedSampleRate == 0 && fm.metadata.has_value() && fm.metadata->sampleRate > 0)
     {
