@@ -744,15 +744,23 @@ void AudioDecoderTest::submitFrame(int64_t audioBufferHandle, const audiodecoder
         mEosSubmitted = true;
 }
 
-void AudioDecoderTest::handleMidStreamEOS(int64_t audioBufferHandle, int64_t framePTS)
+void AudioDecoderTest::handleMidStreamEOS(int64_t framePTS)
 {
+    /* Allocate a fresh handle for the post-EOS negative test. The EOS buffer was
+     * already accepted (and freed) by the HAL, so reusing it would be a spec
+     * violation. HAL will reject this call (returns false, EX_NONE) because EOS
+     * was already submitted; ownership stays with the caller, so we free it. */
+    int64_t tempHandle;
+    AVBUFFER_ALLOC_SUCCESS(mAVBufferManager, mAudioPool, 1, tempHandle);
+
     audiodecoder::InputBufferMetadata dummyMeta;
     dummyMeta.nsPresentationTime = framePTS;
     dummyMeta.endOfStream  = false;
     dummyMeta.discontinuity = false;
     dummyMeta.trimStartNs  = 0;
     dummyMeta.trimEndNs    = 0;
-    AUDIODECODER_DECODE_WITH_METADATA_FAILURE(mAudioDecoderController, audioBufferHandle, dummyMeta, Status::EX_NONE);
+    AUDIODECODER_DECODE_WITH_METADATA_FAILURE(mAudioDecoderController, tempHandle, dummyMeta, Status::EX_NONE);
+    AVBUFFER_FREE_SUCCESS(mAVBufferManager, tempHandle);
 
     UT_LOG_INFO("[Audio DecoderID: %d] Restarting decoder after mid-stream EOS at PTS:%lld",
                 mDecoderId.value, framePTS);
@@ -811,7 +819,7 @@ void AudioDecoderTest::startDecoding()
             this_thread::sleep_for(chrono::milliseconds(mTestConfiguration.decoderDelay));
 
         if (isEosPtsFrame)
-            handleMidStreamEOS(audioBufferHandle, framePTS);
+            handleMidStreamEOS(framePTS);
     }
 
     UT_LOG_INFO("[Audio DecoderID: %d] End of Testing Stream: %s",
@@ -878,10 +886,7 @@ void AudioDecoderTest::checkPTSSpacing(const DecodedAudioFrame_t& frame, int64_t
                               ? pcm->numChannels : state.decodedChannels;
     audiodecoder::PCMFormat frameFormat = pcm.has_value()
                               ? pcm->format : state.decodedFormat;
-    int32_t bytesPerSample  = vts_bytesPerSample(frameFormat) * frameChannels;
-    int64_t numSamples      = (bytesPerSample > 0) ? frameBytes / bytesPerSample : 0;
-    int64_t frameDurationNs = (frameSampleRate > 0 && numSamples > 0)
-                              ? (numSamples * 1000000000LL) / frameSampleRate : 0;
+    int64_t frameDurationNs = vts_audio_frameDurationNs(frameBytes, frameSampleRate, frameChannels, frameFormat);
 
     if (state.prevPTS != -1)
     {
@@ -951,8 +956,8 @@ void AudioDecoderTest::validatePostLoopMetrics(const FrameValidationState& state
 
     if (mTestConfiguration.duration > 0 && state.decodedSampleRate > 0 && state.decodedChannels > 0)
     {
-        int64_t expectedSamples     = static_cast<int64_t>(std::ceil(static_cast<double>(mTestConfiguration.duration) * state.decodedSampleRate / 1e9));
-        int64_t totalDecodedSamples = (int64_t)(state.accumulatedSize / ((int64_t)vts_bytesPerSample(state.decodedFormat) * state.decodedChannels));
+        int64_t expectedSamples     = vts_audio_expectedSamples(mTestConfiguration.duration, state.decodedSampleRate);
+        int64_t totalDecodedSamples = vts_audio_totalSamples(state.accumulatedSize, state.decodedChannels, state.decodedFormat);
         UT_LOG_INFO("[Audio DecoderID: %d] Resampling validation: totalDecodedSamples=%lld expectedSamples=%lld decodeErrors=%d",
                     mDecoderId.value, (long long)totalDecodedSamples, (long long)expectedSamples, state.decodeErrors);
         if (state.decodeErrors > 0)

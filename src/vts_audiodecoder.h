@@ -555,10 +555,14 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
     do { \
         ::android::binder::Status status; \
         bool _aidl_return = false; \
-        UT_LOG_INFO("Calling decodeBufferWithMetadata(IN:bufferHandle[0x%016" PRIx64 "], IN:PTS[%" PRId64"])", \
-            (uint64_t)(bufferHandle), (int64_t)(metadata).nsPresentationTime); \
+        UT_LOG_INFO("Calling decodeBufferWithMetadata(IN:bufferHandle[0x%016" PRIx64 "], IN:PTS[%" PRId64 "], IN:endOfStream[%s], IN:trimStartNs[%d], IN:trimEndNs[%d], IN:discontinuity[%s])", \
+            (uint64_t)(bufferHandle), (int64_t)(metadata).nsPresentationTime, \
+            UT_Control_GetMapString(bool_mapTable, (metadata).endOfStream), \
+            (metadata).trimStartNs, (metadata).trimEndNs, \
+            UT_Control_GetMapString(bool_mapTable, (metadata).discontinuity)); \
         status = (audioDecoderController)->decodeBufferWithMetadata(bufferHandle, metadata, &_aidl_return); \
-        UT_LOG_INFO("Result decodeBufferWithMetadata(...), status:[isOK:%s, exception:%s]", \
+        UT_LOG_INFO("Result decodeBufferWithMetadata(OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+            UT_Control_GetMapString(bool_mapTable, _aidl_return), \
             UT_Control_GetMapString(bool_mapTable, status.isOk()), \
             UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         if ((exception) == Status::EX_NONE) { \
@@ -965,7 +969,7 @@ private:
     void trackInputFrame(int64_t framePTS, bool errorFrame);
     audiodecoder::InputBufferMetadata buildMetadata(size_t frameIndex, int64_t framePTS, int64_t endPTS, bool isEosPtsFrame);
     void submitFrame(int64_t audioBufferHandle, const audiodecoder::InputBufferMetadata& metadata);
-    void handleMidStreamEOS(int64_t audioBufferHandle, int64_t framePTS);
+    void handleMidStreamEOS(int64_t framePTS);
 
     bool checkPassThrough   (const DecodedAudioFrame_t& frame, int32_t framesDecoded, bool& isPassThrough);
     void checkPTSSpacing    (const DecodedAudioFrame_t& frame, int64_t frameBytes, FrameValidationState& state);

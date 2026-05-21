@@ -99,6 +99,10 @@ size_t vts_bytesPerSample(PCMFormat format);
 double vts_computeRMSDiff(const void* ref_buf, const void* act_buf, size_t size, PCMFormat format);
 int32_t vts_audioDecoder_helper_getSamplesPerFrame(audiodecoder::Codec codec);
 
+int64_t vts_audio_frameDurationNs(int64_t frameBytes, int32_t sampleRate, int32_t numChannels, PCMFormat format);
+int64_t vts_audio_totalSamples(int64_t accumulatedBytes, int32_t numChannels, PCMFormat format);
+int64_t vts_audio_expectedSamples(int64_t durationNs, int32_t sampleRate);
+
 #endif //__VTS_AUDIODECODER_HELPER_H__
 
 /** @} */ // End of AUDIO_DECODER_HALTEST_HELPER_HEADER
