@@ -534,21 +534,6 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         UT_ASSERT_TRUE(_aidl_return); \
     } while (0)
 
-/* onDecodeBufferAvailable — back-pressure: queue full, call returns false but status OK */
-#define AUDIODECODER_DECODE_WITH_METADATA_RETURNS_FALSE(decoderID, audioDecoderController, bufferHandle, metadata) \
-    do { \
-        ::android::binder::Status status; \
-        bool _aidl_return; \
-        UT_LOG_INFO("[DecoderID: %d] Calling decodeBufferWithMetadata expecting queue-full (returns false)", decoderID); \
-        status = (audioDecoderController)->decodeBufferWithMetadata(bufferHandle, metadata, &_aidl_return); \
-        UT_LOG_INFO("[DecoderID: %d] Result decodeBufferWithMetadata(OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
-            decoderID, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
-            UT_Control_GetMapString(bool_mapTable, status.isOk()), \
-            UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
-        UT_ASSERT_FALSE(_aidl_return); \
-    } while (0)
 
 /* Failure: EX_NONE means soft rejection (status ok, _aidl_return false); non-EX_NONE means hard error */
 #define AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, bufferHandle, metadata, exception) \

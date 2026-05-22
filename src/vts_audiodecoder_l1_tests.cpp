@@ -1437,11 +1437,15 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalDiscontinuity_pos)
     sp<IAudioDecoder> audioDecoder;
     audiodecoder::Capabilities capabilities;
 
+    /* Get the Audio decoder IDs */
     AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
+        /* Get Audio decoder handle */
         AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
+
+        /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, &capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
@@ -1450,14 +1454,19 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalDiscontinuity_pos)
             sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
             sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
 
+            /* Open the Decoder */
             AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
 
+            /* Start the decoder */
             AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
 
+            /* Signal discontinuity to the decoder */
             AUDIODECODER_SIGNAL_DISCONTINUITY_SUCCESS(audioDecoder, audioDecoderController, true);
 
+            /* Stop the decoder */
             AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
 
+            /* Close the decoder */
             AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
         }
     }
@@ -1495,12 +1504,15 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalDiscontinuity_neg)
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
     audiodecoder::Capabilities capabilities;
-
+    /* Get the Audio decoder IDs */
     AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
     for(const auto& _decoderId: decoderIds)
     {
+        /* Get Audio decoder handle */
         AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
+
+        /* Get Capabilities of Audio Decoder */
         AUDIODECODER_GETCAPABILITIES(audioDecoder, &capabilities);
 
         for(const auto& _codec: capabilities.supportedCodecs)
@@ -1509,18 +1521,22 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalDiscontinuity_neg)
             sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
             sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
 
+            /* Open the Decoder */
             AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
 
             /* Signal discontinuity to the decoder before start */
             AUDIODECODER_SIGNAL_DISCONTINUITY_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
 
+            /* Start the decoder */
             AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
 
+            /* Stop the decoder */
             AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
 
             /* Signal discontinuity to the decoder after start->stop */
             AUDIODECODER_SIGNAL_DISCONTINUITY_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
 
+            /* Close the decoder */
             AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
 
             /* Signal discontinuity to the decoder after close */
