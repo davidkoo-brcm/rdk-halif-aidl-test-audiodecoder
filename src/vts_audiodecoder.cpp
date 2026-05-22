@@ -724,10 +724,12 @@ void AudioDecoderTest::submitFrame(int64_t audioBufferHandle, const audiodecoder
         {
             /* HAL rejected frame after EOS was accepted — this is NOT a queue-full
              * event.  onDecodeBufferAvailable will NOT fire for this reason, so
-             * do not wait for it and do not count it as back-pressure. */
+             * do not wait for it and do not count it as back-pressure.
+             * Ownership stays with the caller on rejection, so free the handle here. */
             UT_LOG_INFO("[Audio DecoderID: %d] decodeBufferWithMetadata returned false at PTS %lld "
                            "after EOS was already submitted — HAL rejecting post-EOS frame",
                            mDecoderId.value, metadata.nsPresentationTime);
+            AVBUFFER_FREE_SUCCESS(mAVBufferManager, audioBufferHandle);
             return;
         }
 
