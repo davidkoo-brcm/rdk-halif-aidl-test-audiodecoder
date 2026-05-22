@@ -709,6 +709,10 @@ void AudioDecoderTest::submitFrame(int64_t audioBufferHandle, const audiodecoder
     ::android::binder::Status status;
     bool decodeResult;
 
+    /* Reset before the call so any onDecodeBufferAvailable that fires during or after
+     * decodeBufferWithMetadata() is captured and not erased by a post-call reset. */
+    mControlListener->resetDecodeBufferAvailable();
+
     UT_LOG_INFO("[Audio DecoderID: %d] Calling decodeBufferWithMetadata(IN:bufferHandle[0x%016" PRIx64 "], IN:PTS[%" PRId64 "], IN:endOfStream[%s], IN:trim[%d/%d])",
         mDecoderId.value, (uint64_t)audioBufferHandle, metadata.nsPresentationTime,
         UT_Control_GetMapString(bool_mapTable, metadata.endOfStream),
@@ -733,13 +737,10 @@ void AudioDecoderTest::submitFrame(int64_t audioBufferHandle, const audiodecoder
             return;
         }
 
-        /* Input queue full: reset the available flag just before waiting so a
-         * stale signal from a prior episode does not unblock us prematurely. */
         mDecodeQueueFullCount++;
         UT_LOG_WARNING("[Audio DecoderID: %d] decodeBufferWithMetadata returned false at PTS %lld "
                        "(queue full #%d) — waiting for onDecodeBufferAvailable before retry",
                        mDecoderId.value, metadata.nsPresentationTime, mDecodeQueueFullCount);
-        mControlListener->resetDecodeBufferAvailable();
         UT_ASSERT_TRUE(mControlListener->waitForDecodeBufferAvailable(MAX_FRAME_WAIT_TIME));
         AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(mDecoderId.value, mAudioDecoderController, audioBufferHandle, metadata);
     }
