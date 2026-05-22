@@ -103,7 +103,7 @@ IAudioDecoderManager:
 - reference_streams_path: Target path for reference PCM streams
 - delay_between_decode_calls: insert delay in msec between each `decodeBufferWithMetadata()` call
 - stop_start_pts: `pts` value in nano seconds at which the decoder should be stopped and restarted during the test. -1 indicates that decoder should not be restarted
-- signal_discontinuity_pts: `pts` value in nano seconds at which the test should signal discontinuity via `InputBufferMetadata.discontinuity = true` on the `decodeBufferWithMetadata()` call. -1 indicates that no discontinuity should be signalled
+- signal_discontinuity_pts: `pts` value in nano seconds at which the test should signal discontinuity via `signalDiscontinuity()`. -1 indicates that no discontinuity should be signalled
 - flush_pts - `pts` value in nano seconds that determine when the test should flush the decoder. -1 indicates that test should not flush
 - flush_reset_pts - `pts` value in nano seconds that determine when the test should flush with reset the decoder. -1 indicates that test should not flush
 - eos_pts - `pts` value in nano seconds that determine when the test should sent `eos` signal to decoder. -1 indicates that test should not signal `eos`
@@ -468,14 +468,13 @@ typedef struct testConfiguration
     int64_t trimEndNs;           /* End trim position in nanoseconds */
     int32_t decoderDelay;        /* delay in msec between each decodeBufferWithMetadata() call */
     int64_t stopPts;             /*  pts value at which the decoder should be stopped and restarted */
-    int64_t discontinuityPts;    /* pts value at which InputBufferMetadata.discontinuity is set to true on decodeBufferWithMetadata(). -1 means no discontinuity */
+    int64_t discontinuityPts;    /* pts value at which signalDiscontinuity() is called. -1 means no discontinuity */
     int64_t flushPts;            /* pts value that determine when the test should flush the decoder. -1 indicates that test should not flush */
     int64_t flushRestPts;        /* pts value that determine when the test should flush with reset the decoder. -1 indicates that test should not flush */
     int64_t eosPts;              /* pts value that determine when the test should signal eos via InputBufferMetadata.endOfStream. -1 indicates that test should not signal eos */
     int64_t sinkEosPts;          /* pts value at which sink eos should be signalled */
     int64_t sinkFlushPts;        /* pts value at which sink flush should be triggered */
     int32_t duration;            /* stream duration in milliseconds */
-    bool onDecodeBufAvailTest;   /* enable onDecodeBufferAvailable back-pressure test */
     std::vector<std::tuple<int32_t, int64_t, bool>> frameDetails; /* Tuple of frameSize, PTS, isCorrupted */
 }testConfiguration_t;
 

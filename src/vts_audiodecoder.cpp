@@ -254,19 +254,21 @@ Status AudioDecoderControllerListener::onDecodeBufferAvailable()
 }
 
 /**
- * Wait for back-pressure relief. Returns true if onDecodeBufferAvailable() fired within waitTimeMs.
+ * Wait for back-pressure relief. Returns true only if onDecodeBufferAvailable() fired within
+ * waitTimeMs. Returns false on timeout or shutdown.
  *
  * @param waitTimeMs maximum time to wait in milliseconds
- * @return true if callback received, false on timeout
+ * @return true if callback received, false on timeout or shutdown
  */
 bool AudioDecoderControllerListener::waitForDecodeBufferAvailable(int32_t waitTimeMs)
 {
     unique_lock<mutex> lock(mDecodeBufferMutex);
-    return mDecodeBufferCV.wait_for(
+    mDecodeBufferCV.wait_for(
         lock,
         chrono::milliseconds(waitTimeMs),
         [this]() { return mDecodeBufferAvailableFlag.load() || mShutdownFlag.load(); }
     );
+    return mDecodeBufferAvailableFlag.load();
 }
 
 /**
@@ -285,8 +287,8 @@ void AudioDecoderControllerListener::resetDecodeBufferAvailable()
 /**
  * Override Call-back funtion for decoder errors
  *
- * @param vendorErrorCode vendor error code
  * @param errorCode General error code
+ * @param vendorErrorCode vendor error code
  * @return Status
  */
 Status AudioDecoderEventListener::onDecodeError(audiodecoder::ErrorCode errorCode, int32_t vendorErrorCode)

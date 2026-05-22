@@ -171,7 +171,8 @@ UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *m
         {
             bool errorFrame = false;
 
-            string eachFrame = frameSize + "." + to_string(j % streamFrameCount);
+            int32_t frameIndex = (streamFrameCount > 0) ? (j % streamFrameCount) : j;
+            string eachFrame = frameSize + "." + to_string(frameIndex);
             string eachPTS   = framePTS  + "." + to_string(j);
             int32_t size = ut_kvp_getUInt32Field(kvpTestInstance, eachFrame.c_str());
             int64_t PTS = ut_kvp_getUInt64Field(kvpTestInstance, eachPTS.c_str());
