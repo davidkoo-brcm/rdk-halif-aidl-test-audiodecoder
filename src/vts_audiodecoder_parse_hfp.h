@@ -75,15 +75,15 @@
 struct audioDecoder
 {
     int id;
-    ::std::vector<Codec> supportedCodecs;
+    ::std::vector<::com::rdk::hal::audiodecoder::Codec> supportedCodecs;
     bool supportsSecure;
     bool isAvailable;
 };
 
 struct audioDecoderModes
 {
-    std::vector<Codec> tunnelModeCodecs;
-    std::vector<Codec> nonTunnelModeCodecs;
+    ::std::vector<::com::rdk::hal::audiodecoder::Codec> tunnelModeCodecs;
+    ::std::vector<::com::rdk::hal::audiodecoder::Codec> nonTunnelModeCodecs;
 };
 
 extern std::vector<audioDecoder> gAudiodecoders_hfp;
