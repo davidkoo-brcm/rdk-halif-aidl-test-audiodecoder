@@ -130,7 +130,7 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
 #define MAX_TRANSITORY_STATE_WAIT_MS 10
 #define MAX_FINAL_STATE_WAIT_MS  500
 
-#ifndef ENABLE_UT_INFO_LOGGING
+/*#ifndef ENABLE_UT_INFO_LOGGING
     // Only WARNING and ERROR logs are enabled; DEBUG and INFO are disabled
     #ifdef UT_LOG_DEBUG
         #undef UT_LOG_DEBUG
@@ -180,7 +180,7 @@ extern sp<IAudioDecoderManager> gAudioDecoderManager;
         #endif
         #define UT_LOG_ERROR(...)
     #endif
-#endif //ENABLE_UT_INFO_LOGGING
+#endif //ENABLE_UT_INFO_LOGGING*/
 
 #define AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds) \
     do { \
