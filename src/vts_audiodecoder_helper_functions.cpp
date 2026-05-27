@@ -326,6 +326,24 @@ int32_t vts_audioDecoder_helper_getSamplesPerFrame(audiodecoder::Codec codec)
     }
 }
 
+int64_t vts_audio_frameDurationNs(int64_t frameBytes, int32_t sampleRate, int32_t numChannels, PCMFormat format)
+{
+    int32_t bytesPerSample = static_cast<int32_t>(vts_bytesPerSample(format)) * numChannels;
+    int64_t numSamples     = (bytesPerSample > 0) ? frameBytes / bytesPerSample : 0;
+    return (sampleRate > 0 && numSamples > 0) ? (numSamples * 1000000000LL) / sampleRate : 0;
+}
+
+int64_t vts_audio_totalSamples(int64_t accumulatedBytes, int32_t numChannels, PCMFormat format)
+{
+    int64_t bytesPerSample = static_cast<int64_t>(vts_bytesPerSample(format)) * numChannels;
+    return (bytesPerSample > 0) ? accumulatedBytes / bytesPerSample : 0;
+}
+
+int64_t vts_audio_expectedSamples(int64_t durationNs, int32_t sampleRate)
+{
+    return static_cast<int64_t>(std::ceil(static_cast<double>(durationNs) * sampleRate / 1e9));
+}
+
 /** @} */ // End of AUDIO_DECODER_HALTEST_HELPER
 /** @} */ // End of AUDIO_DECODER_HALTEST
 /** @} */ // End of AUDIO_DECODER

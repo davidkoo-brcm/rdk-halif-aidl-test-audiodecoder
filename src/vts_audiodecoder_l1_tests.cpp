@@ -1238,93 +1238,6 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, stop_neg)
     }
 }
 
-/**
-* @brief This test validates if the `decodeBuffer` method handles invalid input arguments correctly.
-*
-* The objective of this test is to provide an invalid arguments.
-*
-* **Test Group ID:** Basic: 01@n
-* **Test Case ID:** 020@n
-* **Priority:** High@n
-* @n
-* **Pre-Conditions:** None@n
-* **Dependencies:** None@n
-* **User Interaction:** None@n
-* @n
-* **Test Procedure:**@n
-* |Variation / Step|Description|Test Data|Expected Result|Notes|
-* |----------------|-----------|---------|---------------|-----|
-* |01|Get the supported IDs and loop through the available decoder|None|None|None|
-* |02|Open the audio decoder with the codec and create audioDecoderController with listener|_codec, _decoder.supportsSecure, listener, audioDecoderController|status.isOk() should be true, audioDecoderController != nullptr|Should pass|
-* |03|Verify the state of the decoder after open|state|state should be READY|Should pass|
-* |04|start the decoder|audioDecoderController|status should be ok|Should pass|
-* |05|Check the state of the decoder|None|state should be STARTED, status should be ok|Should pass|
-* |06|decodeBuffer with invalid parameters|invalid arguments|status should not be ok|Should pass|
-* |07|Stop the decoder|None|state should be READY, status should be ok|Should pass|
-* |08|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
-*/
-UT_ADD_TEST(VTS_L1_AudioDecoder, decodeBuffer_neg)
-{
-    std::vector<IAudioDecoder::Id> decoderIds;
-    sp<IAudioDecoder> audioDecoder;
-    audiodecoder::Capabilities capabilities;
-    ::android::binder::Status status;
-
-    int64_t invalid_nsPresentationTime = -1000000;
-    int64_t valid_nsPresentationTime   =  1000000;
-    int64_t invalid_bufferHandle = -1;
-    int32_t valid_trimStartNs    = 1000;
-    int32_t invalid_trimStartNs  = -1000;
-    int32_t valid_trimEndNs      = 500;
-    int32_t invalid_trimEndNs    = -500;
-
-    /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
-
-    for(const auto& _decoderId: decoderIds)
-    {
-        /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
-
-        /* Get Capabilities of Audio Decoder */
-        AUDIODECODER_GETCAPABILITIES(audioDecoder, &capabilities);
-
-        for(const auto& _codec: capabilities.supportedCodecs)
-        {
-            sp<IAudioDecoderController> audioDecoderController;
-            sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
-            sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
-
-            /* Open the Decoder */
-            AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
-
-            /* Start the decoder */
-            AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
-
-            /* Decode buffer with invalid Presentation time */
-            AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, invalid_nsPresentationTime,
-                                              invalid_bufferHandle, valid_trimStartNs, valid_trimEndNs, Status::EX_ILLEGAL_ARGUMENT);
-
-            /* Decode buffer with invalid buffer handle */
-            AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, valid_nsPresentationTime,
-                                              invalid_bufferHandle, valid_trimStartNs, valid_trimEndNs, Status::EX_ILLEGAL_ARGUMENT);
-
-            /* Decode buffer with invalid trimStart */
-            AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, valid_nsPresentationTime,
-                                              invalid_bufferHandle, invalid_trimStartNs, valid_trimEndNs, Status::EX_ILLEGAL_ARGUMENT);
-
-            /* Decode buffer with invalid trimEnd */
-            AUDIODECODER_DECODEBUFFER_FAILURE(audioDecoderController, valid_nsPresentationTime,
-                                              invalid_bufferHandle, valid_trimStartNs, invalid_trimEndNs, Status::EX_ILLEGAL_ARGUMENT);
-
-            /* Stop the decoder */
-            AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
-
-            /* Close the decoder */
-            AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
-        }
-    }
-}
 
 /**
 * @brief Test for positive scenario of audio decoder's flush function
@@ -1490,6 +1403,8 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, flush_neg)
     }
 }
 
+
+
 /**
 * @brief Test to check the functionality of signalDiscontinuity in the AudioDecoder
 *
@@ -1521,7 +1436,6 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalDiscontinuity_pos)
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
     audiodecoder::Capabilities capabilities;
-    ::android::binder::Status status;
 
     /* Get the Audio decoder IDs */
     AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
@@ -1590,8 +1504,6 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalDiscontinuity_neg)
     std::vector<IAudioDecoder::Id> decoderIds;
     sp<IAudioDecoder> audioDecoder;
     audiodecoder::Capabilities capabilities;
-    ::android::binder::Status status;
-
     /* Get the Audio decoder IDs */
     AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
 
@@ -1633,150 +1545,6 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalDiscontinuity_neg)
     }
 }
 
-/**
-* @brief This test case verifies that the audio decoder can successfully signal an End-of-Stream (EOS)
-* condition in a positive scenario.
-*
-* This test ensures that the audio decoder can transition to an EOS state and handle it correctly.
-* Signaling EOS is a key functionality that ensures proper stream termination
-* and resource management, which is crucial for maintaining performance and stability
-*
-* **Test Group ID:** Basic: 01 @n
-* **Test Case ID:** 025 @n
-* **Priority:** High @n
-* @n
-* **Pre-Conditions:** None @n
-* **Dependencies:** None @n
-* **User Interaction:** None @n
-* @n
-* **Test Procedure:** @n
-* |Variation / Step|Description|Test Data|Expected Result|Notes|
-* |----------------|-----------|---------|---------------|-----|
-* |01|Get the supported IDs and loop through the available decoder|None|None|None|
-* |02|Open the audio decoder with the codec and create audioDecoderController with listener|_codec, _decoder.supportsSecure, listener, audioDecoderController|status.isOk() should be true, audioDecoderController != nullptr|Should pass|
-* |03|Verify the state of the decoder after open|state|state should be READY|Should pass|
-* |04|start the decoder|audioDecoderController|status should be ok|Should pass|
-* |05|Check the state of the decoder|None|state should be STARTED, status should be ok|Should pass|
-* |06|Signal EOS to the decoder|None|status should be ok and state should be STARTED|Should pass|
-* |07|Stop the decoder|None|state should be READY, status should be ok|Should pass|
-* |08|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
-*/
-UT_ADD_TEST(VTS_L1_AudioDecoder, signalEOS_pos)
-{
-    std::vector<IAudioDecoder::Id> decoderIds;
-    sp<IAudioDecoder> audioDecoder;
-    audiodecoder::Capabilities capabilities;
-    ::android::binder::Status status;
-
-    /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
-
-    for(const auto& _decoderId: decoderIds)
-    {
-        /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
-
-        /* Get Capabilities of Audio Decoder */
-        AUDIODECODER_GETCAPABILITIES(audioDecoder, &capabilities);
-
-        for(const auto& _codec: capabilities.supportedCodecs)
-        {
-            sp<IAudioDecoderController> audioDecoderController;
-            sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
-            sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
-
-            /* Open the Decoder */
-            AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
-
-            /* Start the decoder */
-            AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
-
-            /* Signal EOS to the decoder */
-            AUDIODECODER_SIGNAL_EOS_SUCCESS(audioDecoder, audioDecoderController, true);
-
-            /* Stop the decoder */
-            AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
-
-            /* Close the decoder */
-            AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
-        }
-    }
-}
-
-/**
-* @brief Test to check the functionality of signalEOS in the AudioDecoder in negative scenarios
-*
-* This test validates the signalEOS method on the AudioDecoderController to ensure it handles
-* negative scenarios of signal eos appropriately
-*
-* **Test Group ID:** Basic: 01 @n
-* **Test Case ID:** 026 @n
-* **Priority:** High @n
-* @n
-* **Pre-Conditions:** None @n
-* **Dependencies:** None @n
-* **User Interaction:** None @n
-* @n
-* **Test Procedure:** @n
-* |Variation / Step|Description|Test Data|Expected Result|Notes|
-* |----------------|-----------|---------|---------------|-----|
-* |01|Get the supported IDs and loop through the available decoder|None|None|None|
-* |02|Open the audio decoder with the codec and create audioDecoderController with listener|_codec, _decoder.supportsSecure, listener, audioDecoderController|status.isOk() should be true, audioDecoderController != nullptr|Should pass|
-* |03|Verify the state of the decoder after open|state|state should be READY|Should pass|
-* |04|Signal EOS to the decoder before start|None|status should not be ok|Should pass|
-* |05|start the decoder|audioDecoderController|status should be ok|Should pass|
-* |06|Stop the decoder|None|state should be READY, status should be ok|Should pass|
-* |07|Signal EOS to the decoder after start->stop|None|status should not be ok|Should pass|
-* |08|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
-* |09|Signal EOS to the decoder after close|None|status should not be ok|Should pass|
-*/
-UT_ADD_TEST(VTS_L1_AudioDecoder, signalEOS_neg)
-{
-    std::vector<IAudioDecoder::Id> decoderIds;
-    sp<IAudioDecoder> audioDecoder;
-    audiodecoder::Capabilities capabilities;
-    ::android::binder::Status status;
-
-    /* Get the Audio decoder IDs */
-    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
-
-    for(const auto& _decoderId: decoderIds)
-    {
-        /* Get Audio decoder handle */
-        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
-
-        /* Get Capabilities of Audio Decoder */
-        AUDIODECODER_GETCAPABILITIES(audioDecoder, &capabilities);
-
-        for(const auto& _codec: capabilities.supportedCodecs)
-        {
-            sp<IAudioDecoderController> audioDecoderController;
-            sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
-            sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
-
-            /* Open the Decoder */
-            AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
-
-            /* Signal EOS to the decoder before start */
-            AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
-
-            /* Start the decoder */
-            AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
-
-            /* Stop the decoder */
-            AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
-
-            /* Signal EOS to the decoder after start->stop */
-            AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
-
-            /* Close the decoder */
-            AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
-
-            /* Signal EOS to the decoder after close */
-            //AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
-        }
-    }
-}
 
 /**
 * @brief This test case verifies parseCodecSpecificData functionality.
@@ -2444,6 +2212,89 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, setAudioFormat_neg)
         AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
 
         AUDIODECODER_SETAUDIOFORMAT_FAILURE(audioDecoderController, 2, 48000, Status::EX_ILLEGAL_STATE);
+    }
+}
+
+
+/**
+* @brief Negative test for decodeBufferWithMetadata — verifies spec-mandated exception codes.
+*
+* Validates the AIDL interface contract: wrong-state calls return EX_ILLEGAL_STATE,
+* and spec-defined invalid arguments (invalid bufferHandle, discontinuity=true) return
+* EX_ILLEGAL_ARGUMENT. Functional behaviour (EOS, queue management) is covered in L3.
+*
+* **Test Group ID:** Basic: 01 @n
+* **Test Case ID:** 025 @n
+* **Priority:** High @n
+* @n
+* **Pre-Conditions:** None @n
+* **Dependencies:** None @n
+* **User Interaction:** None @n
+* @n
+* **Test Procedure:** @n
+* |Variation / Step|Description|Test Data|Expected Result|Notes|
+* |----------------|-----------|---------|---------------|-----|
+* |01|Get the supported IDs and loop through the available decoder|None|None|None|
+* |02|Open the decoder|_codec, secure, listener|state READY|Should pass|
+* |03|decodeBufferWithMetadata before start|state=READY|status not ok, EX_ILLEGAL_STATE|Should pass|
+* |04|Start the decoder|None|state STARTED|Should pass|
+* |05|Invalid bufferHandle|bufferHandle=-1|status not ok, EX_ILLEGAL_ARGUMENT|Should pass|
+* |06|discontinuity=true (reserved in v1)|metadata.discontinuity=true|status not ok, EX_ILLEGAL_ARGUMENT|Should pass|
+* |07|Stop the decoder|None|state READY|Should pass|
+* |08|decodeBufferWithMetadata after stop|state=READY|status not ok, EX_ILLEGAL_STATE|Should pass|
+* |09|Close the decoder|None|state CLOSED|Should pass|
+*/
+UT_ADD_TEST(VTS_L1_AudioDecoder, decodeBufferWithMetadata_neg)
+{
+    std::vector<IAudioDecoder::Id> decoderIds;
+    sp<IAudioDecoder> audioDecoder;
+    audiodecoder::Capabilities capabilities;
+
+    int64_t valid_bufferHandle   = 0;
+    int64_t invalid_bufferHandle = -1;
+
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
+
+    for(const auto& _decoderId: decoderIds)
+    {
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, &capabilities);
+
+        for(const auto& _codec: capabilities.supportedCodecs)
+        {
+            sp<IAudioDecoderController> audioDecoderController;
+            sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
+            sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
+
+            AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
+
+            audiodecoder::InputBufferMetadata metadata;
+            metadata.endOfStream        = false;
+            metadata.discontinuity      = false;
+            metadata.nsPresentationTime = 1000000;
+            metadata.trimStartNs        = 0;
+            metadata.trimEndNs          = 0;
+
+            /* decode before start must fail — EX_ILLEGAL_STATE (spec-mandated) */
+            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_ILLEGAL_STATE);
+
+            AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            /* invalid bufferHandle — EX_ILLEGAL_ARGUMENT (spec-mandated) */
+            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, invalid_bufferHandle, metadata, Status::EX_ILLEGAL_ARGUMENT);
+
+            /* discontinuity=true is reserved in v1 — EX_ILLEGAL_ARGUMENT (spec-mandated) */
+            metadata.discontinuity = true;
+            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_ILLEGAL_ARGUMENT);
+            metadata.discontinuity = false;
+
+            AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            /* decode after stop must fail — EX_ILLEGAL_STATE (spec-mandated) */
+            AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, valid_bufferHandle, metadata, Status::EX_ILLEGAL_STATE);
+
+            AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
+        }
     }
 }
 
