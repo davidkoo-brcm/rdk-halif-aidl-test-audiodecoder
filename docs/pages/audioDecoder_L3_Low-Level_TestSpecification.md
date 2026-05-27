@@ -101,9 +101,9 @@ IAudioDecoderManager:
 - stream_download_path: `URL` path to download the audio test streams
 - input_streams_path: Target path where input streams are stored
 - reference_streams_path: Target path for reference PCM streams
-- delay_between_decode_calls: insert delay in msec between each `decodeBuffer()` call
+- delay_between_decode_calls: insert delay in msec between each `decodeBufferWithMetadata()` call
 - stop_start_pts: `pts` value in nano seconds at which the decoder should be stopped and restarted during the test. -1 indicates that decoder should not be restarted
-- signal_discontinuity_pts: `pts` value in nano seconds at which the test should signal discontinuity to the decoder. -1 indicates that no discontinuity signal should be sent
+- signal_discontinuity_pts: `pts` value in nano seconds at which the test should signal discontinuity via `signalDiscontinuity()`. -1 indicates that no discontinuity should be signalled
 - flush_pts - `pts` value in nano seconds that determine when the test should flush the decoder. -1 indicates that test should not flush
 - flush_reset_pts - `pts` value in nano seconds that determine when the test should flush with reset the decoder. -1 indicates that test should not flush
 - eos_pts - `pts` value in nano seconds that determine when the test should sent `eos` signal to decoder. -1 indicates that test should not signal `eos`
@@ -309,7 +309,7 @@ This class includes methods for testing individual streams and frames.
 
 |#|Function|Arguments|Description|HAL API|
 |-|--------|---------|-----------|-------|
-|1|decodeAndConsumeAudioStreams|bool validateMetrics|Decodes and consumes the audio frames sequentially|`createAudioPool()`<br>`alloc()`<br>`free()`<br>`destroyPool()`<br>`open()`<br>`start()`<br>`decodeBuffer()`<br>`stop()`<br>`close()`|
+|1|decodeAndConsumeAudioStreams|bool validateMetrics|Decodes and consumes the audio frames sequentially|`createAudioPool()`<br>`alloc()`<br>`free()`<br>`destroyPool()`<br>`open()`<br>`start()`<br>`decodeBufferWithMetadata()`<br>`stop()`<br>`close()`|
 |2|run|bool validateMetrics|calls decodeAndConsumeAudioStreams||
 |3|getDecoderMetrics|int32_t &framesDecoded<br>int32_t &decodeErrors<br>int32_t &framesDropped|Gets the decoder metrics|`getProperty()`|
 
@@ -333,7 +333,7 @@ sequenceDiagram
       rundecoder->>AV Buffer HAL: alloc()
       AV Buffer HAL-->>rundecoder: buffer handle
       rundecoder->>rundecoder: read frame & copy to buffer
-      rundecoder->>AudioDecoder HAL: decodeBuffer()
+      rundecoder->>AudioDecoder HAL: decodeBufferWithMetadata()
       rundecoder->>rundecoder: wait for onFrameOutput()
       AudioDecoder HAL-->>rundecoder: onFrameOutput()
       rundecoder->>rundecoder: validate decode time
@@ -466,12 +466,15 @@ typedef struct testConfiguration
     double rms_diff_threashold;  /* Acceptable RMS difference threshold */
     int64_t trimStartNs;         /* Start trim position in nanoseconds */
     int64_t trimEndNs;           /* End trim position in nanoseconds */
-    int32_t decoderDelay;        /* delay in msec between each decodeBuffer() call */
+    int32_t decoderDelay;        /* delay in msec between each decodeBufferWithMetadata() call */
     int64_t stopPts;             /*  pts value at which the decoder should be stopped and restarted */
-    int64_t discontinuityPts;    /* pts value at which the test should signal discontinuity to the decoder. -1 indicates that no discontinuity signal should be sent */
+    int64_t discontinuityPts;    /* pts value at which signalDiscontinuity() is called. -1 means no discontinuity */
     int64_t flushPts;            /* pts value that determine when the test should flush the decoder. -1 indicates that test should not flush */
     int64_t flushRestPts;        /* pts value that determine when the test should flush with reset the decoder. -1 indicates that test should not flush */
-    int64_t eosPts;              /* pts value that determine when the test should sent eos signal to decoder. -1 indicates that test should not signal eos */
+    int64_t eosPts;              /* pts value that determine when the test should signal eos via InputBufferMetadata.endOfStream. -1 indicates that test should not signal eos */
+    int64_t sinkEosPts;          /* pts value at which sink eos should be signalled */
+    int64_t sinkFlushPts;        /* pts value at which sink flush should be triggered */
+    int32_t duration;            /* stream duration in milliseconds */
     std::vector<std::tuple<int32_t, int64_t, bool>> frameDetails; /* Tuple of frameSize, PTS, isCorrupted */
 }testConfiguration_t;
 
@@ -499,7 +502,7 @@ These are retrieved using the `getProperty()` API. The test confirms that the me
 
 ### Validate Decode Time
 
-The time taken to decode each frame is calculated as the difference between `decodeBuffer()` and the corresponding `onFrameOutput()` event. The result is validated against the `decode_time_threshold` specified in the configuration [vts_l3_test_config.yaml](../../test_configuration/vts_l3_test_config.yaml)
+The time taken to decode each frame is calculated as the difference between `decodeBufferWithMetadata()` and the corresponding `onFrameOutput()` event. The result is validated against the `decode_time_threshold` specified in the configuration [vts_l3_test_config.yaml](../../test_configuration/vts_l3_test_config.yaml)
 
 ### Validate AV Buffers
 

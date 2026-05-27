@@ -42,4 +42,8 @@ audiodecoder:           # Component object begins
          supportsSecure: false
     availableDecoders:
       - 2
+    NonTunnelMode:
+      - AAC_LC
+      - DOLBY_AC3
+    TunnelMode:        # Empty - tunnel mode not yet supported
 
