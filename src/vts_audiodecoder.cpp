@@ -542,7 +542,7 @@ AudioDecoderTest::AudioDecoderTest(IAudioDecoder::Id decoderId, sp<IAudioDecoder
     sp<AudioDecoderControllerListener> controlListener,
     sp<AudioDecoderEventListener> eventListener,
     sp<IAVBuffer> AVBufferManager, IAVBufferHelper* avbufferHelper,
-    bool secureDecode, testConfiguration_t config, bool isSinkAttached)
+    bool secureDecode, const testConfiguration_t& config, bool isSinkAttached)
     : mDecoderId(decoderId),
       mDecoderHandle(decoderHandle),
       mControlListener(controlListener),
@@ -559,7 +559,13 @@ AudioDecoderTest::AudioDecoderTest(IAudioDecoder::Id decoderId, sp<IAudioDecoder
 
 AudioDecoderTest::~AudioDecoderTest()
 {
-    AVBUFFER_DESTROY_POOL_SUCCESS(mAVBufferManager, mAudioPool);
+    try {
+        AVBUFFER_DESTROY_POOL_SUCCESS(mAVBufferManager, mAudioPool);
+    } catch (const std::exception& ex) {
+        UT_LOG_ERROR("AudioDecoderTest destructor: %s", ex.what());
+    } catch (...) {
+        UT_LOG_ERROR("AudioDecoderTest destructor: unknown exception");
+    }
 }
 
 void AudioDecoderTest::setupAudioDecoder()
