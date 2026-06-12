@@ -563,8 +563,10 @@ AudioDecoderTest::~AudioDecoderTest()
         AVBUFFER_DESTROY_POOL_SUCCESS(mAVBufferManager, mAudioPool);
     } catch (const std::exception& ex) {
         UT_LOG_ERROR("AudioDecoderTest destructor: %s", ex.what());
+        ADD_FAILURE() << "AudioDecoderTest destructor threw: " << ex.what();
     } catch (...) {
         UT_LOG_ERROR("AudioDecoderTest destructor: unknown exception");
+        ADD_FAILURE() << "AudioDecoderTest destructor threw unknown exception";
     }
 }
 

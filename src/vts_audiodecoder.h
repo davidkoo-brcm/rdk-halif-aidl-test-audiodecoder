@@ -830,7 +830,7 @@ private:
     mutex mQueueMutex;
     condition_variable mFrameAvailable;
     atomic<bool> mShutdownFlag;
-    int32_t mDecoderID = 0;
+    int32_t mDecoderID = -1;
 
     atomic<bool>    mDecodeBufferAvailableFlag;
     atomic<int32_t> mDecodeBufferAvailableCount{0};
@@ -891,7 +891,7 @@ private:
     vector<pair<AudioDecoderState, AudioDecoderState>> mStateChanges;
     condition_variable mErrorAvailable;
     queue<ErrorDetails_t> mErrors;
-    int32_t mDecoderID = 0;
+    int32_t mDecoderID = -1;
 };
 
 class AudioDecoderTest
