@@ -97,10 +97,10 @@ string AudioDecoderControllerListener::formatChannelVector(const std::vector<Cha
  */
 Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime, int64_t frameAVBufferHandle, const ::optional<audiodecoder::FrameMetadata>& metadata)
 {
-    UT_LOG_INFO("[Audio DecoderID: %d] onFrameOutput: Received frameoutput [PTS:%lld, handle: %llX, metaAvail: %s, EOS: %s]",
+    UT_LOG_INFO("[Audio DecoderID: %d] onFrameOutput: Received frameoutput [PTS:%lld, handle: %llX, metaAvail: %s, bitstreamEOS: %s]",
                 mDecoderID, nsPresentationTime, frameAVBufferHandle,
                 metadata.has_value() ? "true" : "false",
-                metadata.has_value() ? UT_Control_GetMapString(bool_mapTable, metadata->endOfStream) : "N/A");
+                metadata.has_value() ? UT_Control_GetMapString(bool_mapTable, metadata->bitstreamEOS) : "N/A");
 
     DecodedAudioFrame_t frame;
     frame.receiveTime = chrono::steady_clock::now();
@@ -137,8 +137,8 @@ Status AudioDecoderControllerListener::onFrameOutput(int64_t nsPresentationTime,
                         UT_Control_GetMapString(bool_mapTable, metadata->isDolbyAtmos));
         }
 
-        UT_LOG_INFO("[Audio DecoderID: %d] Control Parameters [PTS: %lld, discontinuity: %d, EOS: %d, LowLatency: %d, Source: %d, Trim(%lld-%lld)]",
-                    mDecoderID, nsPresentationTime, metadata->discontinuity, metadata->endOfStream, metadata->lowLatency,
+        UT_LOG_INFO("[Audio DecoderID: %d] Control Parameters [PTS: %lld, discontinuity: %d, bitstreamEOS: %d, LowLatency: %d, Source: %d, Trim(%lld-%lld)]",
+                    mDecoderID, nsPresentationTime, metadata->discontinuity, metadata->bitstreamEOS, metadata->lowLatency,
                     metadata->source, metadata->trimStartNs, metadata->trimEndNs);
 
         frame.frameMetadata = std::make_shared<audiodecoder::FrameMetadata>(*metadata);
@@ -222,6 +222,7 @@ void AudioDecoderControllerListener::shutdown()
     mShutdownFlag = true;
     mFrameAvailable.notify_all();
     mDecodeBufferCV.notify_all();
+    mEndOfStreamCV.notify_all();
 }
 
 /**
@@ -253,6 +254,18 @@ Status AudioDecoderControllerListener::onDecodeBufferAvailable()
     return Status::ok();
 }
 
+Status AudioDecoderControllerListener::onEndOfStream()
+{
+    UT_LOG_INFO("[Audio DecoderID: %d] onEndOfStream callback received", mDecoderID);
+    mEndOfStreamCount++;
+    {
+        lock_guard<mutex> lock(mEndOfStreamMutex);
+        mEndOfStreamFlag = true;
+    }
+    mEndOfStreamCV.notify_one();
+    return Status::ok();
+}
+
 /**
  * Wait for back-pressure relief. Returns true only if onDecodeBufferAvailable() fired within
  * waitTimeMs. Returns false on timeout or shutdown.
@@ -280,6 +293,23 @@ void AudioDecoderControllerListener::resetDecodeBufferAvailable()
 {
     lock_guard<mutex> lock(mDecodeBufferMutex);
     mDecodeBufferAvailableFlag = false;
+}
+
+bool AudioDecoderControllerListener::waitForEndOfStream(int32_t waitTimeMs)
+{
+    unique_lock<mutex> lock(mEndOfStreamMutex);
+    mEndOfStreamCV.wait_for(
+        lock,
+        chrono::milliseconds(waitTimeMs),
+        [this]() { return mEndOfStreamFlag.load() || mShutdownFlag.load(); }
+    );
+    return mEndOfStreamFlag.load();
+}
+
+void AudioDecoderControllerListener::resetEndOfStream()
+{
+    lock_guard<mutex> lock(mEndOfStreamMutex);
+    mEndOfStreamFlag = false;
 }
 
 /* Event listener Class Functions */
@@ -439,6 +469,8 @@ void resetDecodeSession(sp<AudioDecoderEventListener> eventListener,
     controlListener->resetFrames();
     controlListener->resetDecodeBufferAvailable();
     controlListener->resetDecodeBufferAvailableCount();
+    controlListener->resetEndOfStream();
+    controlListener->resetEndOfStreamCount();
 }
 
 /**
@@ -542,7 +574,7 @@ AudioDecoderTest::AudioDecoderTest(IAudioDecoder::Id decoderId, sp<IAudioDecoder
     sp<AudioDecoderControllerListener> controlListener,
     sp<AudioDecoderEventListener> eventListener,
     sp<IAVBuffer> AVBufferManager, IAVBufferHelper* avbufferHelper,
-    bool secureDecode, const testConfiguration_t& config, bool isSinkAttached)
+    bool secureDecode, testConfiguration_t config, bool isSinkAttached)
     : mDecoderId(decoderId),
       mDecoderHandle(decoderHandle),
       mControlListener(controlListener),
@@ -559,15 +591,7 @@ AudioDecoderTest::AudioDecoderTest(IAudioDecoder::Id decoderId, sp<IAudioDecoder
 
 AudioDecoderTest::~AudioDecoderTest()
 {
-    try {
-        AVBUFFER_DESTROY_POOL_SUCCESS(mAVBufferManager, mAudioPool);
-    } catch (const std::exception& ex) {
-        UT_LOG_ERROR("AudioDecoderTest destructor: %s", ex.what());
-        ADD_FAILURE() << "AudioDecoderTest destructor threw: " << ex.what();
-    } catch (...) {
-        UT_LOG_ERROR("AudioDecoderTest destructor: unknown exception");
-        ADD_FAILURE() << "AudioDecoderTest destructor threw unknown exception";
-    }
+    AVBUFFER_DESTROY_POOL_SUCCESS(mAVBufferManager, mAudioPool);
 }
 
 void AudioDecoderTest::setupAudioDecoder()
@@ -597,6 +621,8 @@ void AudioDecoderTest::setupAudioDecoder()
 
     /* Start the decoder */
     AUDIODECODER_START_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+    mEosSubmitted       = false;
+    mSubmittedInSession = false;
 
     /* Reset shared input frame queue */
     {
@@ -664,6 +690,8 @@ void AudioDecoderTest::handleControlPoints(int64_t framePTS)
     {
         AUDIODECODER_STOP_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
         AUDIODECODER_START_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+        mEosSubmitted       = false;
+        mSubmittedInSession = false;
     }
 
     if (mTestConfiguration.discontinuityPts == framePTS)
@@ -681,6 +709,8 @@ void AudioDecoderTest::handleControlPoints(int64_t framePTS)
     {
         AUDIODECODER_FLUSH_SUCCESS(mDecoderHandle, mAudioDecoderController, true, true);
         AUDIODECODER_START_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+        mEosSubmitted       = false;
+        mSubmittedInSession = false;
     }
 }
 
@@ -694,8 +724,7 @@ void AudioDecoderTest::trackInputFrame(int64_t framePTS, bool errorFrame)
     mInputFrame.push_back(inputFrame);
 }
 
-audiodecoder::InputBufferMetadata AudioDecoderTest::buildMetadata(size_t frameIndex, int64_t framePTS,
-                                                                   int64_t endPTS, bool isEosPtsFrame)
+audiodecoder::InputBufferMetadata AudioDecoderTest::buildMetadata(size_t frameIndex, int64_t framePTS)
 {
     audiodecoder::InputBufferMetadata metadata;
     metadata.nsPresentationTime = framePTS;
@@ -704,11 +733,6 @@ audiodecoder::InputBufferMetadata AudioDecoderTest::buildMetadata(size_t frameIn
     metadata.trimStartNs = isFirstFrame ? mTestConfiguration.trimStartNs : 0;
     metadata.trimEndNs   = isLastFrame  ? mTestConfiguration.trimEndNs   : 0;
     metadata.discontinuity = false;
-    metadata.endOfStream   = isEosPtsFrame || (framePTS == endPTS);
-
-    if (metadata.endOfStream)
-        UT_LOG_INFO("[Audio DecoderID: %d] Submitting buffer with endOfStream=true at PTS:%lld",
-                    mDecoderId.value, framePTS);
     return metadata;
 }
 
@@ -721,9 +745,8 @@ void AudioDecoderTest::submitFrame(int64_t audioBufferHandle, const audiodecoder
      * decodeBufferWithMetadata() is captured and not erased by a post-call reset. */
     mControlListener->resetDecodeBufferAvailable();
 
-    UT_LOG_INFO("[Audio DecoderID: %d] Calling decodeBufferWithMetadata(IN:bufferHandle[0x%016" PRIx64 "], IN:PTS[%" PRId64 "], IN:endOfStream[%s], IN:trim[%d/%d])",
+    UT_LOG_INFO("[Audio DecoderID: %d] Calling decodeBufferWithMetadata(IN:bufferHandle[0x%016" PRIx64 "], IN:PTS[%" PRId64 "], IN:trim[%d/%d])",
         mDecoderId.value, (uint64_t)audioBufferHandle, metadata.nsPresentationTime,
-        UT_Control_GetMapString(bool_mapTable, metadata.endOfStream),
         metadata.trimStartNs, metadata.trimEndNs);
 
     status = mAudioDecoderController->decodeBufferWithMetadata(audioBufferHandle, metadata, &decodeResult);
@@ -753,26 +776,24 @@ void AudioDecoderTest::submitFrame(int64_t audioBufferHandle, const audiodecoder
         AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(mDecoderId.value, mAudioDecoderController, audioBufferHandle, metadata);
     }
 
-    if (metadata.endOfStream)
-        mEosSubmitted = true;
+    mSubmittedInSession = true;
 }
 
 void AudioDecoderTest::handleMidStreamEOS(int64_t framePTS)
 {
     /* Allocate a fresh handle for the post-EOS negative test. The EOS buffer was
      * already accepted (and freed) by the HAL, so reusing it would be a spec
-     * violation. HAL will reject this call (returns false, EX_NONE) because EOS
-     * was already submitted; ownership stays with the caller, so we free it. */
+     * violation. HAL rejects this call with EX_ILLEGAL_STATE because EOS was
+     * already submitted; ownership stays with the caller, so we free it. */
     int64_t tempHandle;
     AVBUFFER_ALLOC_SUCCESS(mAVBufferManager, mAudioPool, 1, tempHandle);
 
     audiodecoder::InputBufferMetadata dummyMeta;
     dummyMeta.nsPresentationTime = framePTS;
-    dummyMeta.endOfStream  = false;
     dummyMeta.discontinuity = false;
     dummyMeta.trimStartNs  = 0;
     dummyMeta.trimEndNs    = 0;
-    AUDIODECODER_DECODE_WITH_METADATA_FAILURE(mAudioDecoderController, tempHandle, dummyMeta, Status::EX_NONE);
+    AUDIODECODER_DECODE_WITH_METADATA_FAILURE(mAudioDecoderController, tempHandle, dummyMeta, Status::EX_ILLEGAL_STATE);
     AVBUFFER_FREE_SUCCESS(mAVBufferManager, tempHandle);
 
     UT_LOG_INFO("[Audio DecoderID: %d] Restarting decoder after mid-stream EOS at PTS:%lld",
@@ -804,13 +825,13 @@ void AudioDecoderTest::handleMidStreamEOS(int64_t framePTS)
     AUDIODECODER_STOP_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
     AUDIODECODER_START_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
 
-    mEosSubmitted = false;
+    mEosSubmitted       = false;
+    mSubmittedInSession = false;
 }
 
 void AudioDecoderTest::startDecoding()
 {
     const auto& frames = mTestConfiguration.frameDetails;
-    int64_t endPTS = std::get<1>(frames.back());
 
     for (size_t frameIndex = 0; frameIndex < frames.size(); ++frameIndex)
     {
@@ -824,15 +845,31 @@ void AudioDecoderTest::startDecoding()
         trackInputFrame(framePTS, errorFrame);
 
         bool isEosPtsFrame = (mTestConfiguration.eosPts != -1 && mTestConfiguration.eosPts == framePTS);
-        auto metadata = buildMetadata(frameIndex, framePTS, endPTS, isEosPtsFrame);
+        auto metadata = buildMetadata(frameIndex, framePTS);
 
         submitFrame(audioBufferHandle, metadata);
+
+        if (isEosPtsFrame && mSubmittedInSession && !mEosSubmitted)
+        {
+            mControlListener->resetEndOfStream();
+            AUDIODECODER_SIGNAL_EOS_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+            UT_ASSERT_TRUE(mControlListener->waitForEndOfStream(MAX_FRAME_WAIT_TIME));
+            mEosSubmitted = true;
+        }
 
         if (mTestConfiguration.decoderDelay > 0)
             this_thread::sleep_for(chrono::milliseconds(mTestConfiguration.decoderDelay));
 
         if (isEosPtsFrame)
             handleMidStreamEOS(framePTS);
+    }
+
+    if (!mEosSubmitted && mSubmittedInSession)
+    {
+        mControlListener->resetEndOfStream();
+        AUDIODECODER_SIGNAL_EOS_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+        UT_ASSERT_TRUE(mControlListener->waitForEndOfStream(MAX_FRAME_WAIT_TIME));
+        mEosSubmitted = true;
     }
 
     UT_LOG_INFO("[Audio DecoderID: %d] End of Testing Stream: %s",
@@ -915,32 +952,21 @@ void AudioDecoderTest::checkPTSSpacing(const DecodedAudioFrame_t& frame, int64_t
 void AudioDecoderTest::checkFrameMetadata(const DecodedAudioFrame_t& frame, FrameValidationState& state)
 {
     const auto& fm = *frame.frameMetadata;
-    UT_LOG_INFO("[Audio DecoderID: %d] Frame metadata: sourceCodec=%d (expected=%d) source=%d (expected=%d) endOfStream=%s",
-                 mDecoderId.value,
-                 static_cast<int32_t>(fm.sourceCodec), static_cast<int32_t>(mTestConfiguration.codec),
-                 static_cast<int32_t>(fm.source),
-                 mAvSourcePropertyValue.value->get<PropertyValue::Value::Tag::intValue>(),
-                 fm.endOfStream ? "true" : "false");
+    UT_LOG_INFO("[Audio DecoderID: %d] Frame metadata: sourceCodec=%d (expected=%d) source=%d (expected=%d) bitstreamEOS=%s",
+                mDecoderId.value,
+                static_cast<int32_t>(fm.sourceCodec), static_cast<int32_t>(mTestConfiguration.codec),
+                static_cast<int32_t>(fm.source),
+                mAvSourcePropertyValue.value->get<PropertyValue::Value::Tag::intValue>(),
+                fm.bitstreamEOS ? "true" : "false");
 
     if (frame.framePTS == -1LL && frame.frameBufferHandle == (int64_t)0xFFFFFFFFFFFFFFFF)
     {
-        if (fm.endOfStream)
-            state.eosFramesReceived++;
         return;
     }
-
-    UT_ASSERT_EQUAL(fm.sourceCodec, mTestConfiguration.codec);
-    UT_ASSERT_EQUAL(int32_t(static_cast<int32_t>(fm.source)),
-                    mAvSourcePropertyValue.value->get<PropertyValue::Value::Tag::intValue>());
 
     if (fm.discontinuity)
     {
         state.discontinuityFramesReceived++;
-    }
-
-    if (fm.endOfStream)
-    {
-        state.eosFramesReceived++;
     }
 
     if (mTestConfiguration.trimStartNs > 0 || mTestConfiguration.trimEndNs > 0)
@@ -1028,13 +1054,7 @@ void AudioDecoderTest::validatePostLoopMetrics(const FrameValidationState& state
         }
     }
 
-    /* EOS validation: one EOS always expected at stream end; a second when eosPts is configured.
-     * EOS rides on onFrameOutput() of the last decoded frame (AIDL spec). Skip assertion if:
-     *  - all frames errored (no frame output at all), or
-     *  - the last frame (the EOS-carrying input) itself errored (HAL has no frame to attach EOS to).
-     * Applies to both normal and SOC_PROPRIETARY pass-through streams.
-     * stop/start does not exempt EOS: the last frame is always submitted with endOfStream=true
-     * so the HAL is still obligated to fire EOS (AIDL spec). */
+    /* EOS validation: one EOS always expected at stream end; a second when eosPts is configured. */
     int32_t expectedEOSFrames = 1;
 
     if (mTestConfiguration.eosPts != -1)
@@ -1042,11 +1062,7 @@ void AudioDecoderTest::validatePostLoopMetrics(const FrameValidationState& state
         expectedEOSFrames++;
     }
 
-    if (state.decodeErrors < mTestConfiguration.numOfFrames &&
-        !get<2>(mTestConfiguration.frameDetails.back()))
-    {
-        UT_ASSERT_EQUAL(state.eosFramesReceived, expectedEOSFrames);
-    }
+    UT_ASSERT_EQUAL(mControlListener->getEndOfStreamCount(), expectedEOSFrames);
 
     /* SOC_PROPRIETARY pass-through: no further checks needed */
     if (state.isPassThrough)
@@ -1136,8 +1152,6 @@ void AudioDecoderTest::validateDecodedFrame()
 
             if (isPassThroughFrame)
             {
-                if (decodedFrame.isMetaAvailable && decodedFrame.frameMetadata->endOfStream)
-                    state.eosFramesReceived++;
                 continue;
             }
         }

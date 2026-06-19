@@ -58,6 +58,22 @@
  */
 
 #include "vts_audiodecoder.h"
+#include "vts_avbuffer.h"
+
+class L2AVBufferSpaceListener : public BnAVBufferSpaceListener
+{
+public:
+    ::android::binder::Status onSpaceAvailable() override { return Status::ok(); }
+};
+
+static sp<IAVBuffer> vts_audiodecoder_l2_getAvBufferService()
+{
+    return android::interface_cast<IAVBuffer>(
+        android::defaultServiceManager()->getService(
+            android::String16(IAVBuffer::serviceName().c_str())
+        )
+    );
+}
 
 /* Test class registration with UT_Core */
 UT_ADD_TEST_TO_GROUP(VTS_L2_AudioDecoder, UT_TESTS_L2)
@@ -558,6 +574,86 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, StateTransitions_mutipleInstance)
         }
 
         audioDecoderControllersList.clear();
+    }
+}
+
+/**
+ * @brief Validate signalEndOfStream lifecycle and recovery.
+ *
+ * Verifies EOS callback delivery, STARTED->STARTED drained behavior,
+ * post-EOS decode rejection, and recovery via flush(reset=true).
+ */
+UT_ADD_TEST(VTS_L2_AudioDecoder, SignalEndOfStreamLifecycle)
+{
+    sp<IAVBuffer> avBufferManager = vts_audiodecoder_l2_getAvBufferService();
+    UT_ASSERT_TRUE_FATAL(avBufferManager != nullptr);
+
+    for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
+    {
+        for (bool secureDecode : {true, false})
+        {
+            if (secureDecode && !capabilities->supportsSecure)
+            {
+                continue;
+            }
+
+            for (const auto& _codec : capabilities->supportedCodecs)
+            {
+                sp<IAudioDecoderController> audioDecoderController;
+                Pool audioPool;
+                int64_t bufferHandle = -1;
+                int64_t postEosBufferHandle = -1;
+                sp<IAVBufferSpaceListener> bufferListener = new L2AVBufferSpaceListener();
+
+                AUDIODECODER_OPEN_SUCCESS(decoder, _codec, secureDecode, controlListener, audioDecoderController, false);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::CLOSED, AudioDecoderState::OPENING, AudioDecoderState::READY);
+
+                AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::READY, AudioDecoderState::STARTING, AudioDecoderState::STARTED);
+
+                IAudioDecoder::Id decoderId;
+                std::optional<PropertyValue> decoderIdValue;
+                AUDIODECODER_GET_PROPERTY_SUCCESS(decoder, Property::RESOURCE_ID, decoderIdValue);
+                decoderId.value = decoderIdValue->value->get<PropertyValue::Value::Tag::intValue>();
+
+                AVBUFFER_CREATE_AUDIOPOOL_SUCCESS(avBufferManager, secureDecode, decoderId, bufferListener, audioPool);
+                AVBUFFER_ALLOC_SUCCESS(avBufferManager, audioPool, 1, bufferHandle);
+
+                InputBufferMetadata metadata;
+                metadata.nsPresentationTime = 1000000;
+                metadata.discontinuity = false;
+                metadata.trimStartNs = 0;
+                metadata.trimEndNs = 0;
+
+                AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(decoderId.value, audioDecoderController, bufferHandle, metadata);
+
+                controlListener->resetEndOfStream();
+                AUDIODECODER_SIGNAL_EOS_SUCCESS(decoder, audioDecoderController, false);
+                UT_ASSERT_TRUE(controlListener->waitForEndOfStream(MAX_FINAL_STATE_WAIT_MS));
+
+                AudioDecoderState state;
+                AUDIODECODER_GET_STATE(decoder, state);
+                UT_ASSERT_EQUAL(state, AudioDecoderState::STARTED);
+
+                AVBUFFER_ALLOC_SUCCESS(avBufferManager, audioPool, 1, postEosBufferHandle);
+                AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, postEosBufferHandle, metadata, Status::EX_ILLEGAL_STATE);
+                AVBUFFER_FREE_SUCCESS(avBufferManager, postEosBufferHandle);
+
+                AUDIODECODER_FLUSH_SUCCESS(decoder, audioDecoderController, true, false);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::STARTED, AudioDecoderState::FLUSHING, AudioDecoderState::READY);
+
+                AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::READY, AudioDecoderState::STARTING, AudioDecoderState::STARTED);
+
+                AUDIODECODER_STOP_SUCCESS(decoder, audioDecoderController, false);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::STARTED, AudioDecoderState::STOPPING, AudioDecoderState::READY);
+
+                AUDIODECODER_CLOSE_SUCCESS(decoder, audioDecoderController, false);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::READY, AudioDecoderState::CLOSING, AudioDecoderState::CLOSED);
+
+                AVBUFFER_DESTROY_POOL_SUCCESS(avBufferManager, audioPool);
+            }
+        }
     }
 }
 
