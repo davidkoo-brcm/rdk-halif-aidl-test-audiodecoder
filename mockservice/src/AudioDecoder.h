@@ -81,6 +81,7 @@ namespace com {
                     int32_t mAC4AssociatedAudioMixingEnable;
 
                     std::vector<::com::rdk::hal::audiodecoder::Codec> mSupportedCodecs;
+                    Codec mCodec;
                     State mAudioDecoderState;
                     std::mutex mStateMutex;
 
@@ -109,20 +110,33 @@ namespace com {
                 private:
                     IAudioDecoder::Id mId;
                     AudioDecoder *mParentDecoder;
-                    bool mEosReceived;
+                    bool mEosSignalled;
                     android::sp<audiodecoder::IAudioDecoderControllerListener> mControllerListener;
                     int32_t mQueueCount;
                     static constexpr int32_t kQueueDepth = 4;
+                    int32_t mTotalBuffersSubmitted;
+                    Codec mCodec;
+                    int32_t mChannels;
+                    int32_t mSampleRate;
+                    bool mFirstFrameAfterStart;
                 public:
                     AudioDecoderController(IAudioDecoder::Id id, AudioDecoder *parentDecoder,
-                                           android::sp<audiodecoder::IAudioDecoderControllerListener> listener);
+                                           android::sp<audiodecoder::IAudioDecoderControllerListener> listener,
+                                           Codec codec);
                     virtual ~AudioDecoderController();
+
+                    FrameType getFrameTypeForCodec(Codec codec);
+                    void fireOnFrameOutputCallback(int64_t nsPresentationTime, Codec sourceCodec,
+                                                   int32_t trimStartNs, int32_t trimEndNs);
+                    void fireOnEndOfStreamCallback();
 
                     android::binder::Status start() override;
                     android::binder::Status stop() override;
                     android::binder::Status decodeBufferWithMetadata( int64_t bufferHandle, const audiodecoder::InputBufferMetadata& metadata, bool* _aidl_return ) override;
                     android::binder::Status flush( bool reset ) override;
                     android::binder::Status signalDiscontinuity() override;
+                    android::binder::Status signalEndOfStream() override;
+                    android::binder::Status setAudioFormat( int32_t channels, int32_t sampleRate ) override;
                     android::binder::Status parseCodecSpecificData( rdk::hal::audiodecoder::CSDAudioFormat csdAudioFormat, const std::vector<uint8_t>& codecData, bool* _aidl_return ) override;
                     android::binder::Status setProperty( audiodecoder::Property property, const PropertyValue& propertyValue, bool* _aidl_return ) override;
                 };
@@ -131,4 +145,4 @@ namespace com {
     }
 }
 
-#endif AUDIODECODER_H
+#endif // AUDIODECODER_H

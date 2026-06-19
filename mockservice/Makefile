@@ -51,6 +51,7 @@ MOCK_SERVICE_LD_LIBS := -lbinder -lutils
 
 MOCK_SERVICE_LDFLAGS := -L$(BUILD_DIR)/usr/lib
 MOCK_SERVICE_LDFLAGS += -Wl,-rpath-link=$(BUILD_DIR)/usr/lib
+MOCK_SERVICE_LDFLAGS += -Wl,--copy-dt-needed-entries
 
 MOCK_SERVICE_CFLAGS := -Wall -Wextra -std=c++17 -ggdb
 
