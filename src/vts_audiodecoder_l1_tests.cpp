@@ -1635,12 +1635,13 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalEOS_pos)
 * |01|Get the supported IDs and loop through the available decoder|None|None|None|
 * |02|Open the audio decoder with the codec and create audioDecoderController with listener|_codec, _decoder.supportsSecure, listener, audioDecoderController|status.isOk() should be true, audioDecoderController != nullptr|Should pass|
 * |03|Verify the state of the decoder after open|state|state should be READY|Should pass|
-* |04|Signal EOS to the decoder before start|None|status should not be ok|Should pass|
+* |04|Signal EOS to the decoder before start|None|status should not be ok, EX_ILLEGAL_STATE|Should pass|
 * |05|start the decoder|audioDecoderController|status should be ok|Should pass|
-* |06|Stop the decoder|None|state should be READY, status should be ok|Should pass|
-* |07|Signal EOS to the decoder after start->stop|None|status should not be ok|Should pass|
-* |08|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
-* |09|Signal EOS to the decoder after close|None|status should not be ok|Should pass|
+* |06|Signal EOS in STARTED state with no buffers submitted|None|status should not be ok, EX_ILLEGAL_STATE|Should pass|
+* |07|Stop the decoder|None|state should be READY, status should be ok|Should pass|
+* |08|Signal EOS to the decoder after start->stop|None|status should not be ok, EX_ILLEGAL_STATE|Should pass|
+* |09|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
+* |10|Signal EOS to the decoder after close|None|status should not be ok, EX_ILLEGAL_STATE|Should pass|
 */
 UT_ADD_TEST(VTS_L1_AudioDecoder, signalEOS_neg)
 {
@@ -1674,6 +1675,9 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalEOS_neg)
             /* Start the decoder */
             AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
 
+            /* Signal EOS in STARTED state with no buffers submitted — spec mandates EX_ILLEGAL_STATE */
+            AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
+
             /* Stop the decoder */
             AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
 
@@ -1684,7 +1688,7 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalEOS_neg)
             AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
 
             /* Signal EOS to the decoder after close */
-            //AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
+            AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
         }
     }
 }
