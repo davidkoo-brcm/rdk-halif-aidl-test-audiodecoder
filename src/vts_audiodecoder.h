@@ -966,6 +966,10 @@ private:
     int32_t mDecodeQueueFullCount = 0;
     bool    mEosSubmitted         = false;
     bool    mSubmittedInSession   = false;
+    // Set false if setupAudioDecoder() bails out before opening the decoder
+    // (e.g. input file missing) — run() checks this to skip startDecoding()/
+    // teardownDecoder() rather than using a null mAudioDecoderController.
+    bool    mSetupSucceeded       = false;
 
     struct FrameValidationState
     {

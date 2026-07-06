@@ -24,7 +24,7 @@ AudioStreams:
   tones_16k_2_32_heaac:
     input: tones_16k_2_32.aac
     reference: tones_16k_2_32_ref.pcm
-    codec: HEAAC
+    codec: HE_AAC
     sample_rate: 16000
     channels: 2
     format: S16LE
@@ -45,7 +45,7 @@ AudioStreams:
   tones_22_05k_2_32_heaac:
     input: tones_22.05k_2_32.aac
     reference: tones_22.05k_2_32_ref.pcm
-    codec: HEAAC
+    codec: HE_AAC
     sample_rate: 22050
     channels: 2
     format: S16LE
@@ -66,7 +66,7 @@ AudioStreams:
   tones_24k_2_32_heaac:
     input: tones_24k_2_32.aac
     reference: tones_24k_2_32_ref.pcm
-    codec: HEAAC
+    codec: HE_AAC
     sample_rate: 24000
     channels: 2
     format: S16LE
@@ -87,7 +87,7 @@ AudioStreams:
   tones_32k_2_32_heaac:
     input: tones_32k_2_32.aac
     reference: tones_32k_2_32_ref.pcm
-    codec: HEAAC
+    codec: HE_AAC
     sample_rate: 32000
     channels: 2
     format: S16LE
@@ -108,7 +108,7 @@ AudioStreams:
   tones_44_1k_2_64_heaac:
     input: tones_44.1k_2_64.aac
     reference: tones_44.1k_2_64_ref.pcm
-    codec: HEAAC
+    codec: HE_AAC
     sample_rate: 44100
     channels: 2
     format: S16LE
@@ -129,7 +129,7 @@ AudioStreams:
   tones_48k_2_64_heaac:
     input: tones_48k_2_64.aac
     reference: tones_48k_2_64_ref.pcm
-    codec: HEAAC
+    codec: HE_AAC
     sample_rate: 48000
     channels: 2
     format: S16LE
@@ -150,7 +150,7 @@ AudioStreams:
   tones_48k_5_1_128_heaac:
     input: tones_48k_5.1_128.aac
     reference: tones_48k_5.1_128_ref.pcm
-    codec: HEAAC
+    codec: HE_AAC
     sample_rate: 48000
     channels: 6
     format: S16LE
@@ -171,7 +171,7 @@ AudioStreams:
   tones_64k_2_96_heaac:
     input: tones_64k_2_96.aac
     reference: tones_64k_2_96_ref.pcm
-    codec: HEAAC
+    codec: HE_AAC
     sample_rate: 64000
     channels: 2
     format: S16LE
@@ -192,7 +192,7 @@ AudioStreams:
   tones_88_2k_2_96_heaac:
     input: tones_88.2k_2_96.aac
     reference: tones_88.2k_2_96_ref.pcm
-    codec: HEAAC
+    codec: HE_AAC
     sample_rate: 88200
     channels: 2
     format: S16LE
@@ -213,7 +213,7 @@ AudioStreams:
   tones_96k_2_128_heaac:
     input: tones_96k_2_128.aac
     reference: tones_96k_2_128_ref.pcm
-    codec: HEAAC
+    codec: HE_AAC
     sample_rate: 96000
     channels: 2
     format: S16LE
@@ -234,7 +234,7 @@ AudioStreams:
   tones_96k_5_1_256_heaac:
     input: tones_96k_5.1_256.aac
     reference: tones_96k_5.1_256_ref.pcm
-    codec: HEAAC
+    codec: HE_AAC
     sample_rate: 96000
     channels: 6
     format: S16LE
@@ -256,7 +256,7 @@ AudioStreams:
   tones_48k_2_64_incomplete_heaac:
     input: tones_48k_2_64_incomplete.aac
     reference: tones_48k_2_64_incomplete_ref.pcm
-    codec: HEAAC
+    codec: HE_AAC
     sample_rate: 48000
     channels: 2
     format: S16LE
@@ -278,7 +278,7 @@ AudioStreams:
   tones_48k_2_64_zero_heaac:
     input: tones_48k_2_64_zero.aac
     reference: tones_48k_2_64_zero_ref.pcm
-    codec: HEAAC
+    codec: HE_AAC
     sample_rate: 48000
     channels: 2
     format: S16LE

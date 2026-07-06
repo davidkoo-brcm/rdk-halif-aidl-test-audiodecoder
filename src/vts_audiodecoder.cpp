@@ -495,6 +495,13 @@ void AudioDecoderTest::run(bool validateMetrics)
     }
 
     setupAudioDecoder();
+    if (!mSetupSucceeded)
+    {
+        /* Decoder was never opened/started — nothing valid to decode or tear
+         * down. UT_FAIL() in setupAudioDecoder() already recorded the
+         * failure. */
+        return;
+    }
 
     thread validateThread;
 
@@ -629,6 +636,8 @@ void AudioDecoderTest::setupAudioDecoder()
         lock_guard<mutex> lock(mInputFrameMutex);
         mInputFrame.clear();
     }
+
+    mSetupSucceeded = true;
 }
 
 bool AudioDecoderTest::prepareInputBuffer(int32_t frameSize, int64_t& audioBufferHandle)

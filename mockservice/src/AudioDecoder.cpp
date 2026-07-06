@@ -28,6 +28,7 @@
 #include <com/rdk/hal/audiodecoder/PCMMetadata.h>
 #include <com/rdk/hal/audiodecoder/FrameType.h>
 #include <com/rdk/hal/audiodecoder/PCMFormat.h>
+#include <binder/IServiceManager.h>
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -49,13 +50,10 @@ namespace com
                 }
 
                 /* Read only Properties */
+                // Codecs advertised as supported per decoder instance
                 std::vector<::com::rdk::hal::audiodecoder::Codec> g_supported_codecs[NUM_AUDIO_DECODER] = {
-                    {com::rdk::hal::audiodecoder::Codec::PCM,
-                     com::rdk::hal::audiodecoder::Codec::DOLBY_AC3_PLUS_JOC,
-                     com::rdk::hal::audiodecoder::Codec::MP3},
-                    {com::rdk::hal::audiodecoder::Codec::PCM,
-                     com::rdk::hal::audiodecoder::Codec::DOLBY_AC3_PLUS_JOC,
-                     com::rdk::hal::audiodecoder::Codec::MP3}
+                    {com::rdk::hal::audiodecoder::Codec::AAC_LC},
+                    {com::rdk::hal::audiodecoder::Codec::AAC_LC}
                 };
                 IAudioDecoder::Id g_supported_id[NUM_AUDIO_DECODER];
 
@@ -94,8 +92,9 @@ namespace com
                     }
                     if(!found)
                     {
+                        /* Invalid resource index: return null, no exception */
                         *_aidl_return = nullptr;
-                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
+                        return android::binder::Status::ok();
                     }
 
                     android::sp<IAudioDecoder> audioDecoder = new AudioDecoder(decoderResourceId);
@@ -146,6 +145,23 @@ namespace com
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_NULL_POINTER);
                     }
                     com::rdk::hal::PropertyValue value;
+                    switch (property)
+                    {
+                        case audiodecoder::Property::AC4_PRESENTATION_GROUP_INDEX:
+                        case audiodecoder::Property::AC4_PREFERRED_LANG1:
+                        case audiodecoder::Property::AC4_PREFERRED_LANG2:
+                        case audiodecoder::Property::AC4_ASSOCIATED_TYPE:
+                        case audiodecoder::Property::AC4_AUTO_SELECTION_PRIORITY:
+                        case audiodecoder::Property::AC4_MIXER_BALANCE:
+                        case audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE:
+                            if (std::find(this->mSupportedCodecs.begin(), this->mSupportedCodecs.end(), audiodecoder::Codec::DOLBY_AC4) == this->mSupportedCodecs.end())
+                            {
+                                return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
+                            }
+                            break;
+                        default:
+                            break;
+                    }
                     switch (property)
                     {
                         case audiodecoder::Property::RESOURCE_ID:
@@ -227,7 +243,7 @@ namespace com
                     if(audioDecoderControllerListener == nullptr)
                     {
                         *_aidl_return = nullptr;
-                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
+                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_NULL_POINTER);
                     }
 
                     if(this->getState() != State::CLOSED)
@@ -247,7 +263,7 @@ namespace com
 
                     std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-                    *_aidl_return = new AudioDecoderController(this->mId, this, audioDecoderControllerListener, codec);
+                    *_aidl_return = new AudioDecoderController(this->mId, this, audioDecoderControllerListener, codec, secure);
 
                     if (this->mEventListener)
                         this->mAudioDecoderEventListener->onStateChanged(State::OPENING, State::READY);
@@ -290,6 +306,11 @@ namespace com
                 {
                     android::binder::Status status;
 
+                    if(audioDecoderEventListener == nullptr)
+                    {
+                        *_aidl_return = false;
+                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_NULL_POINTER);
+                    }
                     if(this->mEventListener == true)
                     {
                         *_aidl_return = false;
@@ -305,6 +326,11 @@ namespace com
                 {
                     android::binder::Status status;
 
+                    if(audioDecoderEventListener == nullptr)
+                    {
+                        *_aidl_return = false;
+                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_NULL_POINTER);
+                    }
                     if(this->mEventListener ==false)
                     {
                         *_aidl_return = false;
@@ -318,11 +344,12 @@ namespace com
 
                 AudioDecoderController::AudioDecoderController(IAudioDecoder::Id id, AudioDecoder *parentDecoder,
                                                                android::sp<audiodecoder::IAudioDecoderControllerListener> listener,
-                                                               Codec codec)
+                                                               Codec codec, bool secure)
                 {
                     this->mId = id;
                     this->mParentDecoder = parentDecoder;
                     this->mEosSignalled = false;
+                    this->mDiscontinuityPending = false;
                     this->mControllerListener = listener;
                     this->mQueueCount = 0;
                     this->mTotalBuffersSubmitted = 0;
@@ -330,10 +357,80 @@ namespace com
                     this->mChannels = 2;
                     this->mSampleRate = 48000;
                     this->mFirstFrameAfterStart = false;
+                    this->mSecure = secure;
+                    this->mOutputPoolValid = false;
+                    this->mOutputPoolSpaceListener = new OutputPoolSpaceListener();
+                    this->mAVbufferHelper = getAVBufferHelperInstance();
+
+                    android::sp<android::IBinder> binder = android::defaultServiceManager()->getService(
+                        android::String16(::com::rdk::hal::avbuffer::IAVBuffer::serviceName().c_str()));
+                    this->mAVBuffer = android::interface_cast<::com::rdk::hal::avbuffer::IAVBuffer>(binder);
+                }
+
+                int32_t AudioDecoderController::getSamplesPerFrameForCodec(Codec codec)
+                {
+                    /* Codec-standard samples-per-frame constants */
+                    switch (codec)
+                    {
+                        case Codec::AAC_LC:
+                            return 1024;
+                        default:
+                            return 0;
+                    }
                 }
 
                 AudioDecoderController::~AudioDecoderController()
                 {
+                    // Tear down the session's output pool
+                    if (this->mAVBuffer != nullptr && this->mOutputPoolValid)
+                    {
+                        bool destroyResult = false;
+                        android::binder::Status destroyStatus = this->mAVBuffer->destroyPool(this->mOutputPool, &destroyResult);
+                        if (!destroyStatus.isOk() || !destroyResult)
+                        {
+                            std::cout << "[AudioDecoder] destroyPool for internal output pool failed at session end: "
+                                      << "exceptionCode=" << destroyStatus.exceptionCode()
+                                      << " message=" << destroyStatus.exceptionMessage()
+                                      << " destroyResult=" << destroyResult << std::endl;
+                        }
+                        this->mOutputPoolValid = false;
+                    }
+                }
+
+                // ADTS (AAC) fixed-header validity check: syncword, sampling_frequency_index,
+                // frame_length vs. actual buffer size.
+                bool AudioDecoderController::isFrameContentValid(Codec codec, const uint8_t *data, uint32_t size, std::string *reason)
+                {
+                    if (codec != Codec::AAC_LC)
+                    {
+                        // No parser for other codecs; assume valid
+                        return true;
+                    }
+                    if (data == nullptr || size < 7)
+                    {
+                        if (reason) *reason = "buffer too small for an ADTS header";
+                        return false;
+                    }
+                    if (data[0] != 0xFF || (data[1] & 0xF0) != 0xF0)
+                    {
+                        if (reason) *reason = "ADTS syncword invalid";
+                        return false;
+                    }
+                    uint8_t samplingFreqIndex = (data[2] >> 2) & 0x0F;
+                    if (samplingFreqIndex == 0x0F)
+                    {
+                        if (reason) *reason = "ADTS sampling_frequency_index reserved (15)";
+                        return false;
+                    }
+                    uint32_t frameLength = (static_cast<uint32_t>(data[3] & 0x03) << 11)
+                                          | (static_cast<uint32_t>(data[4]) << 3)
+                                          | (static_cast<uint32_t>(data[5]) >> 5);
+                    if (frameLength != size)
+                    {
+                        if (reason) *reason = "ADTS frame_length does not match actual buffer size";
+                        return false;
+                    }
+                    return true;
                 }
 
                 android::binder::Status AudioDecoderController::start()
@@ -360,6 +457,30 @@ namespace com
                     this->mParentDecoder->setState(State::STARTED);
                     this->mFirstFrameAfterStart = true;
 
+                    // Reset per-session metrics
+                    this->mParentDecoder->mMetricsFrameDecoded = 0;
+                    this->mParentDecoder->mMetricsDecodeErrors = 0;
+                    this->mParentDecoder->mMetricsFramesDropped = 0;
+
+                    if (this->mAVBuffer != nullptr && !this->mOutputPoolValid)
+                    {
+                        ::com::rdk::hal::avbuffer::Pool pool;
+                        android::binder::Status poolStatus = this->mAVBuffer->createAudioPool(
+                            this->mSecure, this->mId, this->mOutputPoolSpaceListener, &pool);
+                        if (poolStatus.isOk())
+                        {
+                            this->mOutputPool = pool;
+                            this->mOutputPoolValid = true;
+                        }
+                        else
+                        {
+                            std::cout << "[AudioDecoder] createAudioPool for internal output pool failed: "
+                                      << "exceptionCode=" << poolStatus.exceptionCode()
+                                      << " message=" << poolStatus.exceptionMessage()
+                                      << std::endl;
+                        }
+                    }
+
                     return android::binder::Status::ok();
                 }
 
@@ -372,9 +493,12 @@ namespace com
                     }
 
                     this->mEosSignalled = false;
+                    this->mDiscontinuityPending = false;
                     this->mQueueCount = 0;
                     this->mTotalBuffersSubmitted = 0;
                     this->mFirstFrameAfterStart = false;
+
+                    // Output pool spans the whole open() session; not torn down on stop()
 
                     /* To simulate State Transitions */
                     std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -426,20 +550,13 @@ namespace com
                         *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                     }
-                    if(metadata.trimStartNs > metadata.trimEndNs)
-                    {
-                        *_aidl_return = false;
-                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
-                    }
                     if(metadata.discontinuity)
                     {
                         *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                     }
-                    this->mQueueCount++;
                     if(this->mQueueCount >= kQueueDepth)
                     {
-                        this->mQueueCount = 0;
                         *_aidl_return = false;
                         android::sp<audiodecoder::IAudioDecoderControllerListener> listener = this->mControllerListener;
                         std::thread([listener]() {
@@ -450,11 +567,76 @@ namespace com
                         return android::binder::Status::ok();
                     }
                     
-                    // Buffer accepted - fire onFrameOutput callback and increment counter
+                    // Buffer accepted - reserve a queue slot
+                    this->mQueueCount++;
                     this->mTotalBuffersSubmitted++;
                     *_aidl_return = true;
+
+                    // Validate frame content; failures reported via onDecodeError()
+                    bool frameValid = true;
+                    if (this->mAVbufferHelper != nullptr)
+                    {
+                        uint32_t mappedSize = 0;
+                        void *mapped = this->mAVbufferHelper->mapHandle(static_cast<uint64_t>(bufferHandle), &mappedSize);
+                        if (mapped != nullptr)
+                        {
+                            std::string reason;
+                            frameValid = isFrameContentValid(this->mCodec, static_cast<const uint8_t *>(mapped), mappedSize, &reason);
+                            if (!frameValid)
+                            {
+                                std::cout << "[AudioDecoder] frame at PTS " << metadata.nsPresentationTime
+                                          << " failed content validation: " << reason << std::endl;
+                            }
+                            this->mAVbufferHelper->unmapHandle(static_cast<uint64_t>(bufferHandle));
+                        }
+                    }
+
+                    // Input buffer ownership transfers to the decoder; free it here
+                    if (this->mAVBuffer != nullptr)
+                    {
+                        bool freeResult = false;
+                        this->mAVBuffer->free(bufferHandle, &freeResult);
+                    }
+
+                    if (!frameValid)
+                    {
+                        // No output for this frame - release its queue slot
+                        this->mQueueCount--;
+                        this->mParentDecoder->mMetricsDecodeErrors++;
+                        if (this->mParentDecoder->mEventListener)
+                        {
+                            this->mParentDecoder->mAudioDecoderEventListener->onDecodeError(
+                                ErrorCode::INVALID_ARGUMENT, 0);
+                        }
+                        return android::binder::Status::ok();
+                    }
+
+                    this->mParentDecoder->mMetricsFrameDecoded++;
+
+                    // Consume the pending discontinuity flag
+                    bool isDiscontinuous = this->mDiscontinuityPending;
+                    this->mDiscontinuityPending = false;
+
+                    // Allocate a real output buffer for PCM frames; SOC passthrough
+                    // codecs (Dolby/DTS) keep frameAVBufferHandle = -1
+                    int64_t outputBufferHandle = -1;
+                    if (getFrameTypeForCodec(this->mCodec) == FrameType::PCM && this->mOutputPoolValid)
+                    {
+                        int32_t samplesPerFrame = getSamplesPerFrameForCodec(this->mCodec);
+                        if (samplesPerFrame > 0)
+                        {
+                            int32_t bytes = samplesPerFrame * this->mChannels * static_cast<int32_t>(sizeof(float));
+                            int64_t handle = -1;
+                            android::binder::Status allocStatus = this->mAVBuffer->alloc(this->mOutputPool, bytes, &handle);
+                            if (allocStatus.isOk() && handle >= 0)
+                            {
+                                outputBufferHandle = handle;
+                            }
+                        }
+                    }
+
                     fireOnFrameOutputCallback(metadata.nsPresentationTime, this->mCodec,
-                                              metadata.trimStartNs, metadata.trimEndNs);
+                                              metadata.trimStartNs, metadata.trimEndNs, outputBufferHandle, isDiscontinuous);
                     return android::binder::Status::ok();
                 }
 
@@ -467,6 +649,7 @@ namespace com
                     }
 
                     this->mEosSignalled = false;
+                    this->mDiscontinuityPending = false;
                     this->mQueueCount = 0;
 
                     /* To simulate State Transitions */
@@ -502,6 +685,7 @@ namespace com
                     {
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
+                    this->mDiscontinuityPending = true;
                     return android::binder::Status::ok();
                 }
 
@@ -561,7 +745,8 @@ namespace com
                 }
 
                 void AudioDecoderController::fireOnFrameOutputCallback(int64_t nsPresentationTime, Codec sourceCodec,
-                                                                       int32_t trimStartNs, int32_t trimEndNs)
+                                                                       int32_t trimStartNs, int32_t trimEndNs,
+                                                                       int64_t outputBufferHandle, bool discontinuity)
                 {
                     android::sp<audiodecoder::IAudioDecoderControllerListener> listener = this->mControllerListener;
                     AudioDecoder *parent = this->mParentDecoder;
@@ -569,9 +754,12 @@ namespace com
                     int32_t channels = this->mChannels;
                     int32_t sampleRate = this->mSampleRate;
 
-                    std::thread([listener, parent, sourceCodec, nsPresentationTime, trimStartNs, trimEndNs, 
-                                 firstFrame, channels, sampleRate]() {
+                    std::thread([this, listener, parent, sourceCodec, nsPresentationTime, trimStartNs, trimEndNs,
+                                 firstFrame, channels, sampleRate, outputBufferHandle, discontinuity]() {
                         std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+                        // Frame processing complete - release its queue slot
+                        this->mQueueCount--;
 
                         if (!listener) return;
 
@@ -613,11 +801,11 @@ namespace com
                         frameMetadata.trimEndNs = trimEndNs;
                         frameMetadata.lowLatency = (parent->mLowLatency == 1);
                         frameMetadata.bitstreamEOS = false;
-                        frameMetadata.discontinuity = false;
+                        frameMetadata.discontinuity = discontinuity;
                         frameMetadata.source = parent->mAVSource;
 
-                        // Fire callback: frameAVBufferHandle = -1 (tunnelled/simulated)
-                        listener->onFrameOutput(nsPresentationTime, -1, frameMetadata);
+                        // Real handle for PCM frames, -1 for SOC passthrough/tunnelled
+                        listener->onFrameOutput(nsPresentationTime, outputBufferHandle, frameMetadata);
                     }).detach();
 
                     this->mFirstFrameAfterStart = false;
@@ -634,6 +822,44 @@ namespace com
                     }).detach();
                 }
 
+                // Per-format sanity check for codec-specific-data payloads
+                bool isValidCodecSpecificData(rdk::hal::audiodecoder::CSDAudioFormat format, const std::vector<uint8_t>& codecData)
+                {
+                    // Minimum length per format
+                    size_t minLength = (format == rdk::hal::audiodecoder::CSDAudioFormat::AC4_SPECIFIC_CONFIG) ? 4 : 2;
+                    if (codecData.size() < minLength)
+                    {
+                        return false;
+                    }
+
+                    // Reject degenerate all-identical-byte payloads
+                    bool allSameByte = true;
+                    for (uint8_t b : codecData)
+                    {
+                        if (b != codecData[0])
+                        {
+                            allSameByte = false;
+                            break;
+                        }
+                    }
+                    if (allSameByte)
+                    {
+                        return false;
+                    }
+
+                    if (format == rdk::hal::audiodecoder::CSDAudioFormat::MP4_AUDIO_SPECIFIC_CONFIG)
+                    {
+                        // AAC AudioSpecificConfig: audioObjectType is top 5 bits of byte 0
+                        uint8_t audioObjectType = (codecData[0] >> 3) & 0x1F;
+                        if (audioObjectType == 0 || (audioObjectType == 31 && codecData.size() < 3))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+
                 android::binder::Status AudioDecoderController::parseCodecSpecificData(  rdk::hal::audiodecoder::CSDAudioFormat csdAudioFormat, const std::vector<uint8_t>& codecData, bool* _aidl_return  )
                 {
                     if(this->mParentDecoder->getState() != State::STARTED)
@@ -641,10 +867,10 @@ namespace com
                         *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
-                    if(codecData.empty())
+                    if(!isValidCodecSpecificData(csdAudioFormat, codecData))
                     {
                         *_aidl_return = false;
-                        return android::binder::Status::ok();
+                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                     }
                     *_aidl_return = true;
                     return android::binder::Status::ok();
@@ -655,8 +881,20 @@ namespace com
                     int32_t intvalue;
                     android::String16 strvalue;
                     *_aidl_return = false;
+                    if (!propertyValue.value.has_value())
+                    {
+                        *_aidl_return = false;
+                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
+                    }
                     switch (property)
                     {
+                        case audiodecoder::Property::RESOURCE_ID:
+                        case audiodecoder::Property::SECURE_AUDIO:
+                        case audiodecoder::Property::METRIC_FRAMES_DECODED:
+                        case audiodecoder::Property::METRIC_DECODE_ERRORS:
+                        case audiodecoder::Property::METRIC_FRAMES_DROPPED:
+                            *_aidl_return = false;
+                            return android::binder::Status::fromExceptionCode(android::binder::Status::EX_UNSUPPORTED_OPERATION);
                         case audiodecoder::Property::LOW_LATENCY_MODE:
                             if(this->mParentDecoder->getState() != State::READY)
                             {

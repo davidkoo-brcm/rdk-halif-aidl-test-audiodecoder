@@ -31,12 +31,17 @@
 #include <com/rdk/hal/audiodecoder/IAudioDecoder.h>
 #include <com/rdk/hal/audiodecoder/BnAudioDecoderController.h>
 #include <com/rdk/hal/audiodecoder/InputBufferMetadata.h>
+#include <com/rdk/hal/avbuffer/IAVBuffer.h>
+#include <com/rdk/hal/avbuffer/Pool.h>
+#include <com/rdk/hal/avbuffer/BnAVBufferSpaceListener.h>
 #include <binder/BinderService.h>
 #include <optional>
 #include <string>
 #include <utils/StrongPointer.h>
 #include <vector>
 #include <mutex>
+#include <atomic>
+#include "avbufferhelper.h"
 
 namespace com {
     namespace rdk {
@@ -104,6 +109,13 @@ namespace com {
                     android::binder::Status unregisterEventListener( const android::sp<audiodecoder::IAudioDecoderEventListener>& audioDecoderEventListener, bool* _aidl_return ) override;
                 };
 
+                // No-op listener to satisfy createAudioPool()'s non-null requirement
+                class OutputPoolSpaceListener :public ::com::rdk::hal::avbuffer::BnAVBufferSpaceListener
+                {
+                public:
+                    android::binder::Status onSpaceAvailable() override { return android::binder::Status::ok(); }
+                };
+
                 class AudioDecoderController :public android::BinderService<AudioDecoderController>,
                                               public BnAudioDecoderController
                 {
@@ -111,23 +123,41 @@ namespace com {
                     IAudioDecoder::Id mId;
                     AudioDecoder *mParentDecoder;
                     bool mEosSignalled;
+                    /* Pending discontinuity flag, applied to the next output frame */
+                    bool mDiscontinuityPending;
                     android::sp<audiodecoder::IAudioDecoderControllerListener> mControllerListener;
-                    int32_t mQueueCount;
+
+                    /* Outstanding-frame count (atomic: decremented on a background thread) */
+                    std::atomic<int32_t> mQueueCount;
                     static constexpr int32_t kQueueDepth = 4;
                     int32_t mTotalBuffersSubmitted;
                     Codec mCodec;
                     int32_t mChannels;
                     int32_t mSampleRate;
                     bool mFirstFrameAfterStart;
+                    bool mSecure;
+
+                    /* Connection to MockAVBufferService for allocating output buffers */
+                    android::sp<::com::rdk::hal::avbuffer::IAVBuffer> mAVBuffer;
+                    ::com::rdk::hal::avbuffer::Pool mOutputPool;
+                    bool mOutputPoolValid;
+                    android::sp<OutputPoolSpaceListener> mOutputPoolSpaceListener;
+
+                    /* Shared-memory helper for inspecting input frame bytes */
+                    IAVBufferHelper *mAVbufferHelper;
                 public:
                     AudioDecoderController(IAudioDecoder::Id id, AudioDecoder *parentDecoder,
                                            android::sp<audiodecoder::IAudioDecoderControllerListener> listener,
-                                           Codec codec);
+                                           Codec codec, bool secure);
                     virtual ~AudioDecoderController();
 
                     FrameType getFrameTypeForCodec(Codec codec);
+                    static int32_t getSamplesPerFrameForCodec(Codec codec);
+                    /* Structural validity check for a codec's frame header */
+                    static bool isFrameContentValid(Codec codec, const uint8_t *data, uint32_t size, std::string *reason);
                     void fireOnFrameOutputCallback(int64_t nsPresentationTime, Codec sourceCodec,
-                                                   int32_t trimStartNs, int32_t trimEndNs);
+                                                   int32_t trimStartNs, int32_t trimEndNs,
+                                                   int64_t outputBufferHandle, bool discontinuity);
                     void fireOnEndOfStreamCallback();
 
                     android::binder::Status start() override;
