@@ -620,8 +620,9 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, open_neg)
 
         invalidCodec = static_cast<Codec>(static_cast<int32_t>(capabilities.supportedCodecs.front()) - 1);
 
-        /* Send invalid audio codec value */
-        AUDIODECODER_OPEN_FAILURE(audioDecoder, invalidCodec, capabilities.supportsSecure, controllerListener, audioDecoderController_nullptr, Status::EX_ILLEGAL_ARGUMENT);
+        /* invalidCodec is a valid Codec enum value this instance just doesn't support,
+         * so open() gracefully declines with a null controller rather than an exception. */
+        AUDIODECODER_OPEN_FAILURE(audioDecoder, invalidCodec, capabilities.supportsSecure, controllerListener, audioDecoderController_nullptr, Status::EX_NONE);
 
         /* If decoder doesn't support secure, request for secure decoder */
         if (capabilities.supportsSecure == false)

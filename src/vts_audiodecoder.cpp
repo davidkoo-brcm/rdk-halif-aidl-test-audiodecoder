@@ -808,7 +808,7 @@ void AudioDecoderTest::handleMidStreamEOS(int64_t framePTS)
     UT_LOG_INFO("[Audio DecoderID: %d] Restarting decoder after mid-stream EOS at PTS:%lld",
                 mDecoderId.value, framePTS);
 
-    /* Validate HAL metrics before stop() resets them */
+    /* Validate HAL metrics accumulated so far (stop()/start() below does not reset them) */
     {
         int32_t metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped;
         getDecoderMetrics(metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped);
@@ -1027,8 +1027,8 @@ void AudioDecoderTest::validatePostLoopMetrics(const FrameValidationState& state
     /* Frame count: METRIC_FRAMES_DECODED compared against yaml num_of_frames is the authoritative
      * check. Applies to all codec types including SOC_PROPRIETARY pass-through.
      * When flush is configured use relaxed (<=) checks.
-     * When eosPts is configured, start() resets HAL metrics so they only reflect frames after
-     * the EOS stop; frames before EOS were validated in handleMidStreamEOS(). */
+     * Per Property.aidl, these metrics reset only on open()/flush(), not stop()/start(), so a
+     * mid-stream EOS restart (handleMidStreamEOS() uses stop()+start()) keeps counting cumulatively. */
     int32_t metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped;
 
     getDecoderMetrics(metricsFrameDecoded, metricsDecodeErrors, metricsFramesDropped);
@@ -1038,18 +1038,6 @@ void AudioDecoderTest::validatePostLoopMetrics(const FrameValidationState& state
 
     int32_t metricsExpectedDecoded = expectedFrames;
     int32_t metricsExpectedErrors  = state.decodeErrors;
-
-    if (mTestConfiguration.eosPts != -1)
-    {
-        int32_t errorsAfterEos = static_cast<int32_t>(count_if(
-            mTestConfiguration.frameDetails.begin(), mTestConfiguration.frameDetails.end(),
-            [&](const auto& f) { return get<2>(f) && get<1>(f) > mTestConfiguration.eosPts; }));
-        int32_t totalAfterEos  = static_cast<int32_t>(count_if(
-            mTestConfiguration.frameDetails.begin(), mTestConfiguration.frameDetails.end(),
-            [&](const auto& f) { return get<1>(f) > mTestConfiguration.eosPts; }));
-        metricsExpectedDecoded = totalAfterEos - errorsAfterEos;
-        metricsExpectedErrors  = errorsAfterEos;
-    }
 
     if (metricsFrameDecoded != -1)
     {

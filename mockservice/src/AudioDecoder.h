@@ -145,6 +145,13 @@ namespace com {
 
                     /* Shared-memory helper for inspecting input frame bytes */
                     IAVBufferHelper *mAVbufferHelper;
+
+                    // Helpers for decodeBufferWithMetadata(), one per concern:
+                    android::binder::Status validateDecodeBufferArgs(int64_t bufferHandle,
+                        const audiodecoder::InputBufferMetadata& metadata);
+                    bool tryAcceptBufferIntoQueue();
+                    bool validateFrameContentAndFreeBuffer(int64_t bufferHandle, int64_t nsPresentationTime);
+                    int64_t allocateOutputBufferIfNeeded();
                 public:
                     AudioDecoderController(IAudioDecoder::Id id, AudioDecoder *parentDecoder,
                                            android::sp<audiodecoder::IAudioDecoderControllerListener> listener,
