@@ -37,9 +37,10 @@ declare -r AIDL_LIB_DIR=${TOP}/aidl_lib
 declare -r RDK_HAL_DIR=${TOP}/rdk-halif-aidl
 declare -r INSTALL_PATH=${BUILD_DIR}/bin
 declare -r DEFAULT_AIDL_MANIFEST="versions_released.yaml"
+declare -r DEFAULT_PREBUILT_AIDL_ROOT="${TOP}/prebuilt"
 
 AIDL_VERSION_MANIFEST="${AIDL_VERSION_MANIFEST=${DEFAULT_AIDL_MANIFEST}}"
-PREBUILT_AIDL_ROOT="${PREBUILT_AIDL_ROOT=${DEFAULT_PREBUILT_AIDL_ROOT}}"
+PREBUILT_AIDL_ROOT="${PREBUILT_AIDL_ROOT:-${DEFAULT_PREBUILT_AIDL_ROOT}}"
 
 DEF_LINUX_BINDER="`realpath ${TOP}/../`/linux_binder_idl"
 # AIDL_BIN: path of aidl compiler
@@ -70,7 +71,7 @@ RDK_HALIF_AIDL_VERSION="${RDK_HALIF_AIDL_VERSION="main"}"
 ensure_rdk_hal_repo()
 {
     if [ ! -d "$RDK_HAL_DIR" ]; then
-        git clone -b $RDK_HALIF_AIDL_VERSION 'ssh://git@github.com/rdkcentral/rdk-halif-aidl.git' $RDK_HAL_DIR
+        git clone -b $RDK_HALIF_AIDL_VERSION 'https://github.com/rdkcentral/rdk-halif-aidl.git' $RDK_HAL_DIR
     fi
 }
 
@@ -123,6 +124,9 @@ stage_prebuilt_aidl_artifacts()
     local videodecoder_lib
 
     prebuilt_root="$(realpath "$PREBUILT_AIDL_ROOT" 2>/dev/null || true)"
+    if [ -z "$prebuilt_root" ]; then
+        return 1
+    fi
     prebuilt_include="${prebuilt_root}/usr/include"
     prebuilt_lib="${prebuilt_root}/usr/lib"
 
@@ -186,7 +190,7 @@ generate_audiodecoder_hal()
 
     # Clone the repository if not already present
     if [ ! -d "$RDK_HAL_DIR" ]; then
-        git clone -b $RDK_HALIF_AIDL_VERSION 'ssh://git@github.com/rdkcentral/rdk-halif-aidl.git' $RDK_HAL_DIR
+        git clone -b $RDK_HALIF_AIDL_VERSION 'https://github.com/rdkcentral/rdk-halif-aidl.git' $RDK_HAL_DIR
     fi
 
     # Prepare cmake build directories and configuration for each module
@@ -207,7 +211,7 @@ generate_avbuffer_hal()
 
     # Clone the repository if not already present
     if [ ! -d "$RDK_HAL_DIR" ]; then
-        git clone -b $RDK_HALIF_AIDL_VERSION 'ssh://git@github.com/rdkcentral/rdk-halif-aidl.git' $RDK_HAL_DIR
+        git clone -b $RDK_HALIF_AIDL_VERSION 'https://github.com/rdkcentral/rdk-halif-aidl.git' $RDK_HAL_DIR
     fi
 
     for m in avbuffer; do
@@ -229,7 +233,7 @@ generate_videodecoder_hal()
 
     # Clone the repository if not already present
     if [ ! -d "$RDK_HAL_DIR" ]; then
-        git clone -b $RDK_HALIF_AIDL_VERSION 'ssh://git@github.com/rdkcentral/rdk-halif-aidl.git' $RDK_HAL_DIR
+        git clone -b $RDK_HALIF_AIDL_VERSION 'https://github.com/rdkcentral/rdk-halif-aidl.git' $RDK_HAL_DIR
     fi
 
     cmake \

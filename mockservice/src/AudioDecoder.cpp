@@ -237,15 +237,8 @@ namespace com
 
                     if(std::find(this->mSupportedCodecs.begin(), this->mSupportedCodecs.end(), codec) == this->mSupportedCodecs.end())
                     {
-                        /* Recognized-but-unsupported codec: gracefully decline per spec (null controller, EX_NONE), not EX_ILLEGAL_ARGUMENT */
                         *_aidl_return = nullptr;
-                        return android::binder::Status::ok();
-                    }
-                    if(secure && !this->mSupportsSecure)
-                    {
-                        /* Secure requested but Capabilities.supportsSecure is false: gracefully decline per spec */
-                        *_aidl_return = nullptr;
-                        return android::binder::Status::ok();
+                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                     }
                     if(audioDecoderControllerListener == nullptr)
                     {
@@ -271,11 +264,6 @@ namespace com
                     std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
                     *_aidl_return = new AudioDecoderController(this->mId, this, audioDecoderControllerListener, codec, secure);
-
-                    /* Metrics reset on open() per Property.aidl */
-                    this->mMetricsFrameDecoded = 0;
-                    this->mMetricsDecodeErrors = 0;
-                    this->mMetricsFramesDropped = 0;
 
                     if (this->mEventListener)
                         this->mAudioDecoderEventListener->onStateChanged(State::OPENING, State::READY);
@@ -469,8 +457,10 @@ namespace com
                     this->mParentDecoder->setState(State::STARTED);
                     this->mFirstFrameAfterStart = true;
 
-                    /* Metrics are reset on open() and flush() per Property.aidl, not on start() -
-                     * they must persist across a stop()+start() cycle. */
+                    // Reset per-session metrics
+                    this->mParentDecoder->mMetricsFrameDecoded = 0;
+                    this->mParentDecoder->mMetricsDecodeErrors = 0;
+                    this->mParentDecoder->mMetricsFramesDropped = 0;
 
                     if (this->mAVBuffer != nullptr && !this->mOutputPoolValid)
                     {
@@ -528,59 +518,60 @@ namespace com
                     return android::binder::Status::ok();
                 }
 
-                android::binder::Status AudioDecoderController::validateDecodeBufferArgs(int64_t bufferHandle,
-                    const audiodecoder::InputBufferMetadata& metadata)
+                android::binder::Status AudioDecoderController::decodeBufferWithMetadata( int64_t bufferHandle, const audiodecoder::InputBufferMetadata& metadata, bool* _aidl_return )
                 {
                     if(bufferHandle < 0)
                     {
+                        *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                     }
                     if(this->mParentDecoder->getState() != State::STARTED)
                     {
+                        *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
                     if(this->mEosSignalled)
                     {
+                        *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
                     if(metadata.nsPresentationTime < 0)
                     {
+                        *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                     }
                     if(metadata.trimStartNs < 0)
                     {
+                        *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                     }
                     if(metadata.trimEndNs < 0)
                     {
+                        *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                     }
                     if(metadata.discontinuity)
                     {
+                        *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                     }
-                    return android::binder::Status::ok();
-                }
-
-                bool AudioDecoderController::tryAcceptBufferIntoQueue()
-                {
                     if(this->mQueueCount >= kQueueDepth)
                     {
+                        *_aidl_return = false;
                         android::sp<audiodecoder::IAudioDecoderControllerListener> listener = this->mControllerListener;
                         std::thread([listener]() {
                             std::this_thread::sleep_for(std::chrono::milliseconds(10));
                             if (listener)
                                 listener->onDecodeBufferAvailable();
                         }).detach();
-                        return false;
+                        return android::binder::Status::ok();
                     }
+                    
+                    // Buffer accepted - reserve a queue slot
                     this->mQueueCount++;
                     this->mTotalBuffersSubmitted++;
-                    return true;
-                }
+                    *_aidl_return = true;
 
-                bool AudioDecoderController::validateFrameContentAndFreeBuffer(int64_t bufferHandle, int64_t nsPresentationTime)
-                {
                     // Validate frame content; failures reported via onDecodeError()
                     bool frameValid = true;
                     if (this->mAVbufferHelper != nullptr)
@@ -593,7 +584,7 @@ namespace com
                             frameValid = isFrameContentValid(this->mCodec, static_cast<const uint8_t *>(mapped), mappedSize, &reason);
                             if (!frameValid)
                             {
-                                std::cout << "[AudioDecoder] frame at PTS " << nsPresentationTime
+                                std::cout << "[AudioDecoder] frame at PTS " << metadata.nsPresentationTime
                                           << " failed content validation: " << reason << std::endl;
                             }
                             this->mAVbufferHelper->unmapHandle(static_cast<uint64_t>(bufferHandle));
@@ -606,49 +597,6 @@ namespace com
                         bool freeResult = false;
                         this->mAVBuffer->free(bufferHandle, &freeResult);
                     }
-                    return frameValid;
-                }
-
-                int64_t AudioDecoderController::allocateOutputBufferIfNeeded()
-                {
-                    // Allocate a real output buffer for PCM frames; SOC passthrough
-                    // codecs (Dolby/DTS) keep frameAVBufferHandle = -1
-                    if (getFrameTypeForCodec(this->mCodec) != FrameType::PCM || !this->mOutputPoolValid)
-                    {
-                        return -1;
-                    }
-                    int32_t samplesPerFrame = getSamplesPerFrameForCodec(this->mCodec);
-                    if (samplesPerFrame <= 0)
-                    {
-                        return -1;
-                    }
-                    int32_t bytes = samplesPerFrame * this->mChannels * static_cast<int32_t>(sizeof(float));
-                    int64_t handle = -1;
-                    android::binder::Status allocStatus = this->mAVBuffer->alloc(this->mOutputPool, bytes, &handle);
-                    if (allocStatus.isOk() && handle >= 0)
-                    {
-                        return handle;
-                    }
-                    return -1;
-                }
-
-                android::binder::Status AudioDecoderController::decodeBufferWithMetadata( int64_t bufferHandle, const audiodecoder::InputBufferMetadata& metadata, bool* _aidl_return )
-                {
-                    android::binder::Status validation = validateDecodeBufferArgs(bufferHandle, metadata);
-                    if (!validation.isOk())
-                    {
-                        *_aidl_return = false;
-                        return validation;
-                    }
-
-                    if (!tryAcceptBufferIntoQueue())
-                    {
-                        *_aidl_return = false;
-                        return android::binder::Status::ok();
-                    }
-                    *_aidl_return = true;
-
-                    bool frameValid = validateFrameContentAndFreeBuffer(bufferHandle, metadata.nsPresentationTime);
 
                     if (!frameValid)
                     {
@@ -669,7 +617,23 @@ namespace com
                     bool isDiscontinuous = this->mDiscontinuityPending;
                     this->mDiscontinuityPending = false;
 
-                    int64_t outputBufferHandle = allocateOutputBufferIfNeeded();
+                    // Allocate a real output buffer for PCM frames; SOC passthrough
+                    // codecs (Dolby/DTS) keep frameAVBufferHandle = -1
+                    int64_t outputBufferHandle = -1;
+                    if (getFrameTypeForCodec(this->mCodec) == FrameType::PCM && this->mOutputPoolValid)
+                    {
+                        int32_t samplesPerFrame = getSamplesPerFrameForCodec(this->mCodec);
+                        if (samplesPerFrame > 0)
+                        {
+                            int32_t bytes = samplesPerFrame * this->mChannels * static_cast<int32_t>(sizeof(float));
+                            int64_t handle = -1;
+                            android::binder::Status allocStatus = this->mAVBuffer->alloc(this->mOutputPool, bytes, &handle);
+                            if (allocStatus.isOk() && handle >= 0)
+                            {
+                                outputBufferHandle = handle;
+                            }
+                        }
+                    }
 
                     fireOnFrameOutputCallback(metadata.nsPresentationTime, this->mCodec,
                                               metadata.trimStartNs, metadata.trimEndNs, outputBufferHandle, isDiscontinuous);
@@ -687,12 +651,6 @@ namespace com
                     this->mEosSignalled = false;
                     this->mDiscontinuityPending = false;
                     this->mQueueCount = 0;
-                    this->mTotalBuffersSubmitted = 0;
-
-                    /* Metrics reset on flush() per Property.aidl, regardless of the reset flag */
-                    this->mParentDecoder->mMetricsFrameDecoded = 0;
-                    this->mParentDecoder->mMetricsDecodeErrors = 0;
-                    this->mParentDecoder->mMetricsFramesDropped = 0;
 
                     /* To simulate State Transitions */
                     std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -791,17 +749,22 @@ namespace com
                                                                        int64_t outputBufferHandle, bool discontinuity)
                 {
                     android::sp<audiodecoder::IAudioDecoderControllerListener> listener = this->mControllerListener;
-                    AudioDecoder *parent = this->mParentDecoder;
+                    // Capture strong references (not raw `this`/`parent`) so the detached thread
+                    // below keeps both RefBase objects alive for its own duration - otherwise a
+                    // close() that drops the last sp<> while this thread is still sleeping would
+                    // leave it dereferencing freed memory.
+                    android::sp<AudioDecoderController> self = this;
+                    android::sp<AudioDecoder> parent = this->mParentDecoder;
                     bool firstFrame = this->mFirstFrameAfterStart;
                     int32_t channels = this->mChannels;
                     int32_t sampleRate = this->mSampleRate;
 
-                    std::thread([this, listener, parent, sourceCodec, nsPresentationTime, trimStartNs, trimEndNs,
+                    std::thread([self, listener, parent, sourceCodec, nsPresentationTime, trimStartNs, trimEndNs,
                                  firstFrame, channels, sampleRate, outputBufferHandle, discontinuity]() {
                         std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
                         // Frame processing complete - release its queue slot
-                        this->mQueueCount--;
+                        self->mQueueCount--;
 
                         if (!listener) return;
 

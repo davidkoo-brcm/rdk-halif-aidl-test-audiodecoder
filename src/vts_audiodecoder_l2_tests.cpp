@@ -198,7 +198,7 @@ std::multimap<audiodecoder::Property, android::String16> validAC4StringPropertie
     {audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("fra")},
     {audiodecoder::Property::AC4_PREFERRED_LANG2, android::String16("")},
     {audiodecoder::Property::AC4_PREFERRED_LANG2, android::String16("eng")},
-    {audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("fra")}
+    {audiodecoder::Property::AC4_PREFERRED_LANG2, android::String16("fra")}
 };
 
 /**
@@ -639,8 +639,9 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, SignalEndOfStreamLifecycle)
                 AUDIODECODER_SIGNAL_EOS_SUCCESS(decoder, audioDecoderController, false);
                 UT_ASSERT_TRUE(controlListener->waitForEndOfStream(MAX_FINAL_STATE_WAIT_MS));
 
-                /* Free the input buffer once the HAL has fully drained it at EOS */
-                AVBUFFER_FREE_SUCCESS(avBufferManager, bufferHandle);
+                // bufferHandle ownership already transferred to (and was freed by) the HAL when
+                // decodeBufferWithMetadata() accepted it above - freeing it again here would be
+                // a double-free.
 
                 AudioDecoderState state;
                 AUDIODECODER_GET_STATE(decoder, state);

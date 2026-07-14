@@ -620,9 +620,8 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, open_neg)
 
         invalidCodec = static_cast<Codec>(static_cast<int32_t>(capabilities.supportedCodecs.front()) - 1);
 
-        /* invalidCodec is a valid Codec enum value this instance just doesn't support,
-         * so open() gracefully declines with a null controller rather than an exception. */
-        AUDIODECODER_OPEN_FAILURE(audioDecoder, invalidCodec, capabilities.supportsSecure, controllerListener, audioDecoderController_nullptr, Status::EX_NONE);
+        /* Send invalid audio codec value */
+        AUDIODECODER_OPEN_FAILURE(audioDecoder, invalidCodec, capabilities.supportsSecure, controllerListener, audioDecoderController_nullptr, Status::EX_ILLEGAL_ARGUMENT);
 
         /* If decoder doesn't support secure, request for secure decoder */
         if (capabilities.supportsSecure == false)
@@ -1894,7 +1893,7 @@ std::multimap<Property, android::String16> validAC4StringPropertyAll =
     {Property::AC4_PREFERRED_LANG1, android::String16("fra")},
     {Property::AC4_PREFERRED_LANG2, android::String16("")},
     {Property::AC4_PREFERRED_LANG2, android::String16("eng")},
-    {Property::AC4_PREFERRED_LANG1, android::String16("fra")}
+    {Property::AC4_PREFERRED_LANG2, android::String16("fra")}
 };
 
 std::multimap<Property, int32_t> invalidIntPropertyReady =
