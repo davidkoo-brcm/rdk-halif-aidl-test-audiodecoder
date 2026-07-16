@@ -458,10 +458,8 @@ namespace com
                     this->mParentDecoder->setState(State::STARTED);
                     this->mFirstFrameAfterStart = true;
 
-                    // Reset per-session metrics
-                    this->mParentDecoder->mMetricsFrameDecoded = 0;
-                    this->mParentDecoder->mMetricsDecodeErrors = 0;
-                    this->mParentDecoder->mMetricsFramesDropped = 0;
+                    // Metrics are cumulative across stop()+start() (Property.aidl) - reset only
+                    // happens on open() (fresh AudioDecoder instance) or flush(reset=true).
 
                     if (this->mAVBuffer != nullptr && !this->mOutputPoolValid)
                     {
@@ -689,6 +687,11 @@ namespace com
                         if (this->mParentDecoder->mEventListener)
                             this->mParentDecoder->mAudioDecoderEventListener->onStateChanged(State::FLUSHING, State::READY);
                         this->mParentDecoder->setState(State::READY);
+
+                        // Reset per-session metrics (Property.aidl: metrics reset only on open()/flush()).
+                        this->mParentDecoder->mMetricsFrameDecoded = 0;
+                        this->mParentDecoder->mMetricsDecodeErrors = 0;
+                        this->mParentDecoder->mMetricsFramesDropped = 0;
                     }
                     else
                     {
