@@ -39,7 +39,7 @@ declare -r INSTALL_PATH=${BUILD_DIR}/bin
 declare -r DEFAULT_AIDL_MANIFEST="versions_released.yaml"
 declare -r DEFAULT_PREBUILT_AIDL_ROOT="${TOP}/prebuilt"
 
-AIDL_VERSION_MANIFEST="${AIDL_VERSION_MANIFEST=${DEFAULT_AIDL_MANIFEST}}"
+AIDL_VERSION_MANIFEST="${AIDL_VERSION_MANIFEST:-${DEFAULT_AIDL_MANIFEST}}"
 PREBUILT_AIDL_ROOT="${PREBUILT_AIDL_ROOT:-${DEFAULT_PREBUILT_AIDL_ROOT}}"
 
 DEF_LINUX_BINDER="`realpath ${TOP}/../`/linux_binder_idl"
@@ -66,7 +66,7 @@ fi
 # whiling running the script
 declare -r AIDL_BIN=`realpath ${AIDL_BIN}`
 declare -r LINUX_BINDER_OUT_DIR=`realpath ${LINUX_BINDER_OUT_DIR}`
-RDK_HALIF_AIDL_VERSION="${RDK_HALIF_AIDL_VERSION="main"}"
+RDK_HALIF_AIDL_VERSION="${RDK_HALIF_AIDL_VERSION:-main}"
 
 ensure_rdk_hal_repo()
 {

@@ -470,16 +470,12 @@ namespace com
 
                     std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-                    if (this->mParentDecoder->mEventListener)
-                        this->mParentDecoder->mAudioDecoderEventListener->onStateChanged(State::STARTING, State::STARTED);
-
-                    this->mParentDecoder->setState(State::STARTED);
-                    this->mFirstFrameAfterStart = true;
-
-                    // Metrics are cumulative across stop()+start() (Property.aidl) - reset only
-                    // happens on open() (fresh AudioDecoder instance) or flush(reset=true).
-
-                    if (this->mAVBuffer != nullptr && !this->mOutputPoolValid)
+                    // PCM output needs a working output pool; SOC passthrough codecs (Dolby/DTS)
+                    // never allocate output buffers, so a pool failure doesn't block them. Done
+                    // before committing to STARTED so a failure can cleanly revert to READY
+                    // instead of silently running with outputBufferHandle stuck at -1 forever.
+                    if (this->mAVBuffer != nullptr && !this->mOutputPoolValid &&
+                        getFrameTypeForCodec(this->mCodec) == FrameType::PCM)
                     {
                         ::com::rdk::hal::avbuffer::Pool pool;
                         android::binder::Status poolStatus = this->mAVBuffer->createAudioPool(
@@ -495,8 +491,20 @@ namespace com
                                       << "exceptionCode=" << poolStatus.exceptionCode()
                                       << " message=" << poolStatus.exceptionMessage()
                                       << std::endl;
+                            this->mParentDecoder->setState(State::READY);
+                            return android::binder::Status::fromExceptionCode(
+                                android::binder::Status::EX_SERVICE_SPECIFIC, "Failed to create output pool");
                         }
                     }
+
+                    if (this->mParentDecoder->mEventListener)
+                        this->mParentDecoder->mAudioDecoderEventListener->onStateChanged(State::STARTING, State::STARTED);
+
+                    this->mParentDecoder->setState(State::STARTED);
+                    this->mFirstFrameAfterStart = true;
+
+                    // Metrics are cumulative across stop()+start() (Property.aidl) - reset only
+                    // happens on open() (fresh AudioDecoder instance) or flush(reset=true).
 
                     return android::binder::Status::ok();
                 }
@@ -710,6 +718,10 @@ namespace com
                         this->mParentDecoder->mMetricsFrameDecoded = 0;
                         this->mParentDecoder->mMetricsDecodeErrors = 0;
                         this->mParentDecoder->mMetricsFramesDropped = 0;
+
+                        // Full reset back to READY (per spec) starts a new session for
+                        // signalEndOfStream()'s "no buffers submitted on this session" check.
+                        this->mTotalBuffersSubmitted = 0;
                     }
                     else
                     {
