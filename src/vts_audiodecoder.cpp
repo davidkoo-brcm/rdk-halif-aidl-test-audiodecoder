@@ -1055,10 +1055,13 @@ void AudioDecoderTest::validatePostLoopMetrics(const FrameValidationState& state
         }
     }
 
-    /* EOS validation: one EOS always expected at stream end; a second when eosPts is configured. */
+    /* EOS validation: one EOS always expected at stream end; a second when eosPts is configured
+     * AND frames were submitted after the mid-stream restart (mSubmittedInSession) - if eosPts
+     * lands on the last frame, handleMidStreamEOS() leaves nothing to submit post-restart, so
+     * startDecoding()'s trailing block correctly skips firing a second EOS. */
     int32_t expectedEOSFrames = 1;
 
-    if (mTestConfiguration.eosPts != -1)
+    if (mTestConfiguration.eosPts != -1 && mSubmittedInSession)
     {
         expectedEOSFrames++;
     }

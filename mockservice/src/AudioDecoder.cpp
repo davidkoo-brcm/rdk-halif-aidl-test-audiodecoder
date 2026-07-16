@@ -278,6 +278,10 @@ namespace com
 
                     *_aidl_return = controller;
 
+                    this->mMetricsFrameDecoded = 0;
+                    this->mMetricsDecodeErrors = 0;
+                    this->mMetricsFramesDropped = 0;
+
                     if (this->mEventListener)
                         this->mAudioDecoderEventListener->onStateChanged(State::OPENING, State::READY);
 
@@ -741,7 +745,6 @@ namespace com
 
                 android::binder::Status AudioDecoderController::signalEndOfStream()
                 {
-                    android::binder::Status status;
                     if(this->mParentDecoder->getState() != State::STARTED)
                     {
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
