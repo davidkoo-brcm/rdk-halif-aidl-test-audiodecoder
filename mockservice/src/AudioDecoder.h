@@ -122,9 +122,11 @@ namespace com {
                 private:
                     IAudioDecoder::Id mId;
                     AudioDecoder *mParentDecoder;
-                    bool mEosSignalled;
-                    /* Pending discontinuity flag, applied to the next output frame */
-                    bool mDiscontinuityPending;
+                    /* Atomic: raced between decodeBufferWithMetadata() and signalEndOfStream() on the binder threadpool */
+                    std::atomic<bool> mEosSignalled;
+                    /* Pending discontinuity flag, applied to the next output frame
+                     * (atomic: set by signalDiscontinuity(), consumed by decodeBufferWithMetadata()) */
+                    std::atomic<bool> mDiscontinuityPending;
                     android::sp<audiodecoder::IAudioDecoderControllerListener> mControllerListener;
 
                     /* Outstanding-frame count (atomic: decremented on a background thread) */
@@ -132,11 +134,13 @@ namespace com {
                     static constexpr int32_t kQueueDepth = 4;
                     /* Bumped by stop()/flush() so slot-releases from a prior session are ignored */
                     std::atomic<uint32_t> mQueueGeneration;
-                    int32_t mTotalBuffersSubmitted;
+                    /* Atomic: incremented from decodeBufferWithMetadata(), read from signalEndOfStream() */
+                    std::atomic<int32_t> mTotalBuffersSubmitted;
                     Codec mCodec;
                     int32_t mChannels;
                     int32_t mSampleRate;
-                    bool mFirstFrameAfterStart;
+                    /* Atomic: test-and-set across concurrent decodeBufferWithMetadata() calls */
+                    std::atomic<bool> mFirstFrameAfterStart;
                     bool mSecure;
 
                     /* Connection to MockAVBufferService for allocating output buffers */
@@ -163,6 +167,10 @@ namespace com {
                                            android::sp<audiodecoder::IAudioDecoderControllerListener> listener,
                                            Codec codec, bool secure);
                     virtual ~AudioDecoderController();
+
+                    /* True once the AVBuffer service was successfully located; used by
+                     * AudioDecoder::open() to fail fast rather than silently degrade later. */
+                    bool isAVBufferAvailable() const;
 
                     FrameType getFrameTypeForCodec(Codec codec);
                     static int32_t getSamplesPerFrameForCodec(Codec codec);

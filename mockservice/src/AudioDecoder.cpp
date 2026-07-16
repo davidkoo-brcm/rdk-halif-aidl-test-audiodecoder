@@ -263,7 +263,20 @@ namespace com
 
                     std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-                    *_aidl_return = new AudioDecoderController(this->mId, this, audioDecoderControllerListener, codec, secure);
+                    android::sp<AudioDecoderController> controller = new AudioDecoderController(
+                        this->mId, this, audioDecoderControllerListener, codec, secure);
+
+                    if (!controller->isAVBufferAvailable())
+                    {
+                        /* Fail fast: without AVBuffer, decode/output buffer management can never
+                         * work correctly, so reject the session instead of degrading silently. */
+                        *_aidl_return = nullptr;
+                        this->setState(State::CLOSED);
+                        return android::binder::Status::fromExceptionCode(
+                            android::binder::Status::EX_SERVICE_SPECIFIC, "AVBuffer service unavailable");
+                    }
+
+                    *_aidl_return = controller;
 
                     if (this->mEventListener)
                         this->mAudioDecoderEventListener->onStateChanged(State::OPENING, State::READY);
@@ -366,6 +379,11 @@ namespace com
                     android::sp<android::IBinder> binder = android::defaultServiceManager()->getService(
                         android::String16(::com::rdk::hal::avbuffer::IAVBuffer::serviceName().c_str()));
                     this->mAVBuffer = android::interface_cast<::com::rdk::hal::avbuffer::IAVBuffer>(binder);
+                }
+
+                bool AudioDecoderController::isAVBufferAvailable() const
+                {
+                    return this->mAVBuffer != nullptr;
                 }
 
                 int32_t AudioDecoderController::getSamplesPerFrameForCodec(Codec codec)
@@ -631,9 +649,9 @@ namespace com
 
                     this->mParentDecoder->mMetricsFrameDecoded++;
 
-                    // Consume the pending discontinuity flag
-                    bool isDiscontinuous = this->mDiscontinuityPending;
-                    this->mDiscontinuityPending = false;
+                    // Consume the pending discontinuity flag (exchange: one atomic step so a
+                    // racing decodeBufferWithMetadata() call can't also observe it as pending)
+                    bool isDiscontinuous = this->mDiscontinuityPending.exchange(false, std::memory_order_acq_rel);
 
                     // Allocate a real output buffer for PCM frames; SOC passthrough
                     // codecs (Dolby/DTS) keep frameAVBufferHandle = -1
@@ -725,12 +743,13 @@ namespace com
                     {
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
-                    if(this->mEosSignalled)
+                    // CAS so two concurrent signalEndOfStream() calls can't both pass and both fire the callback
+                    bool expectedEos = false;
+                    if (!this->mEosSignalled.compare_exchange_strong(expectedEos, true, std::memory_order_acq_rel))
                     {
                         // Second call is a no-op
                         return android::binder::Status::ok();
                     }
-                    this->mEosSignalled = true;
                     fireOnEndOfStreamCallback();
                     return android::binder::Status::ok();
                 }
@@ -798,7 +817,9 @@ namespace com
                     // leave it dereferencing freed memory.
                     android::sp<AudioDecoderController> self = this;
                     android::sp<AudioDecoder> parent = this->mParentDecoder;
-                    bool firstFrame = this->mFirstFrameAfterStart;
+                    // Exchange: one atomic step so a racing decodeBufferWithMetadata() call can't
+                    // also observe this frame as the first one.
+                    bool firstFrame = this->mFirstFrameAfterStart.exchange(false, std::memory_order_acq_rel);
                     int32_t channels = this->mChannels;
                     int32_t sampleRate = this->mSampleRate;
 
@@ -855,8 +876,6 @@ namespace com
                         // Real handle for PCM frames, -1 for SOC passthrough/tunnelled
                         listener->onFrameOutput(nsPresentationTime, outputBufferHandle, frameMetadata);
                     }).detach();
-
-                    this->mFirstFrameAfterStart = false;
                 }
 
                 void AudioDecoderController::fireOnEndOfStreamCallback()
