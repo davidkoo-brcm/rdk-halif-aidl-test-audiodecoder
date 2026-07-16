@@ -576,11 +576,6 @@ namespace com
                         *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                     }
-                    if(metadata.trimStartNs > metadata.trimEndNs)
-                    {
-                        *_aidl_return = false;
-                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
-                    }
                     if(metadata.discontinuity)
                     {
                         *_aidl_return = false;
