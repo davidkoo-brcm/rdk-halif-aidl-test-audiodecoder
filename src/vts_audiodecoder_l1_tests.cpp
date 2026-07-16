@@ -1546,10 +1546,10 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalDiscontinuity_neg)
 }
 
 /**
-* @brief Test to check the functionality of signalEOS in the AudioDecoder in negative scenarios
+* @brief Test to check the functionality of signalEndOfStream in the AudioDecoder in negative scenarios
 *
-* This test validates the signalEOS method on the AudioDecoderController to ensure it handles
-* negative scenarios of signal eos appropriately
+* This test validates the signalEndOfStream method on the AudioDecoderController to ensure it handles
+* negative scenarios of signaling end of stream appropriately
 *
 * **Test Group ID:** Basic: 01 @n
 * **Test Case ID:** 026 @n
@@ -1565,13 +1565,13 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalDiscontinuity_neg)
 * |01|Get the supported IDs and loop through the available decoder|None|None|None|
 * |02|Open the audio decoder with the codec and create audioDecoderController with listener|_codec, _decoder.supportsSecure, listener, audioDecoderController|status.isOk() should be true, audioDecoderController != nullptr|Should pass|
 * |03|Verify the state of the decoder after open|state|state should be READY|Should pass|
-* |04|Signal EOS to the decoder before start|None|status should not be ok, EX_ILLEGAL_STATE|Should pass|
+* |04|Signal end of stream to the decoder before start|None|status should not be ok, EX_ILLEGAL_STATE|Should pass|
 * |05|start the decoder|audioDecoderController|status should be ok|Should pass|
-* |06|Signal EOS in STARTED state with no buffers submitted|None|status should not be ok, EX_ILLEGAL_STATE|Should pass|
+* |06|Signal end of stream in STARTED state with no buffers submitted|None|status should not be ok, EX_ILLEGAL_STATE|Should pass|
 * |07|Stop the decoder|None|state should be READY, status should be ok|Should pass|
-* |08|Signal EOS to the decoder after start->stop|None|status should not be ok, EX_ILLEGAL_STATE|Should pass|
+* |08|Signal end of stream to the decoder after start->stop|None|status should not be ok, EX_ILLEGAL_STATE|Should pass|
 * |09|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
-* |10|Signal EOS to the decoder after close|None|status should not be ok, EX_ILLEGAL_STATE|Should pass|
+* |10|Signal end of stream to the decoder after close|None|status should not be ok, EX_ILLEGAL_STATE|Should pass|
 */
 UT_ADD_TEST(VTS_L1_AudioDecoder, signalEOS_neg)
 {
@@ -1599,25 +1599,25 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalEOS_neg)
             /* Open the Decoder */
             AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
 
-            /* Signal EOS to the decoder before start */
+            /* Signal end of stream to the decoder before start */
             AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
 
             /* Start the decoder */
             AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
 
-            /* Signal EOS in STARTED state with no buffers submitted — spec mandates EX_ILLEGAL_STATE */
+            /* Signal end of stream in STARTED state with no buffers submitted — spec mandates EX_ILLEGAL_STATE */
             AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
 
             /* Stop the decoder */
             AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
 
-            /* Signal EOS to the decoder after start->stop */
+            /* Signal end of stream to the decoder after start->stop */
             AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
 
             /* Close the decoder */
             AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
 
-            /* Signal EOS to the decoder after close */
+            /* Signal end of stream to the decoder after close */
             AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
         }
     }

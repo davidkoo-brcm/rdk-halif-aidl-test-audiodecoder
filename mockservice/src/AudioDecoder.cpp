@@ -352,6 +352,7 @@ namespace com
                     this->mDiscontinuityPending = false;
                     this->mControllerListener = listener;
                     this->mQueueCount = 0;
+                    this->mQueueGeneration = 0;
                     this->mTotalBuffersSubmitted = 0;
                     this->mCodec = codec;
                     this->mChannels = 2;
@@ -494,6 +495,7 @@ namespace com
 
                     this->mEosSignalled = false;
                     this->mDiscontinuityPending = false;
+                    this->mQueueGeneration++;
                     this->mQueueCount = 0;
                     this->mTotalBuffersSubmitted = 0;
                     this->mFirstFrameAfterStart = false;
@@ -555,20 +557,33 @@ namespace com
                         *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                     }
-                    if(this->mQueueCount >= kQueueDepth)
+                    // CAS loop so check-and-increment is one atomic step, avoiding a race that could overbook the queue.
+                    int32_t expectedQueueCount = this->mQueueCount.load(std::memory_order_relaxed);
+                    for (;;)
                     {
-                        *_aidl_return = false;
-                        android::sp<audiodecoder::IAudioDecoderControllerListener> listener = this->mControllerListener;
-                        std::thread([listener]() {
-                            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                            if (listener)
-                                listener->onDecodeBufferAvailable();
-                        }).detach();
-                        return android::binder::Status::ok();
+                        if (expectedQueueCount >= kQueueDepth)
+                        {
+                            *_aidl_return = false;
+                            android::sp<audiodecoder::IAudioDecoderControllerListener> listener = this->mControllerListener;
+                            std::thread([listener]() {
+                                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                                if (listener)
+                                    listener->onDecodeBufferAvailable();
+                            }).detach();
+                            return android::binder::Status::ok();
+                        }
+                        if (this->mQueueCount.compare_exchange_weak(expectedQueueCount, expectedQueueCount + 1,
+                                                                      std::memory_order_acq_rel, std::memory_order_relaxed))
+                        {
+                            break;
+                        }
+                        // Someone else changed it first; expectedQueueCount now holds the latest value, so retry.
                     }
-                    
-                    // Buffer accepted - reserve a queue slot
-                    this->mQueueCount++;
+
+                    // Buffer accepted - queue slot reserved above. Tag the slot with the current
+                    // generation so its eventual release is skipped if stop()/flush() resets the
+                    // queue for a new session before this frame finishes processing.
+                    uint32_t queueGeneration = this->mQueueGeneration.load(std::memory_order_acquire);
                     this->mTotalBuffersSubmitted++;
                     *_aidl_return = true;
 
@@ -601,7 +616,7 @@ namespace com
                     if (!frameValid)
                     {
                         // No output for this frame - release its queue slot
-                        this->mQueueCount--;
+                        this->releaseQueueSlot(queueGeneration);
                         this->mParentDecoder->mMetricsDecodeErrors++;
                         if (this->mParentDecoder->mEventListener)
                         {
@@ -636,7 +651,8 @@ namespace com
                     }
 
                     fireOnFrameOutputCallback(metadata.nsPresentationTime, this->mCodec,
-                                              metadata.trimStartNs, metadata.trimEndNs, outputBufferHandle, isDiscontinuous);
+                                              metadata.trimStartNs, metadata.trimEndNs, outputBufferHandle, isDiscontinuous,
+                                              queueGeneration);
                     return android::binder::Status::ok();
                 }
 
@@ -650,6 +666,7 @@ namespace com
 
                     this->mEosSignalled = false;
                     this->mDiscontinuityPending = false;
+                    this->mQueueGeneration++;
                     this->mQueueCount = 0;
 
                     /* To simulate State Transitions */
@@ -744,9 +761,27 @@ namespace com
                     }
                 }
 
+                void AudioDecoderController::releaseQueueSlot(uint32_t queueGeneration)
+                {
+                    // stop()/flush() already started a new session; this slot belongs to a stale one, so skip it.
+                    if (this->mQueueGeneration.load(std::memory_order_acquire) != queueGeneration)
+                    {
+                        return;
+                    }
+
+                    // CAS loop that never decrements past 0, so a race with a concurrent reset can't go negative.
+                    int32_t current = this->mQueueCount.load(std::memory_order_relaxed);
+                    while (current > 0 &&
+                           !this->mQueueCount.compare_exchange_weak(current, current - 1,
+                                                                     std::memory_order_acq_rel, std::memory_order_relaxed))
+                    {
+                    }
+                }
+
                 void AudioDecoderController::fireOnFrameOutputCallback(int64_t nsPresentationTime, Codec sourceCodec,
                                                                        int32_t trimStartNs, int32_t trimEndNs,
-                                                                       int64_t outputBufferHandle, bool discontinuity)
+                                                                       int64_t outputBufferHandle, bool discontinuity,
+                                                                       uint32_t queueGeneration)
                 {
                     android::sp<audiodecoder::IAudioDecoderControllerListener> listener = this->mControllerListener;
                     // Capture strong references (not raw `this`/`parent`) so the detached thread
@@ -760,11 +795,11 @@ namespace com
                     int32_t sampleRate = this->mSampleRate;
 
                     std::thread([self, listener, parent, sourceCodec, nsPresentationTime, trimStartNs, trimEndNs,
-                                 firstFrame, channels, sampleRate, outputBufferHandle, discontinuity]() {
+                                 firstFrame, channels, sampleRate, outputBufferHandle, discontinuity, queueGeneration]() {
                         std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
                         // Frame processing complete - release its queue slot
-                        self->mQueueCount--;
+                        self->releaseQueueSlot(queueGeneration);
 
                         if (!listener) return;
 

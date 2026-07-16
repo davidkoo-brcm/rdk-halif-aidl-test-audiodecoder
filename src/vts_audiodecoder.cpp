@@ -589,7 +589,7 @@ AudioDecoderTest::AudioDecoderTest(IAudioDecoder::Id decoderId, sp<IAudioDecoder
       mAVBufferManager(AVBufferManager),
       mAVbufferHelper(avbufferHelper),
       mSecureDecode(secureDecode),
-      mTestConfiguration(config),
+      mTestConfiguration(std::move(config)),
       mIsSinkAttached(isSinkAttached)
 {
     mBufferListener = new AVBufferSpaceListener();
@@ -972,6 +972,10 @@ void AudioDecoderTest::checkFrameMetadata(const DecodedAudioFrame_t& frame, Fram
     {
         return;
     }
+
+    UT_ASSERT_EQUAL(fm.sourceCodec, mTestConfiguration.codec);
+    UT_ASSERT_EQUAL(int32_t(static_cast<int32_t>(fm.source)),
+                    mAvSourcePropertyValue.value->get<PropertyValue::Value::Tag::intValue>());
 
     if (fm.discontinuity)
     {

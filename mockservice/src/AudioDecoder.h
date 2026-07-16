@@ -130,6 +130,8 @@ namespace com {
                     /* Outstanding-frame count (atomic: decremented on a background thread) */
                     std::atomic<int32_t> mQueueCount;
                     static constexpr int32_t kQueueDepth = 4;
+                    /* Bumped by stop()/flush() so slot-releases from a prior session are ignored */
+                    std::atomic<uint32_t> mQueueGeneration;
                     int32_t mTotalBuffersSubmitted;
                     Codec mCodec;
                     int32_t mChannels;
@@ -152,6 +154,10 @@ namespace com {
                     bool tryAcceptBufferIntoQueue();
                     bool validateFrameContentAndFreeBuffer(int64_t bufferHandle, int64_t nsPresentationTime);
                     int64_t allocateOutputBufferIfNeeded();
+                    /* Releases one reserved queue slot, but only if queueGeneration still matches the
+                     * current session (i.e. no stop()/flush() reset the queue since the slot was taken).
+                     * Saturates at 0 either way, so it can never drive mQueueCount negative. */
+                    void releaseQueueSlot(uint32_t queueGeneration);
                 public:
                     AudioDecoderController(IAudioDecoder::Id id, AudioDecoder *parentDecoder,
                                            android::sp<audiodecoder::IAudioDecoderControllerListener> listener,
@@ -164,7 +170,8 @@ namespace com {
                     static bool isFrameContentValid(Codec codec, const uint8_t *data, uint32_t size, std::string *reason);
                     void fireOnFrameOutputCallback(int64_t nsPresentationTime, Codec sourceCodec,
                                                    int32_t trimStartNs, int32_t trimEndNs,
-                                                   int64_t outputBufferHandle, bool discontinuity);
+                                                   int64_t outputBufferHandle, bool discontinuity,
+                                                   uint32_t queueGeneration);
                     void fireOnEndOfStreamCallback();
 
                     android::binder::Status start() override;
