@@ -1045,7 +1045,8 @@ void AudioDecoderTest::validatePostLoopMetrics(const FrameValidationState& state
 
     if (metricsFrameDecoded != -1)
     {
-        if ((mTestConfiguration.flushPts == -1) && (mTestConfiguration.flushRestPts == -1) && (mTestConfiguration.stopPts == -1))
+        if ((mTestConfiguration.flushPts == -1) && (mTestConfiguration.flushRestPts == -1) &&
+            (mTestConfiguration.stopPts == -1) && (mTestConfiguration.eosPts == -1))
         {
             UT_ASSERT_EQUAL(metricsFrameDecoded, metricsExpectedDecoded);
         }
