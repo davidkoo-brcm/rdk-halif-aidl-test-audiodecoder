@@ -18,55 +18,90 @@
 #*
 #* ******************************************************************************
 
-.PHONY: all
-
-AVBUFFER_AIDL_LIB_NAME := avbufferaidl
-VIDEODECODER_AIDL_LIB_NAME := videodecoderaidl
-AUDIODECODER_AIDL_LIB_NAME := audiodecoderaidl
-AVBUFFER_HELPER_LIB_NAME := avbufferhelper
-
-AVBUFFER_AIDL_LIB := lib$(AVBUFFER_AIDL_LIB_NAME).so
-VIDEODECODER_AIDL_LIB := lib$(VIDEODECODER_AIDL_LIB_NAME).so
-AUDIODECODER_AIDL_LIB := lib$(AUDIODECODER_AIDL_LIB_NAME).so
-AVBUFFERHELPER_LIB := lib$(AVBUFFER_HELPER_LIB_NAME).so
+.PHONY: all clean check-libs check-headers
 
 MOCK_SERVICE_BIN := MockAudioDecoderService
 
-BUILD_DIR ?= $(CURDIR)/../build
-AIDL_GEN_DIR ?= $(BUILD_DIR)/audiodecoder_gen/current
-AV_BUFFER_AIDL_GEN_DIR ?= $(BUILD_DIR)/avbuffer_gen/current
-VIDEO_DECODER_AIDL_GEN_DIR ?= $(BUILD_DIR)/videodecoder_gen/current
+# BUILD_DIR is the top-level repo build/ directory. When invoked as
+# `make -C vts_hal_test_components/audiodecoder/mockservice`, CURDIR is that
+# mockservice/ directory, so ../../../build resolves to <repo-root>/build.
+BUILD_DIR ?= $(CURDIR)/../../../build
+
+# Headers/libraries come from the AIDL codegen output produced by
+# ./build.sh (rdk-halif-aidl/out/...), not from any audiodecoder_gen/
+# staging directory (that path is never created by the build).
+RDK_HAL_DIR ?= $(BUILD_DIR)/../rdk-halif-aidl
+HALIF_LIB_DIR ?= $(RDK_HAL_DIR)/out/target/lib/halif
+
+# Header directories are versioned (e.g. .../audiodecoder/0.2.0.0/include)
+# with no "current" alias, so pick whichever version directory build.sh
+# produced.
+AUDIODECODER_HEADERS ?= $(firstword $(wildcard $(RDK_HAL_DIR)/out/build/include/audiodecoder/*/include))
+AVBUFFER_HEADERS ?= $(firstword $(wildcard $(RDK_HAL_DIR)/out/build/include/avbuffer/*/include))
+VIDEODECODER_HEADERS ?= $(firstword $(wildcard $(RDK_HAL_DIR)/out/build/include/videodecoder/*/include))
+COMMON_HEADERS ?= $(firstword $(wildcard $(RDK_HAL_DIR)/out/build/include/common/*/include))
 
 MOCK_SERVICE_DIR ?= $(CURDIR)/src
 
 MOCK_SERVICE_BIN_SRC := $(MOCK_SERVICE_DIR)/AudioDecoderService.cpp
 MOCK_SERVICE_BIN_SRC += $(MOCK_SERVICE_DIR)/AudioDecoder.cpp
 
-MOCK_SERVICE_INC_FLAGS := -I$(AIDL_GEN_DIR)/h
-MOCK_SERVICE_INC_FLAGS += -I$(AV_BUFFER_AIDL_GEN_DIR)/h
-MOCK_SERVICE_INC_FLAGS += -I$(VIDEO_DECODER_AIDL_GEN_DIR)/h
+MOCK_SERVICE_INC_FLAGS := -I$(AUDIODECODER_HEADERS)
+MOCK_SERVICE_INC_FLAGS += -I$(AVBUFFER_HEADERS)
+MOCK_SERVICE_INC_FLAGS += -I$(VIDEODECODER_HEADERS)
+MOCK_SERVICE_INC_FLAGS += -I$(COMMON_HEADERS)
 MOCK_SERVICE_INC_FLAGS += -I$(BUILD_DIR)/usr/include
 
 MOCK_SERVICE_LD_LIBS := -lbinder -lutils
 
-MOCK_SERVICE_LDFLAGS := -L$(BUILD_DIR)/usr/lib
+MOCK_SERVICE_LDFLAGS := -L$(HALIF_LIB_DIR)
+MOCK_SERVICE_LDFLAGS += -Wl,-rpath-link=$(HALIF_LIB_DIR)
+MOCK_SERVICE_LDFLAGS += -L$(BUILD_DIR)/usr/lib
 MOCK_SERVICE_LDFLAGS += -Wl,-rpath-link=$(BUILD_DIR)/usr/lib
+MOCK_SERVICE_LDFLAGS += -Wl,--copy-dt-needed-entries
+# -rpath-link only helps the linker resolve symbols at build time; it is not
+# embedded in the binary. Embed a $ORIGIN-relative RUNPATH so the binary can
+# find its .so dependencies at runtime as long as they are copied alongside
+# it (portable across build host and any deployed target, e.g. QEMU).
+MOCK_SERVICE_LDFLAGS += -Wl,-rpath,'$$ORIGIN' -Wl,--disable-new-dtags
 
 MOCK_SERVICE_CFLAGS := -Wall -Wextra -std=c++17 -ggdb
 
-AVBUFFER_AIDL_LIB := $(BUILD_DIR)/usr/lib/$(AVBUFFER_AIDL_LIB)
-AUDIODECODER_AIDL_LIB := $(BUILD_DIR)/usr/lib/$(AUDIODECODER_AIDL_LIB)
-VIDEODECODER_AIDL_LIB := $(BUILD_DIR)/usr/lib/$(VIDEODECODER_AIDL_LIB)
 MOCK_SERVICE_BIN := $(BUILD_DIR)/bin/$(MOCK_SERVICE_BIN)
 
 all: $(MOCK_SERVICE_BIN)
 
-$(MOCK_SERVICE_BIN): $(MOCK_SERVICE_BIN_SRC:%.cpp=%.o)
+check-headers:
+	@echo "Checking required header directories..."
+	@test -d "$(AUDIODECODER_HEADERS)" || { echo "ERROR: missing audiodecoder headers under $(RDK_HAL_DIR)/out/build/include/audiodecoder/*/include - run ./build.sh Target=linux (or arm) first"; exit 1; }
+	@test -d "$(AVBUFFER_HEADERS)" || { echo "ERROR: missing avbuffer headers under $(RDK_HAL_DIR)/out/build/include/avbuffer/*/include - run ./build.sh Target=linux (or arm) first"; exit 1; }
+	@test -d "$(VIDEODECODER_HEADERS)" || { echo "ERROR: missing videodecoder headers under $(RDK_HAL_DIR)/out/build/include/videodecoder/*/include - run ./build.sh Target=linux (or arm) first"; exit 1; }
+	@test -d "$(COMMON_HEADERS)" || { echo "ERROR: missing common headers under $(RDK_HAL_DIR)/out/build/include/common/*/include - run ./build.sh Target=linux (or arm) first"; exit 1; }
+	@echo "Header check passed"
+
+check-libs:
+	@echo "Checking required libraries..."
+	@test -e "$(HALIF_LIB_DIR)/libaudiodecoder-cpp_vts.so" || { echo "ERROR: missing $(HALIF_LIB_DIR)/libaudiodecoder-cpp_vts.so - run ./build.sh Target=linux (or arm) first"; exit 1; }
+	@test -e "$(HALIF_LIB_DIR)/libavbuffer-cpp_vts.so" || { echo "ERROR: missing $(HALIF_LIB_DIR)/libavbuffer-cpp_vts.so - run ./build.sh Target=linux (or arm) first"; exit 1; }
+	@test -e "$(HALIF_LIB_DIR)/libcommon-cpp_vts.so" || { echo "ERROR: missing $(HALIF_LIB_DIR)/libcommon-cpp_vts.so - run ./build.sh Target=linux (or arm) first"; exit 1; }
+	@test -e "$(BUILD_DIR)/usr/lib/libbinder.so" || { echo "ERROR: missing $(BUILD_DIR)/usr/lib/libbinder.so - run ./build.sh Target=linux (or arm) first"; exit 1; }
+	@test -e "$(BUILD_DIR)/usr/lib/libutils.so" || { echo "ERROR: missing $(BUILD_DIR)/usr/lib/libutils.so - run ./build.sh Target=linux (or arm) first"; exit 1; }
+	@echo "Library check passed"
+
+$(MOCK_SERVICE_BIN): check-headers check-libs $(MOCK_SERVICE_BIN_SRC:%.cpp=%.o)
+	@mkdir -p $(dir $@)
 	g++ $(MOCK_SERVICE_LDFLAGS) \
 		$(MOCK_SERVICE_BIN_SRC:%.cpp=%.o) -o $@ \
 		$(MOCK_SERVICE_LD_LIBS) \
 		-lpthread \
-		-l$(AUDIODECODER_AIDL_LIB_NAME)
+		-laudiodecoder-cpp_vts \
+		-lavbuffer-cpp_vts \
+		-lcommon-cpp_vts \
+		-lavbufferhelper
 
 %.o: %.cpp
 	g++ $(MOCK_SERVICE_CFLAGS) $(MOCK_SERVICE_INC_FLAGS) -fPIC -c $< -o $@
+
+clean:
+	rm -f $(MOCK_SERVICE_BIN_SRC:%.cpp=%.o)
+	rm -f $(MOCK_SERVICE_BIN)

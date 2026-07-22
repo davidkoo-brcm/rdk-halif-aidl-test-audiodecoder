@@ -1545,6 +1545,84 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, signalDiscontinuity_neg)
     }
 }
 
+/**
+* @brief Test to check the functionality of signalEndOfStream in the AudioDecoder in negative scenarios
+*
+* This test validates the signalEndOfStream method on the AudioDecoderController to ensure it handles
+* negative scenarios of signaling end of stream appropriately
+*
+* **Test Group ID:** Basic: 01 @n
+* **Test Case ID:** 026 @n
+* **Priority:** High @n
+* @n
+* **Pre-Conditions:** None @n
+* **Dependencies:** None @n
+* **User Interaction:** None @n
+* @n
+* **Test Procedure:** @n
+* |Variation / Step|Description|Test Data|Expected Result|Notes|
+* |----------------|-----------|---------|---------------|-----|
+* |01|Get the supported IDs and loop through the available decoder|None|None|None|
+* |02|Open the audio decoder with the codec and create audioDecoderController with listener|_codec, _decoder.supportsSecure, listener, audioDecoderController|status.isOk() should be true, audioDecoderController != nullptr|Should pass|
+* |03|Verify the state of the decoder after open|state|state should be READY|Should pass|
+* |04|Signal end of stream to the decoder before start|None|status should not be ok, EX_ILLEGAL_STATE|Should pass|
+* |05|start the decoder|audioDecoderController|status should be ok|Should pass|
+* |06|Signal end of stream in STARTED state with no buffers submitted|None|status should not be ok, EX_ILLEGAL_STATE|Should pass|
+* |07|Stop the decoder|None|state should be READY, status should be ok|Should pass|
+* |08|Signal end of stream to the decoder after start->stop|None|status should not be ok, EX_ILLEGAL_STATE|Should pass|
+* |09|Close the audio decoder and verify cleanup succeeded|audioDecoderController, _aidl_return|status.isOk() should be true, _aidl_return = true|Should pass|
+* |10|Signal end of stream to the decoder after close|None|status should not be ok, EX_ILLEGAL_STATE|Should pass|
+*/
+UT_ADD_TEST(VTS_L1_AudioDecoder, signalEOS_neg)
+{
+    std::vector<IAudioDecoder::Id> decoderIds;
+    sp<IAudioDecoder> audioDecoder;
+    audiodecoder::Capabilities capabilities;
+
+    /* Get the Audio decoder IDs */
+    AUDIODECODER_MANAGER_GETAUDIODECODERIDS(decoderIds);
+
+    for(const auto& _decoderId: decoderIds)
+    {
+        /* Get Audio decoder handle */
+        AUDIODECODER_MANAGER_GETAUDIODECODER(_decoderId, audioDecoder);
+
+        /* Get Capabilities of Audio Decoder */
+        AUDIODECODER_GETCAPABILITIES(audioDecoder, &capabilities);
+
+        for(const auto& _codec: capabilities.supportedCodecs)
+        {
+            sp<IAudioDecoderController> audioDecoderController;
+            sp<IAudioDecoderControllerListener> controllerListener = new AudioDecoderControllerListener();
+            sp<IAudioDecoderEventListener> eventListener = new AudioDecoderEventListener();
+
+            /* Open the Decoder */
+            AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
+
+            /* Signal end of stream to the decoder before start */
+            AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
+
+            /* Start the decoder */
+            AUDIODECODER_START_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            /* Signal end of stream in STARTED state with no buffers submitted — spec mandates EX_ILLEGAL_STATE */
+            AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
+
+            /* Stop the decoder */
+            AUDIODECODER_STOP_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            /* Signal end of stream to the decoder after start->stop */
+            AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
+
+            /* Close the decoder */
+            AUDIODECODER_CLOSE_SUCCESS(audioDecoder, audioDecoderController, true);
+
+            /* Signal end of stream to the decoder after close */
+            AUDIODECODER_SIGNAL_EOS_FAILURE(audioDecoderController, Status::EX_ILLEGAL_STATE);
+        }
+    }
+}
+
 
 /**
 * @brief This test case verifies parseCodecSpecificData functionality.
@@ -1815,7 +1893,7 @@ std::multimap<Property, android::String16> validAC4StringPropertyAll =
     {Property::AC4_PREFERRED_LANG1, android::String16("fra")},
     {Property::AC4_PREFERRED_LANG2, android::String16("")},
     {Property::AC4_PREFERRED_LANG2, android::String16("eng")},
-    {Property::AC4_PREFERRED_LANG1, android::String16("fra")}
+    {Property::AC4_PREFERRED_LANG2, android::String16("fra")}
 };
 
 std::multimap<Property, int32_t> invalidIntPropertyReady =
@@ -2269,7 +2347,6 @@ UT_ADD_TEST(VTS_L1_AudioDecoder, decodeBufferWithMetadata_neg)
             AUDIODECODER_OPEN_SUCCESS(audioDecoder, _codec, capabilities.supportsSecure, controllerListener, audioDecoderController, true);
 
             audiodecoder::InputBufferMetadata metadata;
-            metadata.endOfStream        = false;
             metadata.discontinuity      = false;
             metadata.nsPresentationTime = 1000000;
             metadata.trimStartNs        = 0;

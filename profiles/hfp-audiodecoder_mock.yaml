@@ -27,18 +27,12 @@ audiodecoder:           # Component object begins
     IAudioDecoder:              # Resource list
       - 0:                   # Resource object begins
          supportedCodecs:       # Array of codec capabilities
-           - PCM
-           - DOLBY_AC3_PLUS_JOC
-           - MP3
+           - AAC_LC
          supportsSecure: true
       - 1:                  # Resource object begins
          supportedCodecs:       # Array of codec capabilities
-           - PCM
-           - DOLBY_AC3_PLUS_JOC
-           - MP3
+           - AAC_LC
          supportsSecure: true
     NonTunnelMode:
-      - PCM
-      - DOLBY_AC3_PLUS_JOC
-      - MP3
+      - AAC_LC
     TunnelMode:        # Empty - tunnel mode not yet supported

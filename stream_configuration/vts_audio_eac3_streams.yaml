@@ -24,7 +24,7 @@ AudioStreams:
   vts_eac3_48k_1ch_64k_eac3:
     input: vts_eac3_48k_1ch_64k.eac3            # Stream name
     reference: vts_eac3_48k_1ch_64k_ref.pcm      # Reference stream name
-    codec: EAC3                                  # audio codec information (E-AC-3)
+    codec: DOLBY_AC3_PLUS                        # audio codec information (E-AC-3)
     sample_rate: 48000                           # Sample rate in Hz
     channels: 1                                  # Number of audio channels (mono)
     format: S16LE                                # PCM format of the reference stream
@@ -45,7 +45,7 @@ AudioStreams:
   vts_eac3_48k_2ch_128k_eac3:
     input: vts_eac3_48k_2ch_128k.eac3            # Stream name
     reference: vts_eac3_48k_2ch_128k_ref.pcm      # Reference stream name
-    codec: EAC3                                  # audio codec information (E-AC-3)
+    codec: DOLBY_AC3_PLUS                        # audio codec information (E-AC-3)
     sample_rate: 48000                           # Sample rate in Hz
     channels: 2                                  # Number of audio channels (stereo)
     format: S16LE                                # PCM format of the reference stream
@@ -66,7 +66,7 @@ AudioStreams:
   vts_eac3_48k_6ch_256k_eac3:
     input: vts_eac3_48k_6ch_256k.eac3            # Stream name
     reference: vts_eac3_48k_6ch_256k_ref.pcm      # Reference stream name
-    codec: EAC3                                  # audio codec information (E-AC-3)
+    codec: DOLBY_AC3_PLUS                        # audio codec information (E-AC-3)
     sample_rate: 48000                           # Sample rate in Hz
     channels: 6                                  # Number of audio channels (5.1)
     format: S16LE                                # PCM format of the reference stream
@@ -87,7 +87,7 @@ AudioStreams:
   vts_eac3_48k_6ch_512k_eac3:
     input: vts_eac3_48k_6ch_512k.eac3            # Stream name
     reference: vts_eac3_48k_6ch_512k_ref.pcm      # Reference stream name
-    codec: EAC3                                  # audio codec information (E-AC-3)
+    codec: DOLBY_AC3_PLUS                        # audio codec information (E-AC-3)
     sample_rate: 48000                           # Sample rate in Hz
     channels: 6                                  # Number of audio channels (5.1)
     format: S16LE                                # PCM format of the reference stream

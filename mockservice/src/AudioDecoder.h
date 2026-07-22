@@ -31,12 +31,17 @@
 #include <com/rdk/hal/audiodecoder/IAudioDecoder.h>
 #include <com/rdk/hal/audiodecoder/BnAudioDecoderController.h>
 #include <com/rdk/hal/audiodecoder/InputBufferMetadata.h>
+#include <com/rdk/hal/avbuffer/IAVBuffer.h>
+#include <com/rdk/hal/avbuffer/Pool.h>
+#include <com/rdk/hal/avbuffer/BnAVBufferSpaceListener.h>
 #include <binder/BinderService.h>
 #include <optional>
 #include <string>
 #include <utils/StrongPointer.h>
 #include <vector>
 #include <mutex>
+#include <atomic>
+#include "avbufferhelper.h"
 
 namespace com {
     namespace rdk {
@@ -81,6 +86,7 @@ namespace com {
                     int32_t mAC4AssociatedAudioMixingEnable;
 
                     std::vector<::com::rdk::hal::audiodecoder::Codec> mSupportedCodecs;
+                    Codec mCodec;
                     State mAudioDecoderState;
                     std::mutex mStateMutex;
 
@@ -103,26 +109,86 @@ namespace com {
                     android::binder::Status unregisterEventListener( const android::sp<audiodecoder::IAudioDecoderEventListener>& audioDecoderEventListener, bool* _aidl_return ) override;
                 };
 
+                // No-op listener to satisfy createAudioPool()'s non-null requirement
+                class OutputPoolSpaceListener :public ::com::rdk::hal::avbuffer::BnAVBufferSpaceListener
+                {
+                public:
+                    android::binder::Status onSpaceAvailable() override { return android::binder::Status::ok(); }
+                };
+
                 class AudioDecoderController :public android::BinderService<AudioDecoderController>,
                                               public BnAudioDecoderController
                 {
                 private:
                     IAudioDecoder::Id mId;
                     AudioDecoder *mParentDecoder;
-                    bool mEosReceived;
+                    /* Atomic: raced between decodeBufferWithMetadata() and signalEndOfStream() on the binder threadpool */
+                    std::atomic<bool> mEosSignalled;
+                    /* Pending discontinuity flag, applied to the next output frame
+                     * (atomic: set by signalDiscontinuity(), consumed by decodeBufferWithMetadata()) */
+                    std::atomic<bool> mDiscontinuityPending;
                     android::sp<audiodecoder::IAudioDecoderControllerListener> mControllerListener;
-                    int32_t mQueueCount;
+
+                    /* Outstanding-frame count (atomic: decremented on a background thread) */
+                    std::atomic<int32_t> mQueueCount;
                     static constexpr int32_t kQueueDepth = 4;
+                    /* Bumped by stop()/flush() so slot-releases from a prior session are ignored */
+                    std::atomic<uint32_t> mQueueGeneration;
+                    /* Atomic: incremented from decodeBufferWithMetadata(), read from signalEndOfStream() */
+                    std::atomic<int32_t> mTotalBuffersSubmitted;
+                    Codec mCodec;
+                    int32_t mChannels;
+                    int32_t mSampleRate;
+                    /* Atomic: test-and-set across concurrent decodeBufferWithMetadata() calls */
+                    std::atomic<bool> mFirstFrameAfterStart;
+                    bool mSecure;
+
+                    /* Connection to MockAVBufferService for allocating output buffers */
+                    android::sp<::com::rdk::hal::avbuffer::IAVBuffer> mAVBuffer;
+                    ::com::rdk::hal::avbuffer::Pool mOutputPool;
+                    bool mOutputPoolValid;
+                    android::sp<OutputPoolSpaceListener> mOutputPoolSpaceListener;
+
+                    /* Shared-memory helper for inspecting input frame bytes */
+                    IAVBufferHelper *mAVbufferHelper;
+
+                    // Helpers for decodeBufferWithMetadata(), one per concern:
+                    android::binder::Status validateDecodeBufferArgs(int64_t bufferHandle,
+                        const audiodecoder::InputBufferMetadata& metadata);
+                    bool tryAcceptBufferIntoQueue();
+                    bool validateFrameContentAndFreeBuffer(int64_t bufferHandle, int64_t nsPresentationTime);
+                    int64_t allocateOutputBufferIfNeeded();
+                    /* Releases one reserved queue slot, but only if queueGeneration still matches the
+                     * current session (i.e. no stop()/flush() reset the queue since the slot was taken).
+                     * Saturates at 0 either way, so it can never drive mQueueCount negative. */
+                    void releaseQueueSlot(uint32_t queueGeneration);
                 public:
                     AudioDecoderController(IAudioDecoder::Id id, AudioDecoder *parentDecoder,
-                                           android::sp<audiodecoder::IAudioDecoderControllerListener> listener);
+                                           android::sp<audiodecoder::IAudioDecoderControllerListener> listener,
+                                           Codec codec, bool secure);
                     virtual ~AudioDecoderController();
+
+                    /* True once the AVBuffer service was successfully located; used by
+                     * AudioDecoder::open() to fail fast rather than silently degrade later. */
+                    bool isAVBufferAvailable() const;
+
+                    FrameType getFrameTypeForCodec(Codec codec);
+                    static int32_t getSamplesPerFrameForCodec(Codec codec);
+                    /* Structural validity check for a codec's frame header */
+                    static bool isFrameContentValid(Codec codec, const uint8_t *data, uint32_t size, std::string *reason);
+                    void fireOnFrameOutputCallback(int64_t nsPresentationTime, Codec sourceCodec,
+                                                   int32_t trimStartNs, int32_t trimEndNs,
+                                                   int64_t outputBufferHandle, bool discontinuity,
+                                                   uint32_t queueGeneration);
+                    void fireOnEndOfStreamCallback();
 
                     android::binder::Status start() override;
                     android::binder::Status stop() override;
                     android::binder::Status decodeBufferWithMetadata( int64_t bufferHandle, const audiodecoder::InputBufferMetadata& metadata, bool* _aidl_return ) override;
                     android::binder::Status flush( bool reset ) override;
                     android::binder::Status signalDiscontinuity() override;
+                    android::binder::Status signalEndOfStream() override;
+                    android::binder::Status setAudioFormat( int32_t channels, int32_t sampleRate ) override;
                     android::binder::Status parseCodecSpecificData( rdk::hal::audiodecoder::CSDAudioFormat csdAudioFormat, const std::vector<uint8_t>& codecData, bool* _aidl_return ) override;
                     android::binder::Status setProperty( audiodecoder::Property property, const PropertyValue& propertyValue, bool* _aidl_return ) override;
                 };
@@ -131,4 +197,4 @@ namespace com {
     }
 }
 
-#endif AUDIODECODER_H
+#endif // AUDIODECODER_H
