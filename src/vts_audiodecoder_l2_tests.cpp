@@ -58,6 +58,22 @@
  */
 
 #include "vts_audiodecoder.h"
+#include "vts_avbuffer.h"
+
+class L2AVBufferSpaceListener : public BnAVBufferSpaceListener
+{
+public:
+    ::android::binder::Status onSpaceAvailable() override { return Status::ok(); }
+};
+
+static sp<IAVBuffer> vts_audiodecoder_l2_getAvBufferService()
+{
+    return android::interface_cast<IAVBuffer>(
+        android::defaultServiceManager()->getService(
+            android::String16(IAVBuffer::serviceName().c_str())
+        )
+    );
+}
 
 /* Test class registration with UT_Core */
 UT_ADD_TEST_TO_GROUP(VTS_L2_AudioDecoder, UT_TESTS_L2)
@@ -142,47 +158,47 @@ VTS_L2_AudioDecoder() : UTCore() {}
     }
 };
 
-std::multimap<Property, int32_t> validIntProperties =
+std::multimap<audiodecoder::Property, int32_t> validIntProperties =
 {
-    {Property::LOW_LATENCY_MODE, 0},
-    {Property::LOW_LATENCY_MODE, 1},
-    {Property::AV_SOURCE , int32_t(static_cast<int32_t>(AVSource::AUTO))},
-    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::UNKNOWN))},
-    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::IP))},
-    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::TUNER))},
-    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::SYSTEM))},
-    {Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::HDMI_1))}
+    {audiodecoder::Property::LOW_LATENCY_MODE, 0},
+    {audiodecoder::Property::LOW_LATENCY_MODE, 1},
+    {audiodecoder::Property::AV_SOURCE , int32_t(static_cast<int32_t>(AVSource::AUTO))},
+    {audiodecoder::Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::UNKNOWN))},
+    {audiodecoder::Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::IP))},
+    {audiodecoder::Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::TUNER))},
+    {audiodecoder::Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::SYSTEM))},
+    {audiodecoder::Property::AV_SOURCE, int32_t(static_cast<int32_t>(AVSource::HDMI_1))}
 };
-std::multimap<Property, int32_t> validAC4IntProperties =
+std::multimap<audiodecoder::Property, int32_t> validAC4IntProperties =
 {
-    {Property::AC4_PRESENTATION_GROUP_INDEX , -1},
-    {Property::AC4_PRESENTATION_GROUP_INDEX , 0},
-    {Property::AC4_ASSOCIATED_TYPE, -1},
-    {Property::AC4_ASSOCIATED_TYPE, 0},
-    {Property::AC4_ASSOCIATED_TYPE, 1},
-    {Property::AC4_ASSOCIATED_TYPE, 2},
-    {Property::AC4_AUTO_SELECTION_PRIORITY, -1},
-    {Property::AC4_AUTO_SELECTION_PRIORITY, 0},
-    {Property::AC4_AUTO_SELECTION_PRIORITY, 1},
-    {Property::AC4_MIXER_BALANCE, 255},
-    {Property::AC4_MIXER_BALANCE, -32},
-    {Property::AC4_MIXER_BALANCE, -12},
-    {Property::AC4_MIXER_BALANCE, 0},
-    {Property::AC4_MIXER_BALANCE, 12},
-    {Property::AC4_MIXER_BALANCE, 32},
-    {Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, -1},
-    {Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, 0},
-    {Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, 1}
+    {audiodecoder::Property::AC4_PRESENTATION_GROUP_INDEX , -1},
+    {audiodecoder::Property::AC4_PRESENTATION_GROUP_INDEX , 0},
+    {audiodecoder::Property::AC4_ASSOCIATED_TYPE, -1},
+    {audiodecoder::Property::AC4_ASSOCIATED_TYPE, 0},
+    {audiodecoder::Property::AC4_ASSOCIATED_TYPE, 1},
+    {audiodecoder::Property::AC4_ASSOCIATED_TYPE, 2},
+    {audiodecoder::Property::AC4_AUTO_SELECTION_PRIORITY, -1},
+    {audiodecoder::Property::AC4_AUTO_SELECTION_PRIORITY, 0},
+    {audiodecoder::Property::AC4_AUTO_SELECTION_PRIORITY, 1},
+    {audiodecoder::Property::AC4_MIXER_BALANCE, 255},
+    {audiodecoder::Property::AC4_MIXER_BALANCE, -32},
+    {audiodecoder::Property::AC4_MIXER_BALANCE, -12},
+    {audiodecoder::Property::AC4_MIXER_BALANCE, 0},
+    {audiodecoder::Property::AC4_MIXER_BALANCE, 12},
+    {audiodecoder::Property::AC4_MIXER_BALANCE, 32},
+    {audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, -1},
+    {audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, 0},
+    {audiodecoder::Property::AC4_ASSOCIATED_AUDIO_MIXING_ENABLE, 1}
 };
 
-std::multimap<Property, android::String16> validAC4StringProperties =
+std::multimap<audiodecoder::Property, android::String16> validAC4StringProperties =
 {
-    {Property::AC4_PREFERRED_LANG1, android::String16("")},
-    {Property::AC4_PREFERRED_LANG1, android::String16("eng")},
-    {Property::AC4_PREFERRED_LANG1, android::String16("fra")},
-    {Property::AC4_PREFERRED_LANG2, android::String16("")},
-    {Property::AC4_PREFERRED_LANG2, android::String16("eng")},
-    {Property::AC4_PREFERRED_LANG1, android::String16("fra")}
+    {audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("")},
+    {audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("eng")},
+    {audiodecoder::Property::AC4_PREFERRED_LANG1, android::String16("fra")},
+    {audiodecoder::Property::AC4_PREFERRED_LANG2, android::String16("")},
+    {audiodecoder::Property::AC4_PREFERRED_LANG2, android::String16("eng")},
+    {audiodecoder::Property::AC4_PREFERRED_LANG2, android::String16("fra")}
 };
 
 /**
@@ -236,7 +252,7 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, SetandGetProperties)
                     UT_ASSERT_EQUAL(value, getValue);
                 }
                 /*Check for AC4 Property only if the decoder support AC4 codec*/
-                if (Codec::DOLBY_AC4 == _codec)
+                if (audiodecoder::Codec::DOLBY_AC4 == _codec)
                 {
                     /* Test int property values */
                     for (const auto &[property, value] : validAC4IntProperties)
@@ -304,7 +320,7 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, SetandGetProperties_multipleInstance)
     {
         for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
         {
-            Codec _codec = capabilities->supportedCodecs[0];
+            audiodecoder::Codec _codec = capabilities->supportedCodecs[0];
             sp<IAudioDecoderController> audioDecoderController;
 
             //Skip if the plafrom doesn't support secure decode
@@ -350,7 +366,7 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, SetandGetProperties_multipleInstance)
             }
             /*Check if decoder supports AC4 codec*/
             if (std::find(capabilities->supportedCodecs.begin(), capabilities->supportedCodecs.end(),
-                          Codec::DOLBY_AC4) != capabilities->supportedCodecs.end())
+                          audiodecoder::Codec::DOLBY_AC4) != capabilities->supportedCodecs.end())
             {
                 for (const auto &[property, value] : validAC4IntProperties)
                 {
@@ -492,7 +508,7 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, StateTransitions_mutipleInstance)
     {
         for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
         {
-            Codec _codec = capabilities->supportedCodecs[0];
+            audiodecoder::Codec _codec = capabilities->supportedCodecs[0];
             sp<IAudioDecoderController> audioDecoderController;
 
             //Skip if the plafrom doesn't support secure decode
@@ -558,6 +574,114 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, StateTransitions_mutipleInstance)
         }
 
         audioDecoderControllersList.clear();
+    }
+}
+
+/**
+ * @brief Validate signalEndOfStream lifecycle and recovery.
+ *
+ * Verifies EOS callback delivery, STARTED->STARTED drained behavior,
+ * post-EOS decode rejection, second call no-op, and recovery via flush(reset=true).
+ */
+UT_ADD_TEST(VTS_L2_AudioDecoder, SignalEndOfStreamLifecycle)
+{
+    sp<IAVBuffer> avBufferManager = vts_audiodecoder_l2_getAvBufferService();
+    UT_ASSERT_TRUE_FATAL(avBufferManager != nullptr);
+
+    for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
+    {
+        for (bool secureDecode : {true, false})
+        {
+            if (secureDecode && !capabilities->supportsSecure)
+            {
+                continue;
+            }
+
+            for (const auto& _codec : capabilities->supportedCodecs)
+            {
+                sp<IAudioDecoderController> audioDecoderController;
+                Pool audioPool;
+                int64_t bufferHandle = -1;
+                int64_t postEosBufferHandle = -1;
+                sp<IAVBufferSpaceListener> bufferListener = new L2AVBufferSpaceListener();
+
+                AUDIODECODER_OPEN_SUCCESS(decoder, _codec, secureDecode, controlListener, audioDecoderController, false);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::CLOSED, AudioDecoderState::OPENING, AudioDecoderState::READY);
+
+                /* Get resource ID and set up pool in READY state before start */
+                IAudioDecoder::Id decoderId;
+                std::optional<PropertyValue> decoderIdValue;
+                AUDIODECODER_GET_PROPERTY_SUCCESS(decoder, audiodecoder::Property::RESOURCE_ID, decoderIdValue);
+                decoderId.value = decoderIdValue->value->get<PropertyValue::Value::Tag::intValue>();
+
+                AVBUFFER_CREATE_AUDIOPOOL_SUCCESS(avBufferManager, secureDecode, decoderId, bufferListener, audioPool);
+
+                /* Set AV source and audio format in READY state (required by HAL before decode) */
+                PropertyValue avSourceValue;
+                avSourceValue.value = PropertyValue::Value::make<PropertyValue::Value::Tag::intValue>(int32_t(static_cast<int32_t>(AVSource::IP)));
+                AUDIODECODER_SETPROPERTY_SUCCESS(audioDecoderController, audiodecoder::Property::AV_SOURCE, avSourceValue);
+                AUDIODECODER_SETAUDIOFORMAT_SUCCESS(audioDecoderController, 2, 48000);
+
+                AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::READY, AudioDecoderState::STARTING, AudioDecoderState::STARTED);
+
+                AVBUFFER_ALLOC_SUCCESS(avBufferManager, audioPool, 1, bufferHandle);
+
+                audiodecoder::InputBufferMetadata metadata;
+                metadata.nsPresentationTime = 1000000;
+                metadata.discontinuity = false;
+                metadata.trimStartNs = 0;
+                metadata.trimEndNs = 0;
+
+                AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(decoderId.value, audioDecoderController, bufferHandle, metadata);
+
+                // Per IAudioDecoderControllerListener.onFrameOutput() spec: a valid (non -1,
+                // non-tunnelled) frameAVBufferHandle transfers ownership to the caller, who must
+                // free it via IAVBuffer.free() - the HAL does not free it internally. This applies
+                // to SOC_PROPRIETARY pass-through frames too, so drain and free the output frame
+                // here before the pool is torn down below.
+                DecodedAudioFrame_t decodedFrame;
+                if (controlListener->getNextFrame(decodedFrame, MAX_FINAL_STATE_WAIT_MS, true) &&
+                    decodedFrame.frameBufferHandle != -1)
+                {
+                    bool isOutputBufferValid = false;
+                    AVBUFFER_ISVALID_SUCCESS(avBufferManager, decodedFrame.frameBufferHandle, isOutputBufferValid);
+                    if (isOutputBufferValid)
+                    {
+                        AVBUFFER_FREE_SUCCESS(avBufferManager, decodedFrame.frameBufferHandle);
+                    }
+                }
+
+                controlListener->resetEndOfStream();
+                AUDIODECODER_SIGNAL_EOS_SUCCESS(decoder, audioDecoderController, false);
+                UT_ASSERT_TRUE(controlListener->waitForEndOfStream(MAX_FINAL_STATE_WAIT_MS));
+
+                AudioDecoderState state;
+                AUDIODECODER_GET_STATE(decoder, state);
+                UT_ASSERT_EQUAL(state, AudioDecoderState::STARTED);
+
+                /* Second signalEndOfStream() must be a no-op — spec mandates no exception */
+                AUDIODECODER_SIGNAL_EOS_SUCCESS(decoder, audioDecoderController, false);
+
+                AVBUFFER_ALLOC_SUCCESS(avBufferManager, audioPool, 1, postEosBufferHandle);
+                AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, postEosBufferHandle, metadata, Status::EX_ILLEGAL_STATE);
+                AVBUFFER_FREE_SUCCESS(avBufferManager, postEosBufferHandle);
+
+                AUDIODECODER_FLUSH_SUCCESS(decoder, audioDecoderController, true, false);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::STARTED, AudioDecoderState::FLUSHING, AudioDecoderState::READY);
+
+                AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::READY, AudioDecoderState::STARTING, AudioDecoderState::STARTED);
+
+                AUDIODECODER_STOP_SUCCESS(decoder, audioDecoderController, false);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::STARTED, AudioDecoderState::STOPPING, AudioDecoderState::READY);
+
+                AUDIODECODER_CLOSE_SUCCESS(decoder, audioDecoderController, false);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::READY, AudioDecoderState::CLOSING, AudioDecoderState::CLOSED);
+
+                AVBUFFER_DESTROY_POOL_SUCCESS(avBufferManager, audioPool);
+            }
+        }
     }
 }
 
