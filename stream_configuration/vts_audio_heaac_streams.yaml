@@ -85,7 +85,7 @@ AudioStreams:
       - 341
 
   tones_32k_2_32_heaac:
-    input: tones_32k_2_32.aac
+    input: tones_32k_2_32_heaac.aac
     reference: tones_32k_2_32_ref.pcm
     codec: HE_AAC
     sample_rate: 32000
