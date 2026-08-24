@@ -63,6 +63,67 @@ AudioStreams:
       - 512
       - 512
 
+  vts_eac3_48k_2ch_128k_long_eac3:
+    input: vts_eac3_48k_2ch_128k.eac3            # Stream name
+    reference: vts_eac3_48k_2ch_128k_ref.pcm      # Reference stream name
+    codec: DOLBY_AC3_PLUS                        # audio codec information (E-AC-3)
+    sample_rate: 48000                           # Sample rate in Hz
+    channels: 2                                  # Number of audio channels (stereo)
+    format: S16LE                                # PCM format of the reference stream
+    num_of_frames: 50                            # Total number of E-AC-3 syncframes
+    duration: 1600000000 # (1536 samples/frame x 50 frames x 1e9) / 48000 Hz
+    frame_size:                                 # Byte size for each E-AC-3 syncframe
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+      - 512
+
   vts_eac3_48k_6ch_256k_eac3:
     input: vts_eac3_48k_6ch_256k.eac3            # Stream name
     reference: vts_eac3_48k_6ch_256k_ref.pcm      # Reference stream name
