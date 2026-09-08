@@ -31,7 +31,7 @@ audiodecoder:
         signal_discontinuity_pts: -1
         flush_pts: -1
         flush_reset_pts: -1
-        eos_pts: 127999998
+        eos_pts: 128000000
         sink_eos_pts: -1
         sink_flush_pts: -1
       Inputs:

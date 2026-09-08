@@ -31,7 +31,7 @@ audiodecoder:
         stop_start_pts: -1
         signal_discontinuity_pts: -1
         flush_pts: -1
-        flush_reset_pts: 106666665
+        flush_reset_pts: 128000000
         eos_pts: -1
         sink_eos_pts: -1
         sink_flush_pts: -1

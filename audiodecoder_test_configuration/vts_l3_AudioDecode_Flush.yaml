@@ -30,7 +30,7 @@ audiodecoder:
         delay_between_decode_calls: -1
         stop_start_pts: -1
         signal_discontinuity_pts: -1
-        flush_pts: 127999998
+        flush_pts: 128000000
         flush_reset_pts: -1
         eos_pts: -1
         sink_eos_pts: -1

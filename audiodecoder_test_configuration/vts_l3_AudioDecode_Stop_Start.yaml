@@ -28,7 +28,7 @@ audiodecoder:
     Decode_Stop_Start:
       Controls:
         delay_between_decode_calls: 5
-        stop_start_pts: 127999998
+        stop_start_pts: 128000000
         signal_discontinuity_pts: -1
         flush_pts: -1
         flush_reset_pts: -1
