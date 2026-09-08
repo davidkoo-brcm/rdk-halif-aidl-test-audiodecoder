@@ -152,7 +152,7 @@ public:
         auto it = std::find_if(gAudiodecoders_hfp.begin(), gAudiodecoders_hfp.end(), [decoderId](const audioDecoder& item) {
             return item.id == decoderId.value;
         });
-        if(it == gAudiodecoders_hfp.end() || !it->isAvailable)
+        if(it == gAudiodecoders_hfp.end())
             return false;
         if (secureDecode && !capabilities->supportsSecure)
             return false;

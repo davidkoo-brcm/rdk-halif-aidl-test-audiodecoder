@@ -33,6 +33,3 @@ audiodecoder:           # Component object begins
          supportedCodecs:       # Array of codec capabilities
            - AAC_LC
          supportsSecure: true
-    NonTunnelMode:
-      - AAC_LC
-    TunnelMode:        # Empty - tunnel mode not yet supported
