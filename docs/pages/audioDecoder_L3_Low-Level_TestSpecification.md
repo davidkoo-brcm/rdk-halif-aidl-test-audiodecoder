@@ -53,45 +53,45 @@ IAudioDecoderManager:
     Decode_Sequential_NonTunnel_NonSecure:
       Controls:
         delay_between_decode_calls: 5 #Time in milli seconds
-        stop_start_pts: 106666665
-        signal_discontinuity_pts: 149333331
-        flush_pts: 170666664
-        flush_reset_pts: 191999997
-        eos_pts: 191999997
+        stop_start_pts: 106666667
+        signal_discontinuity_pts: 149333333
+        flush_pts: 170666667
+        flush_reset_pts: 192000000
+        eos_pts: 192000000
       Inputs:
         Streams:
           - Name: tones_48k_2_256_aac
             PTS:
               - 0
               - 21333333
-              - 42666666
-              - 63999999
-              - 85333332
-              - 106666665
-              - 127999998
-              - 149333331
-              - 170666664
-              - 191999997
+              - 42666667
+              - 64000000
+              - 85333333
+              - 106666667
+              - 128000000
+              - 149333333
+              - 170666667
+              - 192000000
             trim:
-              - 127999998 #Start in Nano seconds
-              - 149333331 #End
+              - 128000000 #Start in Nano seconds
+              - 149333333 #End
             rms_diff_threshold: 0.5
             decode_time_threshold: 10000000 #Time in nano seconds
           - Name: tones_48k_1_256_aac
             PTS:
               - 0
               - 21333333
-              - 42666666
-              - 63999999
-              - 85333332
-              - 106666665
-              - 127999998
-              - 149333331
-              - 170666664
-              - 191999997
+              - 42666667
+              - 64000000
+              - 85333333
+              - 106666667
+              - 128000000
+              - 149333333
+              - 170666667
+              - 192000000
             trim:
-              - 127999998 #Start in Nano seconds
-              - 149333331 #End
+              - 128000000 #Start in Nano seconds
+              - 149333333 #End
             rms_diff_threshold: 0.5
             decode_time_threshold: 10000000 #Time in nano seconds
 ```
