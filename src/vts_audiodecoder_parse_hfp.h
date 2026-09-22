@@ -82,7 +82,6 @@ struct audioDecoder
 extern std::vector<audioDecoder> gAudiodecoders_hfp;
 
 #define AUDIODECODERMGR_IAUDIODECODER     "audiodecoder.IAudioDecoder"
-#define AUDIODECODERMGR_TUNNELMODE        "audiodecoder.TunnelMode"
 
 UT_status_t vts_audiodecoder_parseAudioDecoderHFP();
 bool isTunnelModeSupported();
