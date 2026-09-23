@@ -50,7 +50,7 @@ IAudioDecoderManager:
   input_streams_path: "assets/streams/input"
   reference_streams_path: "assets/streams/reference/"
   L3:
-    Decode_Sequential_NonTunnel_NonSecure:
+    ADecode_Sequential_NonTunnel_NonSecure:
       Controls:
         delay_between_decode_calls: 5 #Time in milli seconds
         stop_start_pts: 106666667
@@ -514,68 +514,68 @@ The L3 tests validate the functional correctness and performance of the AudioDec
 
 |# | Test Name                                         | function             | Arguments                                      | Test Configuration Controls                |
 |--|---------------------------------------------------|----------------------|------------------------------------------------|--------------------------------------------|
-| 1| Decode_Sequential_NonTunnel_NonSecure             | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams                             |
-| 2| Decode_Sequential_NonTunnel_NonSecure_Error       | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams                             |
-| 3| Decode_Sequential_NonTunnel_NonSecure_Trim        | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Inputs.Streams.trim      |
-| 4| Decode_Sequential_NonTunnel_NonSecure_Discontinuity| runSingleProcessTest| secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.signal_discontinuity_pts |
-| 5| Decode_Sequential_NonTunnel_NonSecure_EOS         | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.eos_pts         |
-| 6| Decode_Sequential_NonTunnel_NonSecure_Flush       | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.flush_pts       |
-| 7| Decode_Sequential_NonTunnel_NonSecure_FlushReset  | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.flush_reset_pts |
-| 8| Decode_Sequential_NonTunnel_NonSecure_StopStart   | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.stop_start_pts  |
-| 9| Decode_Sequential_NonTunnel_Secure                | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams                             |
-|10| Decode_Sequential_NonTunnel_Secure_Error          | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams                             |
-|11| Decode_Sequential_NonTunnel_Secure_Trim           | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Inputs.Streams.trim      |
-|12| Decode_Sequential_NonTunnel_Secure_Discontinuity  | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.signal_discontinuity_pts |
-|13| Decode_Sequential_NonTunnel_Secure_EOS            | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.eos_pts         |
-|14| Decode_Sequential_NonTunnel_Secure_Flush          | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.flush_pts       |
-|15| Decode_Sequential_NonTunnel_Secure_FlushReset     | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.flush_reset_pts |
-|16| Decode_Sequential_NonTunnel_Secure_StopStart      | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.stop_start_pts  |
-|17| Decode_Sequential_Tunnel_NonSecure                | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams                             |
-|18| Decode_Sequential_Tunnel_NonSecure_Error          | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams                             |
-|19| Decode_Sequential_Tunnel_NonSecure_Trim           | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Inputs.Streams.trim      |
-|20| Decode_Sequential_Tunnel_NonSecure_Discontinuity  | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.signal_discontinuity_pts |
-|21| Decode_Sequential_Tunnel_NonSecure_EOS            | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.eos_pts         |
-|22| Decode_Sequential_Tunnel_NonSecure_Flush          | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.flush_pts       |
-|23| Decode_Sequential_Tunnel_NonSecure_FlushReset     | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.flush_reset_pts |
-|24| Decode_Sequential_Tunnel_NonSecure_StopStart      | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.stop_start_pts  |
-|25| Decode_Sequential_Tunnel_Secure                   | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams                             |
-|26| Decode_Sequential_Tunnel_Secure_Error             | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams                             |
-|27| Decode_Sequential_Tunnel_Secure_Trim              | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Inputs.Streams.trim      |
-|28| Decode_Sequential_Tunnel_Secure_Discontinuity     | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.signal_discontinuity_pts |
-|29| Decode_Sequential_Tunnel_Secure_EOS               | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.eos_pts         |
-|30| Decode_Sequential_Tunnel_Secure_Flush             | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.flush_pts       |
-|31| Decode_Sequential_Tunnel_Secure_FlushReset        | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.flush_reset_pts |
-|32| Decode_Sequential_Tunnel_Secure_StopStart         | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.stop_start_pts  |
-|33| Decode_Concurrent_NonTunnel_NonSecure             | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams                             |
-|34| Decode_Concurrent_NonTunnel_NonSecure_Error       | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams                             |
-|35| Decode_Concurrent_NonTunnel_NonSecure_Trim        | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Inputs.Streams.trim      |
-|36| Decode_Concurrent_NonTunnel_NonSecure_Discontinuity| runSingleProcessTest| secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.signal_discontinuity_pts |
-|37| Decode_Concurrent_NonTunnel_NonSecure_EOS         | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.eos_pts         |
-|38| Decode_Concurrent_NonTunnel_NonSecure_Flush       | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.flush_pts       |
-|39| Decode_Concurrent_NonTunnel_NonSecure_FlushReset  | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.flush_reset_pts |
-|40| Decode_Concurrent_NonTunnel_NonSecure_StopStart   | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.stop_start_pts  |
-|41| Decode_Concurrent_NonTunnel_Secure                | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams                             |
-|42| Decode_Concurrent_NonTunnel_Secure_Error          | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams                             |
-|43| Decode_Concurrent_NonTunnel_Secure_Trim           | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Inputs.Streams.trim      |
-|44| Decode_Concurrent_NonTunnel_Secure_Discontinuity  | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.signal_discontinuity_pts |
-|45| Decode_Concurrent_NonTunnel_Secure_EOS            | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.eos_pts         |
-|46| Decode_Concurrent_NonTunnel_Secure_Flush          | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.flush_pts       |
-|47| Decode_Concurrent_NonTunnel_Secure_FlushReset     | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.flush_reset_pts |
-|48| Decode_Concurrent_NonTunnel_Secure_StopStart      | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.stop_start_pts  |
-|49| Decode_Concurrent_Tunnel_NonSecure                | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams                             |
-|50| Decode_Concurrent_Tunnel_NonSecure_Error          | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams                             |
-|51| Decode_Concurrent_Tunnel_NonSecure_Trim           | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Inputs.Streams.trim      |
-|52| Decode_Concurrent_Tunnel_NonSecure_Discontinuity  | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.signal_discontinuity_pts |
-|53| Decode_Concurrent_Tunnel_NonSecure_EOS            | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.eos_pts         |
-|54| Decode_Concurrent_Tunnel_NonSecure_Flush          | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.flush_pts       |
-|55| Decode_Concurrent_Tunnel_NonSecure_FlushReset     | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.flush_reset_pts |
-|56| Decode_Concurrent_Tunnel_NonSecure_StopStart      | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.stop_start_pts  |
-|57| Decode_Concurrent_Tunnel_Secure                   | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams                             |
-|58| Decode_Concurrent_Tunnel_Secure_Error             | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams                             |
-|59| Decode_Concurrent_Tunnel_Secure_Trim              | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Inputs.Streams.trim      |
-|60| Decode_Concurrent_Tunnel_Secure_Discontinuity     | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.signal_discontinuity_pts |
-|61| Decode_Concurrent_Tunnel_Secure_EOS               | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.eos_pts         |
-|62| Decode_Concurrent_Tunnel_Secure_Flush             | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.flush_pts       |
-|63| Decode_Concurrent_Tunnel_Secure_FlushReset        | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.flush_reset_pts |
-|64| Decode_Concurrent_Tunnel_Secure_StopStart         | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.stop_start_pts  |
+| 1| ADecode_Sequential_NonTunnel_NonSecure             | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams                             |
+| 2| ADecode_Sequential_NonTunnel_NonSecure_Error       | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams                             |
+| 3| ADecode_Sequential_NonTunnel_NonSecure_Trim        | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Inputs.Streams.trim      |
+| 4| ADecode_Sequential_NonTunnel_NonSecure_Discontinuity| runSingleProcessTest| secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+| 5| ADecode_Sequential_NonTunnel_NonSecure_EOS         | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.eos_pts         |
+| 6| ADecode_Sequential_NonTunnel_NonSecure_Flush       | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.flush_pts       |
+| 7| ADecode_Sequential_NonTunnel_NonSecure_FlushReset  | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.flush_reset_pts |
+| 8| ADecode_Sequential_NonTunnel_NonSecure_StopStart   | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.stop_start_pts  |
+| 9| ADecode_Sequential_NonTunnel_Secure                | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams                             |
+|10| ADecode_Sequential_NonTunnel_Secure_Error          | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams                             |
+|11| ADecode_Sequential_NonTunnel_Secure_Trim           | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Inputs.Streams.trim      |
+|12| ADecode_Sequential_NonTunnel_Secure_Discontinuity  | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|13| ADecode_Sequential_NonTunnel_Secure_EOS            | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.eos_pts         |
+|14| ADecode_Sequential_NonTunnel_Secure_Flush          | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.flush_pts       |
+|15| ADecode_Sequential_NonTunnel_Secure_FlushReset     | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.flush_reset_pts |
+|16| ADecode_Sequential_NonTunnel_Secure_StopStart      | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.stop_start_pts  |
+|17| ADecode_Sequential_Tunnel_NonSecure                | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams                             |
+|18| ADecode_Sequential_Tunnel_NonSecure_Error          | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams                             |
+|19| ADecode_Sequential_Tunnel_NonSecure_Trim           | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Inputs.Streams.trim      |
+|20| ADecode_Sequential_Tunnel_NonSecure_Discontinuity  | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|21| ADecode_Sequential_Tunnel_NonSecure_EOS            | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.eos_pts         |
+|22| ADecode_Sequential_Tunnel_NonSecure_Flush          | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.flush_pts       |
+|23| ADecode_Sequential_Tunnel_NonSecure_FlushReset     | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.flush_reset_pts |
+|24| ADecode_Sequential_Tunnel_NonSecure_StopStart      | runSingleProcessTest | secureMode = false<br>concurrentMode = false   | Inputs.Streams<br>Controls.stop_start_pts  |
+|25| ADecode_Sequential_Tunnel_Secure                   | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams                             |
+|26| ADecode_Sequential_Tunnel_Secure_Error             | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams                             |
+|27| ADecode_Sequential_Tunnel_Secure_Trim              | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Inputs.Streams.trim      |
+|28| ADecode_Sequential_Tunnel_Secure_Discontinuity     | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|29| ADecode_Sequential_Tunnel_Secure_EOS               | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.eos_pts         |
+|30| ADecode_Sequential_Tunnel_Secure_Flush             | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.flush_pts       |
+|31| ADecode_Sequential_Tunnel_Secure_FlushReset        | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.flush_reset_pts |
+|32| ADecode_Sequential_Tunnel_Secure_StopStart         | runSingleProcessTest | secureMode = true<br>concurrentMode = false    | Inputs.Streams<br>Controls.stop_start_pts  |
+|33| ADecode_Concurrent_NonTunnel_NonSecure             | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams                             |
+|34| ADecode_Concurrent_NonTunnel_NonSecure_Error       | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams                             |
+|35| ADecode_Concurrent_NonTunnel_NonSecure_Trim        | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Inputs.Streams.trim      |
+|36| ADecode_Concurrent_NonTunnel_NonSecure_Discontinuity| runSingleProcessTest| secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|37| ADecode_Concurrent_NonTunnel_NonSecure_EOS         | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.eos_pts         |
+|38| ADecode_Concurrent_NonTunnel_NonSecure_Flush       | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.flush_pts       |
+|39| ADecode_Concurrent_NonTunnel_NonSecure_FlushReset  | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.flush_reset_pts |
+|40| ADecode_Concurrent_NonTunnel_NonSecure_StopStart   | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.stop_start_pts  |
+|41| ADecode_Concurrent_NonTunnel_Secure                | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams                             |
+|42| ADecode_Concurrent_NonTunnel_Secure_Error          | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams                             |
+|43| ADecode_Concurrent_NonTunnel_Secure_Trim           | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Inputs.Streams.trim      |
+|44| ADecode_Concurrent_NonTunnel_Secure_Discontinuity  | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|45| ADecode_Concurrent_NonTunnel_Secure_EOS            | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.eos_pts         |
+|46| ADecode_Concurrent_NonTunnel_Secure_Flush          | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.flush_pts       |
+|47| ADecode_Concurrent_NonTunnel_Secure_FlushReset     | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.flush_reset_pts |
+|48| ADecode_Concurrent_NonTunnel_Secure_StopStart      | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.stop_start_pts  |
+|49| ADecode_Concurrent_Tunnel_NonSecure                | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams                             |
+|50| ADecode_Concurrent_Tunnel_NonSecure_Error          | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams                             |
+|51| ADecode_Concurrent_Tunnel_NonSecure_Trim           | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Inputs.Streams.trim      |
+|52| ADecode_Concurrent_Tunnel_NonSecure_Discontinuity  | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|53| ADecode_Concurrent_Tunnel_NonSecure_EOS            | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.eos_pts         |
+|54| ADecode_Concurrent_Tunnel_NonSecure_Flush          | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.flush_pts       |
+|55| ADecode_Concurrent_Tunnel_NonSecure_FlushReset     | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.flush_reset_pts |
+|56| ADecode_Concurrent_Tunnel_NonSecure_StopStart      | runSingleProcessTest | secureMode = false<br>concurrentMode = true    | Inputs.Streams<br>Controls.stop_start_pts  |
+|57| ADecode_Concurrent_Tunnel_Secure                   | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams                             |
+|58| ADecode_Concurrent_Tunnel_Secure_Error             | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams                             |
+|59| ADecode_Concurrent_Tunnel_Secure_Trim              | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Inputs.Streams.trim      |
+|60| ADecode_Concurrent_Tunnel_Secure_Discontinuity     | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.signal_discontinuity_pts |
+|61| ADecode_Concurrent_Tunnel_Secure_EOS               | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.eos_pts         |
+|62| ADecode_Concurrent_Tunnel_Secure_Flush             | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.flush_pts       |
+|63| ADecode_Concurrent_Tunnel_Secure_FlushReset        | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.flush_reset_pts |
+|64| ADecode_Concurrent_Tunnel_Secure_StopStart         | runSingleProcessTest | secureMode = true<br>concurrentMode = true     | Inputs.Streams<br>Controls.stop_start_pts  |
 
