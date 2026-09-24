@@ -36,7 +36,7 @@ audiodecoder:
       Inputs:
         Streams:
 ####### AAC 48kHz 2ch — 50 frames @ 21333333 ns/frame #######
-          - Name: tones_48k_2_256_aac
+          - Name: tones_48k_2_256_long_aac
             PTS:
               - 0
               - 21333333
@@ -94,7 +94,7 @@ audiodecoder:
             decode_time_threshold: 100000
             rms_diff_threshold: 0.5
 ####### AC3 48kHz 2ch — 50 frames @ 32000000 ns/frame #######
-          - Name: tones_48k_2_192_ac3
+          - Name: tones_48k_2_192_long_ac3
             PTS:
               - 123456
               - 32123456
@@ -152,7 +152,7 @@ audiodecoder:
             decode_time_threshold: 100000
             rms_diff_threshold: 0.5
 ####### OPUS 48kHz 2ch — 50 frames @ 20000000 ns/frame #######
-          - Name: vts_opus_48k_2ch_64k_opus
+          - Name: vts_opus_48k_2ch_64k_long_opus
             PTS:
               - 0
               - 20000000
@@ -210,7 +210,7 @@ audiodecoder:
             decode_time_threshold: 100000
             rms_diff_threshold: 0.5
 ####### EAC3 48kHz 2ch — 50 frames @ 32000000 ns/frame #######
-          - Name: vts_eac3_48k_2ch_128k_eac3
+          - Name: vts_eac3_48k_2ch_128k_long_eac3
             PTS:
               - 0
               - 32000000

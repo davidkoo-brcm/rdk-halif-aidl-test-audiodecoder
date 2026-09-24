@@ -69,33 +69,34 @@
 using namespace std;
 
 vector<audioDecoder> gAudiodecoders_hfp;
-audioDecoderModes gAudioDecoderModes_hfp;
+
+void vts_audiodecoder_get_available_id(std::vector<int32_t> &availableIds)
+{
+    std::string audiodecoderpath = AUDIODECODERMGR_IAUDIODECODER;
+
+    availableIds.clear();
+
+    int32_t number_of_audiodecoders = UT_KVP_PROFILE_GET_LIST_COUNT(audiodecoderpath.c_str());
+    for (int32_t i = 0; i < number_of_audiodecoders; ++i)
+    {
+        availableIds.push_back(i);
+    }
+}
 
 UT_status_t vts_audiodecoder_parseAudioDecoderHFP()
 {
     std::string audiodecoderpath = AUDIODECODERMGR_IAUDIODECODER;
-    std::string availableDecodersPath = AUDIODECODERMGR_AVAILABLEDECODERS;
 
     int32_t number_of_audiodecoders = 0;
-    int32_t available_decoders = 0;
     int32_t supportedcodec_count = 0;
 
     audioDecoder temporary;
-    vector<int32_t> availableIds;
 
     number_of_audiodecoders = UT_KVP_PROFILE_GET_LIST_COUNT(audiodecoderpath.c_str());
     if (number_of_audiodecoders <= 0)
     {
         UT_LOG_ERROR("No audiodecoders found in the HFP");
         return UT_STATUS_FAILURE;
-    }
-
-    available_decoders = UT_KVP_PROFILE_GET_LIST_COUNT(availableDecodersPath.c_str());
-    for (int32_t i = 0; i < available_decoders; i++)
-    {
-        std::string decoderIdPath = availableDecodersPath + "." + std::to_string(i);
-        int32_t id = UT_KVP_PROFILE_GET_UINT32(decoderIdPath.c_str());
-        availableIds.push_back(id);
     }
 
     gAudiodecoders_hfp.clear();
@@ -114,16 +115,6 @@ UT_status_t vts_audiodecoder_parseAudioDecoderHFP()
         temporary.supportsSecure = UT_KVP_PROFILE_GET_BOOL(supportsSecurepath.c_str());
         supportedcodec_count = UT_KVP_PROFILE_GET_LIST_COUNT(supportedcodecpath.c_str());
 
-        if (available_decoders <= 0)
-        {
-            temporary.isAvailable = true;
-        }
-        else
-        {
-            auto it = find(availableIds.begin(), availableIds.end(), temporary.id);
-            temporary.isAvailable = (it != availableIds.end());
-        }
-
         temporary.supportedCodecs.clear();
         for (int32_t j = 0; j < supportedcodec_count; ++j)
         {
@@ -137,33 +128,13 @@ UT_status_t vts_audiodecoder_parseAudioDecoderHFP()
         gAudiodecoders_hfp.push_back(temporary);
     }
 
-    gAudioDecoderModes_hfp.tunnelModeCodecs.clear();
-    gAudioDecoderModes_hfp.nonTunnelModeCodecs.clear();
-
-    int32_t tunnelCodecCount = UT_KVP_PROFILE_GET_LIST_COUNT(AUDIODECODERMGR_TUNNELMODE);
-    for (int32_t i = 0; i < tunnelCodecCount; ++i)
-    {
-        char result_kvp[UT_KVP_MAX_ELEMENT_SIZE] = {0};
-        std::string codecpath = std::string(AUDIODECODERMGR_TUNNELMODE) + "." + std::to_string(i);
-        UT_KVP_PROFILE_GET_STRING(codecpath.c_str(), result_kvp);
-        gAudioDecoderModes_hfp.tunnelModeCodecs.push_back(vts_audioDecoder_helper_StringToCodec(std::string(result_kvp)));
-    }
-
-    int32_t nonTunnelCodecCount = UT_KVP_PROFILE_GET_LIST_COUNT(AUDIODECODERMGR_NONTUNNELMODE);
-    for (int32_t i = 0; i < nonTunnelCodecCount; ++i)
-    {
-        char result_kvp[UT_KVP_MAX_ELEMENT_SIZE] = {0};
-        std::string codecpath = std::string(AUDIODECODERMGR_NONTUNNELMODE) + "." + std::to_string(i);
-        UT_KVP_PROFILE_GET_STRING(codecpath.c_str(), result_kvp);
-        gAudioDecoderModes_hfp.nonTunnelModeCodecs.push_back(vts_audioDecoder_helper_StringToCodec(std::string(result_kvp)));
-    }
-
     return UT_STATUS_OK;
 }
 
 bool isTunnelModeSupported()
 {
-    return !gAudioDecoderModes_hfp.tunnelModeCodecs.empty();
+    //TODO: Implement the actual check for tunnel mode support based on interface decisions
+    return false;
 }
 
 bool isSecureModeSupported()
