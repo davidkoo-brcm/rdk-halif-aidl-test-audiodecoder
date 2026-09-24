@@ -323,7 +323,7 @@ public:
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_NonTunnel_NonSecure)
 {
     const char *testName = "Decode";
     bool secureMode = false;
@@ -342,7 +342,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Error)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_NonTunnel_NonSecure_Error)
 {
     const char *testName = "Decode_Error";
     bool secureMode = false;
@@ -361,7 +361,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Error)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Trim)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_NonTunnel_NonSecure_Trim)
 {
     const char *testName = "Decode_Trim";
     bool secureMode = false;
@@ -380,7 +380,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Trim)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Discontinuity)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_NonTunnel_NonSecure_Discontinuity)
 {
     const char *testName = "Decode_Discontinuity";
     bool secureMode = false;
@@ -399,7 +399,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Discontin
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_EOS)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_NonTunnel_NonSecure_EOS)
 {
     const char *testName = "Decode_EOS";
     bool secureMode = false;
@@ -418,7 +418,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_EOS)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Flush)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_NonTunnel_NonSecure_Flush)
 {
     const char *testName = "Decode_Flush";
     bool secureMode = false;
@@ -437,7 +437,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_Flush)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_FlushReset)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_NonTunnel_NonSecure_FlushReset)
 {
     const char *testName = "Decode_FlushReset";
     bool secureMode = false;
@@ -456,7 +456,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_FlushRese
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_StopStart)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_NonTunnel_NonSecure_StopStart)
 {
     const char *testName = "Decode_Stop_Start";
     bool secureMode = false;
@@ -485,7 +485,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_StopStart
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_OnDecodeBufAvail)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_NonTunnel_NonSecure_OnDecodeBufAvail)
 {
     const char *testName = "Decode_OnDecodeBufAvail";
     bool secureMode = false;
@@ -505,7 +505,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_NonSecure_OnDecodeB
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_NonTunnel_Secure)
 {
     const char *testName = "Decode";
     bool secureMode = true;
@@ -524,7 +524,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Error)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_NonTunnel_Secure_Error)
 {
     const char *testName = "Decode_Error";
     bool secureMode = true;
@@ -543,7 +543,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Error)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Trim)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_NonTunnel_Secure_Trim)
 {
     const char *testName = "Decode_Trim";
     bool secureMode = true;
@@ -562,7 +562,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Trim)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Discontinuity)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_NonTunnel_Secure_Discontinuity)
 {
     const char *testName = "Decode_Discontinuity";
     bool secureMode = true;
@@ -581,7 +581,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Discontinuit
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_EOS)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_NonTunnel_Secure_EOS)
 {
     const char *testName = "Decode_EOS";
     bool secureMode = true;
@@ -600,7 +600,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_EOS)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Flush)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_NonTunnel_Secure_Flush)
 {
     const char *testName = "Decode_Flush";
     bool secureMode = true;
@@ -619,7 +619,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_Flush)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_FlushReset)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_NonTunnel_Secure_FlushReset)
 {
     const char *testName = "Decode_FlushReset";
     bool secureMode = true;
@@ -638,7 +638,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_FlushReset)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_StopStart)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_NonTunnel_Secure_StopStart)
 {
     const char *testName = "Decode_Stop_Start";
     bool secureMode = true;
@@ -657,7 +657,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_NonTunnel_Secure_StopStart)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_Tunnel_NonSecure)
 {
     const char *testName = "Decode";
     bool secureMode = false;
@@ -676,7 +676,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Error)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_Tunnel_NonSecure_Error)
 {
     const char *testName = "Decode_Error";
     bool secureMode = false;
@@ -695,7 +695,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Error)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Trim)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_Tunnel_NonSecure_Trim)
 {
     const char *testName = "Decode_Trim";
     bool secureMode = false;
@@ -714,7 +714,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Trim)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Discontinuity)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_Tunnel_NonSecure_Discontinuity)
 {
     const char *testName = "Decode_Discontinuity";
     bool secureMode = false;
@@ -733,7 +733,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Discontinuit
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_EOS)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_Tunnel_NonSecure_EOS)
 {
     const char *testName = "Decode_EOS";
     bool secureMode = false;
@@ -752,7 +752,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_EOS)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Flush)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_Tunnel_NonSecure_Flush)
 {
     const char *testName = "Decode_Flush";
     bool secureMode = false;
@@ -771,7 +771,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_Flush)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_FlushReset)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_Tunnel_NonSecure_FlushReset)
 {
     const char *testName = "Decode_FlushReset";
     bool secureMode = false;
@@ -790,7 +790,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_FlushReset)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_StopStart)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_Tunnel_NonSecure_StopStart)
 {
     const char *testName = "Decode_Stop_Start";
     bool secureMode = false;
@@ -809,7 +809,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_NonSecure_StopStart)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_Tunnel_Secure)
 {
     const char *testName = "Decode";
     bool secureMode = true;
@@ -828,7 +828,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Error)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_Tunnel_Secure_Error)
 {
     const char *testName = "Decode_Error";
     bool secureMode = true;
@@ -847,7 +847,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Error)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Trim)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_Tunnel_Secure_Trim)
 {
     const char *testName = "Decode_Trim";
     bool secureMode = true;
@@ -866,7 +866,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Trim)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Discontinuity)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_Tunnel_Secure_Discontinuity)
 {
     const char *testName = "Decode_Discontinuity";
     bool secureMode = true;
@@ -885,7 +885,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Discontinuity)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_EOS)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_Tunnel_Secure_EOS)
 {
     const char *testName = "Decode_EOS";
     bool secureMode = true;
@@ -904,7 +904,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_EOS)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Flush)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_Tunnel_Secure_Flush)
 {
     const char *testName = "Decode_Flush";
     bool secureMode = true;
@@ -923,7 +923,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_Flush)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_FlushReset)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_Tunnel_Secure_FlushReset)
 {
     const char *testName = "Decode_FlushReset";
     bool secureMode = true;
@@ -942,7 +942,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_FlushReset)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_StopStart)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Sequential_Tunnel_Secure_StopStart)
 {
     const char *testName = "Decode_Stop_Start";
     bool secureMode = true;
@@ -961,7 +961,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Sequential_Tunnel_Secure_StopStart)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_NonTunnel_NonSecure)
 {
     const char *testName = "Decode";
     bool secureMode = false;
@@ -980,7 +980,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Error)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_NonTunnel_NonSecure_Error)
 {
     const char *testName = "Decode_Error";
     bool secureMode = false;
@@ -999,7 +999,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Error)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Trim)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_NonTunnel_NonSecure_Trim)
 {
     const char *testName = "Decode_Trim";
     bool secureMode = false;
@@ -1018,7 +1018,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Trim)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Discontinuity)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_NonTunnel_NonSecure_Discontinuity)
 {
     const char *testName = "Decode_Discontinuity";
     bool secureMode = false;
@@ -1037,7 +1037,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Discontin
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_EOS)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_NonTunnel_NonSecure_EOS)
 {
     const char *testName = "Decode_EOS";
     bool secureMode = false;
@@ -1056,7 +1056,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_EOS)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Flush)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_NonTunnel_NonSecure_Flush)
 {
     const char *testName = "Decode_Flush";
     bool secureMode = false;
@@ -1075,7 +1075,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_Flush)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_FlushReset)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_NonTunnel_NonSecure_FlushReset)
 {
     const char *testName = "Decode_FlushReset";
     bool secureMode = false;
@@ -1094,7 +1094,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_FlushRese
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_StopStart)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_NonTunnel_NonSecure_StopStart)
 {
     const char *testName = "Decode_Stop_Start";
     bool secureMode = false;
@@ -1112,7 +1112,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_NonSecure_StopStart
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_NonTunnel_Secure)
 {
     const char *testName = "Decode_Secure";
     bool secureMode = true;
@@ -1131,7 +1131,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Error)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_NonTunnel_Secure_Error)
 {
     const char *testName = "Decode_Error";
     bool secureMode = true;
@@ -1150,7 +1150,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Error)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Trim)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_NonTunnel_Secure_Trim)
 {
     const char *testName = "Decode_Trim";
     bool secureMode = true;
@@ -1169,7 +1169,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Trim)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Discontinuity)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_NonTunnel_Secure_Discontinuity)
 {
     const char *testName = "Decode_Discontinuity";
     bool secureMode = true;
@@ -1188,7 +1188,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Discontinuit
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_EOS)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_NonTunnel_Secure_EOS)
 {
     const char *testName = "Decode_EOS";
     bool secureMode = true;
@@ -1207,7 +1207,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_EOS)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Flush)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_NonTunnel_Secure_Flush)
 {
     const char *testName = "Decode_Flush";
     bool secureMode = true;
@@ -1226,7 +1226,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_Flush)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_FlushReset)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_NonTunnel_Secure_FlushReset)
 {
     const char *testName = "Decode_FlushReset";
     bool secureMode = true;
@@ -1245,7 +1245,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_FlushReset)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_StopStart)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_NonTunnel_Secure_StopStart)
 {
     const char *testName = "Decode_Stop_Start";
     bool secureMode = true;
@@ -1264,7 +1264,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_NonTunnel_Secure_StopStart)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_Tunnel_NonSecure)
 {
     const char *testName = "Decode";
     bool secureMode = false;
@@ -1283,7 +1283,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Error)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_Tunnel_NonSecure_Error)
 {
     const char *testName = "Decode_Error";
     bool secureMode = false;
@@ -1302,7 +1302,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Error)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Trim)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_Tunnel_NonSecure_Trim)
 {
     const char *testName = "Decode_Trim";
     bool secureMode = false;
@@ -1321,7 +1321,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Trim)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Discontinuity)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_Tunnel_NonSecure_Discontinuity)
 {
     const char *testName = "Decode_Discontinuity";
     bool secureMode = false;
@@ -1340,7 +1340,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Discontinuit
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_EOS)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_Tunnel_NonSecure_EOS)
 {
     const char *testName = "Decode_EOS";
     bool secureMode = false;
@@ -1359,7 +1359,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_EOS)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Flush)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_Tunnel_NonSecure_Flush)
 {
     const char *testName = "Decode_Flush";
     bool secureMode = false;
@@ -1378,7 +1378,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_Flush)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_FlushReset)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_Tunnel_NonSecure_FlushReset)
 {
     const char *testName = "Decode_FlushReset";
     bool secureMode = false;
@@ -1397,7 +1397,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_FlushReset)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_StopStart)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_Tunnel_NonSecure_StopStart)
 {
     const char *testName = "Decode_Stop_Start";
     bool secureMode = false;
@@ -1416,7 +1416,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_NonSecure_StopStart)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_Tunnel_Secure)
 {
     const char *testName = "Decode";
     bool secureMode = true;
@@ -1435,7 +1435,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Error)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_Tunnel_Secure_Error)
 {
     const char *testName = "Decode_Error";
     bool secureMode = true;
@@ -1454,7 +1454,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Error)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Trim)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_Tunnel_Secure_Trim)
 {
     const char *testName = "Decode_Trim";
     bool secureMode = true;
@@ -1473,7 +1473,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Trim)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Discontinuity)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_Tunnel_Secure_Discontinuity)
 {
     const char *testName = "Decode_Discontinuity";
     bool secureMode = true;
@@ -1492,7 +1492,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Discontinuity)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_EOS)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_Tunnel_Secure_EOS)
 {
     const char *testName = "Decode_EOS";
     bool secureMode = true;
@@ -1511,7 +1511,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_EOS)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Flush)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_Tunnel_Secure_Flush)
 {
     const char *testName = "Decode_Flush";
     bool secureMode = true;
@@ -1530,7 +1530,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_Flush)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_FlushReset)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_Tunnel_Secure_FlushReset)
 {
     const char *testName = "Decode_FlushReset";
     bool secureMode = true;
@@ -1549,7 +1549,7 @@ UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_FlushReset)
  * **Test Procedure:**
  * Refer to UT specification documentation [audioDecoder_High-Level_TestSpecification.md](../../docs/pages/audioDecoder_High-Level_TestSpecification.md)
  */
-UT_ADD_TEST(VTS_L3_AudioDecoder, Decode_Concurrent_Tunnel_Secure_StopStart)
+UT_ADD_TEST(VTS_L3_AudioDecoder, ADecode_Concurrent_Tunnel_Secure_StopStart)
 {
     const char *testName = "Decode_Stop_Start";
     bool secureMode = true;
