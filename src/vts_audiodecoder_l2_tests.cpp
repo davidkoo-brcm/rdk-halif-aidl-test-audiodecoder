@@ -635,26 +635,36 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, SignalEndOfStreamLifecycle)
 
                 AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(decoderId.value, audioDecoderController, bufferHandle, metadata);
 
-                // Per IAudioDecoderControllerListener.onFrameOutput() spec: a valid (non -1,
-                // non-tunnelled) frameAVBufferHandle transfers ownership to the caller, who must
-                // free it via IAVBuffer.free() - the HAL does not free it internally. This applies
-                // to SOC_PROPRIETARY pass-through frames too, so drain and free the output frame
-                // here before the pool is torn down below.
-                DecodedAudioFrame_t decodedFrame;
-                if (controlListener->getNextFrame(decodedFrame, MAX_FINAL_STATE_WAIT_MS, true) &&
-                    decodedFrame.frameBufferHandle != -1)
+                // VTS owns each output frame and must free it before the pool is destroyed.
+                auto freeOutputFrame = [&](const DecodedAudioFrame_t& frame)
                 {
+                    if (frame.frameBufferHandle == -1)
+                    {
+                        return;
+                    }
                     bool isOutputBufferValid = false;
-                    AVBUFFER_ISVALID_SUCCESS(avBufferManager, decodedFrame.frameBufferHandle, isOutputBufferValid);
+                    AVBUFFER_ISVALID_SUCCESS(avBufferManager, frame.frameBufferHandle, isOutputBufferValid);
                     if (isOutputBufferValid)
                     {
-                        AVBUFFER_FREE_SUCCESS(avBufferManager, decodedFrame.frameBufferHandle);
+                        AVBUFFER_FREE_SUCCESS(avBufferManager, frame.frameBufferHandle);
                     }
+                };
+
+                DecodedAudioFrame_t decodedFrame;
+                if (controlListener->getNextFrame(decodedFrame, MAX_FINAL_STATE_WAIT_MS, true))
+                {
+                    freeOutputFrame(decodedFrame);
                 }
 
                 controlListener->resetEndOfStream();
                 AUDIODECODER_SIGNAL_EOS_SUCCESS(decoder, audioDecoderController, false);
                 UT_ASSERT_TRUE(controlListener->waitForEndOfStream(MAX_FINAL_STATE_WAIT_MS));
+
+                // Free all frames the decoder sent during EOS, so destroyPool() below succeeds.
+                while (controlListener->getNextFrame(decodedFrame, 0, true))
+                {
+                    freeOutputFrame(decodedFrame);
+                }
 
                 AudioDecoderState state;
                 AUDIODECODER_GET_STATE(decoder, state);
