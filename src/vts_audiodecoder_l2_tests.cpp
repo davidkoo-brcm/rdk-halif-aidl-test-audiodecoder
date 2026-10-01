@@ -641,13 +641,14 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, SignalEndOfStreamLifecycle)
                 int32_t outputFramesReceived = 0;
                 auto freeOutputFrame = [&](const DecodedAudioFrame_t& frame)
                 {
+                    // Every callback counts as output; a -1 handle is tunnelled output with no buffer to free.
+                    outputFramesReceived++;
+                    UT_LOG_WARNING("[Codec: %s] onFrameOutput received for invalid 1-byte input: PTS=%lld, handle=0x%llx",
+                                   audiodecoder::toString(_codec).c_str(), static_cast<long long>(frame.framePTS), static_cast<unsigned long long>(frame.frameBufferHandle));
                     if (frame.frameBufferHandle == -1)
                     {
                         return;
                     }
-                    outputFramesReceived++;
-                    UT_LOG_WARNING("[Codec: %s] onFrameOutput received for invalid 1-byte input: PTS=%lld, handle=0x%llx",
-                                   audiodecoder::toString(_codec).c_str(), static_cast<long long>(frame.framePTS), static_cast<unsigned long long>(frame.frameBufferHandle));
                     bool isOutputBufferValid = false;
                     AVBUFFER_ISVALID_SUCCESS(avBufferManager, frame.frameBufferHandle, isOutputBufferValid);
                     if (isOutputBufferValid)
