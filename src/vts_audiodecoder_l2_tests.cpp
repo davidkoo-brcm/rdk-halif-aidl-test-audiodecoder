@@ -633,15 +633,21 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, SignalEndOfStreamLifecycle)
                 metadata.trimStartNs = 0;
                 metadata.trimEndNs = 0;
 
+                eventListener->resetErrors();
+
                 AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(decoderId.value, audioDecoderController, bufferHandle, metadata);
 
                 // VTS owns each output frame and must free it before the pool is destroyed.
+                int32_t outputFramesReceived = 0;
                 auto freeOutputFrame = [&](const DecodedAudioFrame_t& frame)
                 {
                     if (frame.frameBufferHandle == -1)
                     {
                         return;
                     }
+                    outputFramesReceived++;
+                    UT_LOG_WARNING("[Codec: %s] onFrameOutput received for invalid 1-byte input: PTS=%lld, handle=0x%llx",
+                                   audiodecoder::toString(_codec).c_str(), static_cast<long long>(frame.framePTS), static_cast<unsigned long long>(frame.frameBufferHandle));
                     bool isOutputBufferValid = false;
                     AVBUFFER_ISVALID_SUCCESS(avBufferManager, frame.frameBufferHandle, isOutputBufferValid);
                     if (isOutputBufferValid)
@@ -664,6 +670,21 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, SignalEndOfStreamLifecycle)
                 while (controlListener->getNextFrame(decodedFrame, 0, true))
                 {
                     freeOutputFrame(decodedFrame);
+                }
+
+                // The 1-byte input is not a valid frame: a compressed decoder must report an error and
+                // must not output a frame. PCM has no decode step, so it is excluded.
+                if (_codec != audiodecoder::Codec::PCM)
+                {
+                    auto errorWaitEnd = chrono::steady_clock::now() + chrono::milliseconds(MAX_FINAL_STATE_WAIT_MS);
+                    while (eventListener->getErrorCount() == 0 && chrono::steady_clock::now() < errorWaitEnd)
+                    {
+                        this_thread::sleep_for(chrono::milliseconds(10));
+                    }
+                    UT_ASSERT_EQUAL(outputFramesReceived, 0)
+                        << "Codec " << audiodecoder::toString(_codec) << " output a frame for invalid 1-byte input";
+                    UT_ASSERT_TRUE(eventListener->getErrorCount() > 0)
+                        << "Codec " << audiodecoder::toString(_codec) << " did not report onDecodeError for invalid 1-byte input";
                 }
 
                 AudioDecoderState state;
