@@ -588,6 +588,9 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, SignalEndOfStreamLifecycle)
     sp<IAVBuffer> avBufferManager = vts_audiodecoder_l2_getAvBufferService();
     UT_ASSERT_TRUE_FATAL(avBufferManager != nullptr);
 
+    IAVBufferHelper* avBufferHelper = getAVBufferHelperInstance();
+    UT_ASSERT_TRUE_FATAL(avBufferHelper != nullptr);
+
     for (const auto& [decoder, controlListener, eventListener, capabilities] : mAudioDecoderList)
     {
         for (bool secureDecode : {true, false})
@@ -627,6 +630,30 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, SignalEndOfStreamLifecycle)
 
                 AVBUFFER_ALLOC_SUCCESS(avBufferManager, audioPool, 1, bufferHandle);
 
+                /* Write a fixed invalid byte; left unwritten, the byte is random. 0x02 is an Opus TOC
+                 * with code 2, which needs a frame length byte that is missing (RFC 6716 sec 3.2.4),
+                 * and it carries no sync word or header for any other codec, so every compressed
+                 * decoder must reject it (verified with libopus and both ffmpeg Opus decoders). */
+                uint8_t invalidByte = 0x02;
+                if (secureDecode)
+                {
+                    UT_ASSERT_TRUE(avBufferHelper->writeSecureHandle(bufferHandle, &invalidByte, 1));
+                }
+                else
+                {
+                    uint32_t mapSize = 0;
+                    void* mapBuffer = avBufferHelper->mapHandle(bufferHandle, &mapSize);
+                    UT_ASSERT_TRUE(mapBuffer != nullptr && mapSize >= 1);
+                    if (mapBuffer != nullptr)
+                    {
+                        if (mapSize >= 1)
+                        {
+                            memcpy(mapBuffer, &invalidByte, 1);
+                        }
+                        avBufferHelper->unmapHandle(bufferHandle);
+                    }
+                }
+
                 audiodecoder::InputBufferMetadata metadata;
                 metadata.nsPresentationTime = 1000000;
                 metadata.discontinuity = false;
@@ -637,40 +664,68 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, SignalEndOfStreamLifecycle)
 
                 AUDIODECODER_DECODE_WITH_METADATA_SUCCESS(decoderId.value, audioDecoderController, bufferHandle, metadata);
 
-                // VTS owns each output frame and must free it before the pool is destroyed.
-                int32_t outputFramesReceived = 0;
-                auto freeOutputFrame = [&](const DecodedAudioFrame_t& frame)
-                {
-                    // Every callback counts as output; a -1 handle is tunnelled output with no buffer to free.
-                    outputFramesReceived++;
-                    UT_LOG_WARNING("[Codec: %s] onFrameOutput received for invalid 1-byte input: PTS=%lld, handle=0x%llx",
-                                   audiodecoder::toString(_codec).c_str(), static_cast<long long>(frame.framePTS), static_cast<unsigned long long>(frame.frameBufferHandle));
-                    if (frame.frameBufferHandle == -1)
-                    {
-                        return;
-                    }
-                    bool isOutputBufferValid = false;
-                    AVBUFFER_ISVALID_SUCCESS(avBufferManager, frame.frameBufferHandle, isOutputBufferValid);
-                    if (isOutputBufferValid)
-                    {
-                        AVBUFFER_FREE_SUCCESS(avBufferManager, frame.frameBufferHandle);
-                    }
-                };
-
-                DecodedAudioFrame_t decodedFrame;
-                if (controlListener->getNextFrame(decodedFrame, MAX_FINAL_STATE_WAIT_MS, true))
-                {
-                    freeOutputFrame(decodedFrame);
-                }
-
                 controlListener->resetEndOfStream();
                 AUDIODECODER_SIGNAL_EOS_SUCCESS(decoder, audioDecoderController, false);
                 UT_ASSERT_TRUE(controlListener->waitForEndOfStream(MAX_FINAL_STATE_WAIT_MS));
 
-                // Free all frames the decoder sent during EOS, so destroyPool() below succeeds.
+                AudioDecoderState state;
+                AUDIODECODER_GET_STATE(decoder, state);
+                UT_ASSERT_EQUAL(state, AudioDecoderState::STARTED);
+
+                /* Second signalEndOfStream() must be a no-op — spec mandates no exception */
+                AUDIODECODER_SIGNAL_EOS_SUCCESS(decoder, audioDecoderController, false);
+
+                AVBUFFER_ALLOC_SUCCESS(avBufferManager, audioPool, 1, postEosBufferHandle);
+                AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, postEosBufferHandle, metadata, Status::EX_ILLEGAL_STATE);
+
+                AUDIODECODER_FLUSH_SUCCESS(decoder, audioDecoderController, true, false);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::STARTED, AudioDecoderState::FLUSHING, AudioDecoderState::READY);
+
+                AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::READY, AudioDecoderState::STARTING, AudioDecoderState::STARTED);
+
+                AUDIODECODER_STOP_SUCCESS(decoder, audioDecoderController, false);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::STARTED, AudioDecoderState::STOPPING, AudioDecoderState::READY);
+
+                AUDIODECODER_CLOSE_SUCCESS(decoder, audioDecoderController, false);
+                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::READY, AudioDecoderState::CLOSING, AudioDecoderState::CLOSED);
+
+                /* Free every buffer VTS still holds, so destroyPool() succeeds. */
+
+                // Output frames: onEndOfStream() followed the last onFrameOutput(), so all are queued.
+                // Every callback counts as output; a -1 handle is tunnelled output with no buffer to free.
+                int32_t outputFramesReceived = 0;
+                DecodedAudioFrame_t decodedFrame;
                 while (controlListener->getNextFrame(decodedFrame, 0, true))
                 {
-                    freeOutputFrame(decodedFrame);
+                    outputFramesReceived++;
+                    UT_LOG_WARNING("[Codec: %s] onFrameOutput received for invalid 1-byte input: PTS=%lld, handle=0x%llx",
+                                   audiodecoder::toString(_codec).c_str(), static_cast<long long>(decodedFrame.framePTS),
+                                   static_cast<unsigned long long>(decodedFrame.frameBufferHandle));
+                    if (decodedFrame.frameBufferHandle == -1)
+                    {
+                        continue;
+                    }
+                    bool isOutputBufferValid = false;
+                    AVBUFFER_ISVALID_SUCCESS(avBufferManager, decodedFrame.frameBufferHandle, isOutputBufferValid);
+                    if (isOutputBufferValid)
+                    {
+                        AVBUFFER_FREE_SUCCESS(avBufferManager, decodedFrame.frameBufferHandle);
+                    }
+                }
+
+                // Post-EOS buffer: decode rejected it, so ownership stayed with VTS.
+                AVBUFFER_FREE_SUCCESS(avBufferManager, postEosBufferHandle);
+
+                // 1-byte input buffer: the HAL owns it once decode accepts it and should have freed it.
+                // Free it only if it is still valid, to avoid a double free.
+                bool isInputBufferValid = false;
+                AVBUFFER_ISVALID_SUCCESS(avBufferManager, bufferHandle, isInputBufferValid);
+                if (isInputBufferValid)
+                {
+                    UT_LOG_WARNING("[Codec: %s] Input buffer 0x%llx still valid after close, freeing it",
+                                   audiodecoder::toString(_codec).c_str(), static_cast<unsigned long long>(bufferHandle));
+                    AVBUFFER_FREE_SUCCESS(avBufferManager, bufferHandle);
                 }
 
                 // The 1-byte input is not a valid frame: a compressed decoder must report an error and
@@ -687,29 +742,6 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, SignalEndOfStreamLifecycle)
                     UT_ASSERT_TRUE(eventListener->getErrorCount() > 0)
                         << "Codec " << audiodecoder::toString(_codec) << " did not report onDecodeError for invalid 1-byte input";
                 }
-
-                AudioDecoderState state;
-                AUDIODECODER_GET_STATE(decoder, state);
-                UT_ASSERT_EQUAL(state, AudioDecoderState::STARTED);
-
-                /* Second signalEndOfStream() must be a no-op — spec mandates no exception */
-                AUDIODECODER_SIGNAL_EOS_SUCCESS(decoder, audioDecoderController, false);
-
-                AVBUFFER_ALLOC_SUCCESS(avBufferManager, audioPool, 1, postEosBufferHandle);
-                AUDIODECODER_DECODE_WITH_METADATA_FAILURE(audioDecoderController, postEosBufferHandle, metadata, Status::EX_ILLEGAL_STATE);
-                AVBUFFER_FREE_SUCCESS(avBufferManager, postEosBufferHandle);
-
-                AUDIODECODER_FLUSH_SUCCESS(decoder, audioDecoderController, true, false);
-                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::STARTED, AudioDecoderState::FLUSHING, AudioDecoderState::READY);
-
-                AUDIODECODER_START_SUCCESS(decoder, audioDecoderController, false);
-                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::READY, AudioDecoderState::STARTING, AudioDecoderState::STARTED);
-
-                AUDIODECODER_STOP_SUCCESS(decoder, audioDecoderController, false);
-                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::STARTED, AudioDecoderState::STOPPING, AudioDecoderState::READY);
-
-                AUDIODECODER_CLOSE_SUCCESS(decoder, audioDecoderController, false);
-                checkCompleteStateTransition(decoder, eventListener, AudioDecoderState::READY, AudioDecoderState::CLOSING, AudioDecoderState::CLOSED);
 
                 AVBUFFER_DESTROY_POOL_SUCCESS(avBufferManager, audioPool);
             }
