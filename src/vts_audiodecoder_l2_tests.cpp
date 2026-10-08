@@ -717,14 +717,19 @@ UT_ADD_TEST(VTS_L2_AudioDecoder, SignalEndOfStreamLifecycle)
                 // Post-EOS buffer: decode rejected it, so ownership stayed with VTS.
                 AVBUFFER_FREE_SUCCESS(avBufferManager, postEosBufferHandle);
 
-                // 1-byte input buffer: the HAL owns it once decode accepts it and should have freed it.
-                // Free it only if it is still valid, to avoid a double free.
+                // 1-byte input buffer: the HAL owns it once decode accepts it, so it must be freed by close().
+                // Still valid here means the HAL leaked it.
                 bool isInputBufferValid = false;
                 AVBUFFER_ISVALID_SUCCESS(avBufferManager, bufferHandle, isInputBufferValid);
                 if (isInputBufferValid)
                 {
-                    UT_LOG_WARNING("[Codec: %s] Input buffer 0x%llx still valid after close, freeing it",
-                                   audiodecoder::toString(_codec).c_str(), static_cast<unsigned long long>(bufferHandle));
+                    UT_LOG_ERROR("[Codec: %s] HAL leaked accepted input buffer 0x%llx: still valid after close",
+                                 audiodecoder::toString(_codec).c_str(), static_cast<unsigned long long>(bufferHandle));
+                }
+                UT_ASSERT_TRUE(!isInputBufferValid);
+                if (isInputBufferValid)
+                {
+                    // Cleanup only, after the failed assert, so destroyPool() can succeed
                     AVBUFFER_FREE_SUCCESS(avBufferManager, bufferHandle);
                 }
 
