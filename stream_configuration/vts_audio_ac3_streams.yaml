@@ -481,7 +481,7 @@ AudioStreams:
   tones_48k_6_512_11sec:
     input: tones_48k_6_512_11sec.ac3
     reference: tones_48k_6_512_11sec_ref.pcm
-    codec: AC3
+    codec: DOLBY_AC3
     sample_rate: 48000
     channels: 6
     format: S16LE
