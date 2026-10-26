@@ -29,9 +29,9 @@ audiodecoder:           # Component object begins
          supportedCodecs:
            - AAC_LC
            - DOLBY_AC3
-         supportsSecure: true
+         supportsSecure: false
       - 1:
          supportedCodecs:
            - AAC_LC
            - DOLBY_AC3
-         supportsSecure: true
+         supportsSecure: false
