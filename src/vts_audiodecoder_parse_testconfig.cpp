@@ -92,7 +92,7 @@ UT_status_t vts_audiodecoder_parse_testconfig(void* pTestInstance, const char *m
         testConfiguration_t testDetails;
         vector<int32_t> errorFrameNum;
 
-        string streamName = streamList + "." + to_string(i) + "Name";
+        string streamName = streamList + "." + to_string(i) + ".Name";
         ut_kvp_getStringField(kvpTestInstance, streamName.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
 
         string input       = streamsDetails + "." + string(resultKVP) + "." +"input";

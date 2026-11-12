@@ -484,22 +484,31 @@ void AudioDecoderEventListener::setDecoderID(int32_t id)
 
 int32_t AudioDecoderEventListener::mUsedDecoderID = -1;
 
-void AudioDecoderTest::run(bool validateMetrics)
+bool AudioDecoderTest::prepare()
 {
+    if (mSetupSucceeded) return true;
     if (!mAVbufferHelper)
     {
         UT_ASSERT_TRUE(false) << "AVBufferHelper is not initialized";
-        return;
+        return false;
     }
-
-    setupAudioDecoder();
-    if (!mSetupSucceeded)
+    if (mTestConfiguration.frameDetails.empty())
     {
-        /* Decoder was never opened/started — nothing valid to decode or tear
-         * down. UT_FAIL() in setupAudioDecoder() already recorded the
-         * failure. */
-        return;
+        UT_ASSERT_TRUE(false) << "Audio decoder input configuration contains no frames";
+        return false;
     }
+    setupAudioDecoder();
+    return mSetupSucceeded;
+}
+
+void AudioDecoderTest::run(bool validateMetrics)
+{
+    if (!prepare()) return;
+
+    // In AVClock tests the sink/STC has been prepared before run(). NEXUS
+    // copies the STC into audio start settings here, before any input arrives.
+    AUDIODECODER_START_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+    mDecoderStarted = true;
 
     thread validateThread;
 
@@ -534,7 +543,10 @@ void AudioDecoderTest::run(bool validateMetrics)
     UT_ASSERT_EQUAL(queueFullCount, 0);
     UT_ASSERT_EQUAL(decodeBufferAvailCount, 0);
 
-    teardownDecoder();
+    // Attached sinks still need the decoder and its output after input EOS.
+    // The helper's owner joins both threads before destroying this object.
+    if (!mIsSinkAttached)
+        teardownDecoder();
 }
 
 void AudioDecoderTest::getDecoderMetrics(int32_t &framesDecoded, int32_t &decodeErrors, int32_t &framesDropped)
@@ -596,6 +608,7 @@ AudioDecoderTest::AudioDecoderTest(IAudioDecoder::Id decoderId, sp<IAudioDecoder
 
 AudioDecoderTest::~AudioDecoderTest()
 {
+    teardownDecoder();
     AVBUFFER_DESTROY_POOL_SUCCESS(mAVBufferManager, mAudioPool);
 }
 
@@ -624,8 +637,7 @@ void AudioDecoderTest::setupAudioDecoder()
                                         mTestConfiguration.numChannels,
                                         mTestConfiguration.sampleRate);
 
-    /* Start the decoder */
-    AUDIODECODER_START_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+    // Keep READY until run(): the sink must bind STC before decoder start.
     mEosSubmitted       = false;
     mSubmittedInSession = false;
 
@@ -885,8 +897,16 @@ void AudioDecoderTest::startDecoding()
 
 void AudioDecoderTest::teardownDecoder()
 {
-    /* Stop the decoder */
-    AUDIODECODER_STOP_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+    if (!mSetupSucceeded)
+        return;
+    mSetupSucceeded = false;
+
+    // prepare() may have opened the decoder without run() ever starting it.
+    if (mDecoderStarted)
+    {
+        AUDIODECODER_STOP_SUCCESS(mDecoderHandle, mAudioDecoderController, true);
+        mDecoderStarted = false;
+    }
 
     /* Close the decoder */
     AUDIODECODER_CLOSE_SUCCESS(mDecoderHandle, mAudioDecoderController, true);

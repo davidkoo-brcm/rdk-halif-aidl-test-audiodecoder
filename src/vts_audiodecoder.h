@@ -952,6 +952,8 @@ public:
 
     ~AudioDecoderTest();
 
+    // Opens/configures the decoder; run() starts it after the sink binds STC.
+    bool prepare();
     void run(bool validateMetrics);
 
     void getDecoderMetrics(int32_t &framesDecoded, int32_t &decodeErrors, int32_t &framesDropped);
@@ -976,10 +978,10 @@ private:
     int32_t mDecodeQueueFullCount = 0;
     bool    mEosSubmitted         = false;
     bool    mSubmittedInSession   = false;
-    // Set false if setupAudioDecoder() bails out before opening the decoder
-    // (e.g. input file missing) — run() checks this to skip startDecoding()/
-    // teardownDecoder() rather than using a null mAudioDecoderController.
+    // prepare() opens/configures the session; run() starts it after optional
+    // sink/STC preparation. Track both stages for early-return cleanup.
     bool    mSetupSucceeded       = false;
+    bool    mDecoderStarted       = false;
 
     struct FrameValidationState
     {
