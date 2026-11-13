@@ -2,19 +2,20 @@
 
 ## Latest test results
 
-Platform: Broadcom Xione. Profile: `profiles/hfp-unified_xione.yaml`.
+Platform: Broadcom Xione. Profile: `profiles/hfp-unified_xione.yaml`. Run date: 2026-11-12.
 
-| Check | Latest result |
-| --- | --- |
-| AVClock regression with DSOLA off | PASS — confirmed by the user |
-| `seq_tun_nonsec_AutoAudioBeforeVideo` (2026-11-12) | PASS — 81.119 s |
-| `ADecode_Sequential_Tunnel_NonSecure_Error` (2026-11-12) | FAIL — 22 input checks expected 4, 9 or 10 errors; zero callbacks received |
+| Level | Total | PASS | FAIL | SKIP | Duration (s) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| L1 | 31 | 31 | 0 | 0 | 9.269 |
+| L2 | 5 | 5 | 0 | 0 | 1.924 |
+| L3 | 65 | 14 | 4 | 47 | 388.687 |
+| Total | 101 | 50 | 4 | 47 | 399.880 |
 
-An AVClock PASS verifies priming and clock progression, not simultaneous audible output or pitch-corrected trick playback.
+The four sequential/concurrent Tunnel/NonTunnel NonSecure Error cases remain FAIL. Configurations expect 4, 9 or 10 error callbacks, while the received count is zero. The raw results and error-count assertions remain unchanged.
 
 ## Prepare the decoder before starting it
 
-`prepare()` validates input and opens/configures a READY decoder. `run()` starts it only after an attached sink has bound the STC. Standalone calls to run still prepare automatically. Empty input is an explicit assertion failure, and the boolean helper returns false without using a void-returning fatal assertion macro.
+`prepare()` validates input and opens/configures a READY decoder. AVClock and AudioSink callers prepare the sink/STC before invoking `run()`; the helper itself does not wait for a binding. Standalone calls to run still prepare automatically. Empty input is an explicit assertion failure, and the boolean helper returns false without using a void-returning fatal assertion macro.
 
 [`src/vts_audiodecoder.cpp:487`](../../src/vts_audiodecoder.cpp#L487)
 
